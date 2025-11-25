@@ -1,11 +1,11 @@
-from apps.study_groups.models.group_member_base_model import GroupMemberBaseModel
-from apps.study_groups.models.study_group_base_model import StudyGroupBaseModel
+from apps.study_groups.models.group_member import GroupMember
+from apps.study_groups.models.study_group import StudyGroup
 
 # 프로젝트 절대 경로로 import
 
 __all__ = [
-    "StudyGroupBaseModel",
-    "GroupMemberBaseModel",
+    "StudyGroup",
+    "GroupMember",
 ]
 
 # __init__ 사용
