@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class StudyGroup(models.Model):
+class StudyGroupBaseModel(models.Model):
     class StudyGroupStatusChoices(models.TextChoices):
         PENDING = "PENDING"
         ONGOING = "ONGOING"
@@ -22,7 +22,7 @@ class StudyGroup(models.Model):
     updated_at = models.DateTimeField(auto_now=True)  # 갱신 시 저장
 
     class Meta:
-        db_table = "study_groups"
+        db_table = "study_group"
 
     def __str__(self) -> str:
         return self.name
