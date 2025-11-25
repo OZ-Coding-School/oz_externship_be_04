@@ -1,17 +1,19 @@
 import uuid
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
+
 from apps.study_groups.models import StudyGroupBaseModel
 
 User = get_user_model()
 
 
-def get_default_close_at():
+def get_default_close_at() -> datetime:
     return timezone.now() + timedelta(days=14)
+
 
 class Recruitment(models.Model):
     """스터디 구인 공고"""
@@ -39,7 +41,7 @@ class Recruitment(models.Model):
         help_text="예상 모집 인원 (1~10명)",
     )
     views_count = models.IntegerField(default=0, help_text="조회수")
-    close_at = models.DateTimeField(default=get_default_close_at,help_text="공고 마감일")
+    close_at = models.DateTimeField(default=get_default_close_at, help_text="공고 마감일")
     is_closed = models.BooleanField(default=False, help_text="공고 마감 상태")
     created_at = models.DateTimeField(auto_now_add=True, help_text="공고 생성일")
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True, help_text="공고 수정일")
@@ -48,7 +50,7 @@ class Recruitment(models.Model):
         db_table = "recruitments"
         verbose_name = "스터디 구인 공고"
         verbose_name_plural = "스터디 구인 공고 목록"
-        ordering = ["-created_at","-id"]
+        ordering = ["-created_at", "-id"]
         indexes = [
             models.Index(fields=["uuid"], name="idx_uuid"),
             models.Index(fields=["study_group"], name="idx_study_group"),
