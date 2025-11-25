@@ -35,8 +35,9 @@ THIRD_PARTY_APPS = [
 CUSTOM_APPS: list[str] = [
     "apps.study_groups",
     "apps.lectures",
+    "apps.core",
+    "apps.users",
 ]
-
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + CUSTOM_APPS
 
 MIDDLEWARE = [
@@ -128,6 +129,9 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+# custom users model setting
+AUTH_USER_MODEL = "users.Users"
 
 # djangorestframework-simplejwt 관련 설정
 SIMPLE_JWT = {
