@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class StudyGroupBaseModel(models.Model):
+class StudyGroup(models.Model):
     class StudyGroupStatusChoices(models.TextChoices):
         PENDING = "PENDING"
         ONGOING = "ONGOING"
