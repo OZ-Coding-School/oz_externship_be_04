@@ -9,7 +9,7 @@ class GenderChoices(models.TextChoices):
     FEMALE = "F", "여성"
 
 
-class Users(TimeStampedModel, AbstractBaseUser):
+class User(TimeStampedModel, AbstractBaseUser):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=30)
     nickname = models.CharField(max_length=10, unique=True)
