@@ -27,6 +27,7 @@ class CrawledLectureReview(models.Model):
     class Meta:
         db_table = "crawled_lecture_reviews"
         ordering = ["-created_at", "-id"]
+        constraints = [models.UniqueConstraint(fields=["lecture", "external_id"], name="unique_lecture_review")]
 
     def __str__(self) -> str:
         return f"[{self.lecture.id}][{self.lecture.title}] ({self.rating}) {self.content}"
