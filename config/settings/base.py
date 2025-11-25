@@ -38,6 +38,7 @@ CUSTOM_APPS: list[str] = [
     "apps.core",
     "apps.users",
     "apps.recruitment",
+    "apps.chat",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + CUSTOM_APPS
 
@@ -132,7 +133,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # custom users model setting
-AUTH_USER_MODEL = "users.Users"
+AUTH_USER_MODEL = "users.User"
 
 # djangorestframework-simplejwt 관련 설정
 SIMPLE_JWT = {

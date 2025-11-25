@@ -6,7 +6,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
-from apps.study_groups.models import StudyGroupBaseModel
+from apps.study_groups.models import StudyGroup
 
 
 def get_default_close_at() -> datetime:
@@ -18,7 +18,7 @@ class Recruitment(models.Model):
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, help_text="외부 노출용 ID")
     study_group = models.ForeignKey(
-        StudyGroupBaseModel,
+        StudyGroup,
         on_delete=models.CASCADE,
         related_name="recruitments",
         db_column="study_group_id",
