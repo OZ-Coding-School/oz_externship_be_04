@@ -1,3 +1,7 @@
-from django.test import TestCase
+from django.apps import AppConfig
 
-# Create your tests here.
+
+class UsersConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.users"
+    label = "users"
