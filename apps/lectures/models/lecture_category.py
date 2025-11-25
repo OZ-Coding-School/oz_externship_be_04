@@ -15,5 +15,5 @@ class LectureCategory(models.Model):
         ordering = ["pk"]
         db_table = "lecture_categories"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"[{self.lecture}] {self.category}"
