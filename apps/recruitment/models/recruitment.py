@@ -1,14 +1,12 @@
 import uuid
 from datetime import datetime, timedelta
 
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
 from apps.study_groups.models import StudyGroupBaseModel
-
-User = get_user_model()
 
 
 def get_default_close_at() -> datetime:
@@ -27,7 +25,11 @@ class Recruitment(models.Model):
         help_text="스터디 그룹",
     )
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="recruitments", db_column="author_id", help_text="공고 작성자"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="recruitments",
+        db_column="author_id",
+        help_text="공고 작성자",
     )
     title = models.CharField(max_length=50, help_text="공고 제목")
     content = models.TextField(help_text="공고 내용")
@@ -40,7 +42,7 @@ class Recruitment(models.Model):
         help_text="예상 모집 인원 (1~10명)",
     )
     views_count = models.PositiveIntegerField(default=0, help_text="조회수")
-    close_at = models.DateTimeField(default=get_default_close_at, help_text="공고 마감일")
+    close_at = models.DateTimeField(default=get_default_close_at(), help_text="공고 마감일")
     is_closed = models.BooleanField(default=False, help_text="공고 마감 상태")
     created_at = models.DateTimeField(auto_now_add=True, help_text="공고 생성일")
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True, help_text="공고 수정일")
