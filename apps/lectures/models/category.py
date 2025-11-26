@@ -1,10 +1,10 @@
 from django.db import models
 
+from apps.core.models import TimeStampedModel
 
-class Category(models.Model):
+
+class Category(TimeStampedModel):
     name = models.CharField(max_length=255, unique=True, help_text="카테고리명")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["name"]

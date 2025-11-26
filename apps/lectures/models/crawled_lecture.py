@@ -1,8 +1,10 @@
 from django.db import models
 from django.db.models.enums import TextChoices
 
+from apps.core.models import TimeStampedModel
 
-class CrawledLecture(models.Model):
+
+class CrawledLecture(TimeStampedModel):
     class DifficultyEnum(TextChoices):
         EASY = "EASY", "초급"
         NORMAL = "NORMAL", "중급"
@@ -24,8 +26,6 @@ class CrawledLecture(models.Model):
     discount_price = models.BigIntegerField(null=True, default=0, help_text="강의 할인가격")
     url_link = models.URLField(max_length=255, help_text="강의 바로가기 링크")
     thumbnail_img_url = models.URLField(null=True, max_length=255, help_text="강의 썸네일 이미지")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at", "-id"]
