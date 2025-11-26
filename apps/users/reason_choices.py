@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class WithdrawalReason(models.TextChoices):
     NO_LONGER_NEEDED = "NO_LONGER_NEEDED", "서비스 이용할 시간이 없음"
     LACK_OF_INTEREST = "LACK_OF_INTEREST", "관심이 사라짐"
