@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("chat", "0003_remove_lastreadmessage_message_and_more"),
-        ("study_groups", "0002_alter_studygroup_table_groupmember"),
+        ("study_groups", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
