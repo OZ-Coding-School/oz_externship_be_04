@@ -1,7 +1,6 @@
 from django.db import models
 
 from apps.core.models import TimeStampedModel
-from apps.recruitment.models import Recruitment
 
 
 class RecruitmentImage(TimeStampedModel):
@@ -11,11 +10,10 @@ class RecruitmentImage(TimeStampedModel):
         "Recruitment", on_delete=models.CASCADE, related_name="images", db_column="recruitment_id", help_text="구인공고"
     )
 
-    img_url = models.URLField(max_length=255, help_text="이미지 URL")
+    img_url = models.URLField(max_length=500, help_text="이미지 URL")
 
     class Meta:
         db_table = "recruitment_image"
-        ordering = ["-created_at", "-id"]
         indexes = [
             models.Index(fields=["recruitment", "-created_at"], name="idx_recruitment_img_created"),
         ]
