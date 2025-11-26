@@ -1,7 +1,9 @@
 from django.db import models
 
+from apps.core.models import TimeStampedModel
 
-class RecruitmentBookmarks(models.Model):
+
+class RecruitmentBookmarks(TimeStampedModel):
     # 구인공고 북마크
 
     recruitment_id = models.ForeignKey(
@@ -20,8 +22,6 @@ class RecruitmentBookmarks(models.Model):
         related_name="recruitment_bookmarks",
         help_text="북마크한 유저의 ID",
     )
-    created_at = models.DateTimeField(null=False, auto_now_add=True, help_text="북마크 생성일시")
-    updated_at = models.DateTimeField(null=True, auto_now=True, help_text="북마크 수정일시")
 
     class Meta:
         db_table = "recruitment_bookmarks"

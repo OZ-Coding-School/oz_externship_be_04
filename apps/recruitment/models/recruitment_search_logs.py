@@ -1,7 +1,9 @@
 from django.db import models
 
+from apps.core.models import TimeStampedModel
 
-class RecruitmentSearchLogs(models.Model):
+
+class RecruitmentSearchLogs(TimeStampedModel):
     # 공고 검색 기록
 
     user_id = models.ForeignKey(
@@ -13,8 +15,6 @@ class RecruitmentSearchLogs(models.Model):
         help_text="유저 ID",
     )
     keyword = models.CharField(max_length=255, null=False, blank=False, help_text="검색어")
-    created_at = models.DateTimeField(auto_now_add=True, null=False, help_text="공고 검색 기록 생성일시")
-    updated_at = models.DateTimeField(auto_now=True, null=True, help_text="공고 검색 기록 수정일시")
 
     class Meta:
         db_table = "recruitment_search_logs"
