@@ -3,7 +3,7 @@ from rest_framework import serializers
 from apps.lectures.models import Category
 
 
-class CategorySerializer(serializers.ModelSerializer):
+class CategorySerializer(serializers.ModelSerializer[Category]):
     class Meta:
         model = Category
         fields = ["id", "name", "created_at", "updated_at"]
