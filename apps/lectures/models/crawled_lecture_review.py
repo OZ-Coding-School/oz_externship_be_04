@@ -1,10 +1,11 @@
 from django.db import models
 from django.db.models import IntegerChoices
 
+from apps.core.models import TimeStampedModel
 from apps.lectures.models.crawled_lecture import CrawledLecture
 
 
-class CrawledLectureReview(models.Model):
+class CrawledLectureReview(TimeStampedModel):
     class RatingEnum(IntegerChoices):
         FIVE = 5, "5점"
         FOUR = 4, "4점"
@@ -21,8 +22,6 @@ class CrawledLectureReview(models.Model):
     external_id = models.BigIntegerField(help_text="크롤링 한 사이트에서 받은 리뷰의 pk")
     rating = models.SmallIntegerField(choices=RatingEnum.choices, help_text="리뷰의 평점")
     content = models.TextField(help_text="리뷰 내용")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "crawled_lecture_reviews"
