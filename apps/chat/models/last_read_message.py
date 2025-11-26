@@ -1,7 +1,8 @@
 from django.db import models
+from apps.core.models import TimeStampedModel
 
 
-class LastReadMessage(models.Model):
+class LastReadMessage(TimeStampedModel):
     study_group = models.ForeignKey(
         "study_groups.StudyGroup",
         on_delete=models.CASCADE,  # 스터디 그룹 삭제시 해당 그룹의 읽음 상태가 의미 없음
@@ -18,12 +19,12 @@ class LastReadMessage(models.Model):
         related_name="last_read_by_users",
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
-        db_table = "last_read_message"
+        db_table = "last_read_messages" # 복수형으로 변경했습니다
         constraints = [
             # 유저는 각 그룹마다 last_read 메시지가 하나만 존재해야 함
             models.UniqueConstraint(fields=["study_group", "user"], name="unique_user_group_last_read")
         ]
+
+    def __str__(self):
+        return f"{self.user} - {self.study_group} / last: {self.message}"

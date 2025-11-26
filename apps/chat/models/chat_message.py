@@ -1,7 +1,8 @@
 from django.db import models
+from apps.core.models import TimeStampedModel
 
 
-class ChatMessage(models.Model):
+class ChatMessage(TimeStampedModel):
     # 메시지를 보낸 사용자 (탈퇴 시 기록 유지 위해 null)
     sender = models.ForeignKey(
         "users.User",
@@ -17,8 +18,6 @@ class ChatMessage(models.Model):
     )
     # 메시지 내용
     content = models.CharField(max_length=1000)
-    created_at = models.DateTimeField(auto_now_add=True)  # 최초 생성 시 자동 저장
-    updated_at = models.DateTimeField(auto_now=True)  # 수정 시 자동 갱신
 
     class Meta:
         db_table = "chat_messages"
