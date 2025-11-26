@@ -1,6 +1,7 @@
 from django.db import models
+from ...core.models import TimeStampedModel
 
-class GroupScheduleModel(models.Model):
+class GroupScheduleModel(TimeStampedModel):
 
     study_group = models.ForeignKey(
         'study_groups',
@@ -14,8 +15,6 @@ class GroupScheduleModel(models.Model):
     session_date = models.DateTimeField(help_text='스케줄 날짜')
     start_time = models.TimeField(help_text='시작 시간')
     end_time = models.TimeField(help_text='종료 시간')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'group_schedules'

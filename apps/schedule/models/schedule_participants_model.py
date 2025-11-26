@@ -1,6 +1,8 @@
 from django.db import models
+from ...core.models import TimeStampedModel
 
-class ScheduleParticipantsModel(models.Model):
+
+class ScheduleParticipantsModel(TimeStampedModel):
 
     schedule = models.ForeignKey(
         'group_schedules',
@@ -16,8 +18,6 @@ class ScheduleParticipantsModel(models.Model):
         db_column = 'member_id',
         help_text = '참가 맴버',
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'schedule_participants'
