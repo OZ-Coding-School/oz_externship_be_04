@@ -14,5 +14,10 @@ class LectureBookmark(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "lecture_bookmark"
+        db_table = "lecture_bookmarks"
         ordering = ["-created_at", "-updated_at"]
+
+
+
+        def __str__(self):
+            return f"LectureBookmark(user_id={self.user_id}, lecture_id={self.lecture_id})"
