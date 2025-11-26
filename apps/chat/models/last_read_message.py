@@ -21,7 +21,7 @@ class LastReadMessage(TimeStampedModel):
     )
 
     class Meta:
-        db_table = "last_read_messages"  # 복수형으로 변경했습니다
+        db_table = "last_read_messages"  # 복수형으로 변경했습니다.
         constraints = [
             # 유저는 각 그룹마다 last_read 메시지가 하나만 존재해야 함
             models.UniqueConstraint(fields=["study_group", "user"], name="unique_user_group_last_read")

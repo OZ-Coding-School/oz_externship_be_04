@@ -11,7 +11,7 @@ class ChatMessage(TimeStampedModel):
         null=True,
         related_name="sent_messages",
     )
-    # 해달 메시지가 속한 스터디 그룹
+    # 해당 메시지가 속한 스터디 그룹
     study_group = models.ForeignKey(
         "study_groups.StudyGroup",
         on_delete=models.CASCADE,  # 스터디 그룹 삭제 시 메시지도 같이 삭제함
