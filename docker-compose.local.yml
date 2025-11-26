@@ -11,7 +11,7 @@ services:
              python manage.py collectstatic --noinput &&
              gunicorn --workers 3 --bind 0.0.0.0:8000 config.wsgi:application"
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - .:/oz_externship
       - static_volume:/oz_externship/static
@@ -48,7 +48,7 @@ services:
       POSTGRES_ROOT_USER: postgres
       POSTGRES_DB: ozcoding_externship
     ports:
-      - 5432:5432
+      - 5433:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
