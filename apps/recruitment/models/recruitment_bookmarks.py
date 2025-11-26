@@ -5,44 +5,33 @@ class RecruitmentBookmarks(models.Model):
     # 구인공고 북마크
 
     recruitment_id = models.ForeignKey(
-        "recruitments.Recruitment",
-        null = False,
-        on_delete = models.CASCADE,
-        db_column = "recruitment_id",
-        related_name = "recruitment_bookmarks",
-        help_text = "공고 ID"
+        "recruitment.Recruitment",
+        null=False,
+        on_delete=models.CASCADE,
+        db_column="recruitment_id",
+        related_name="recruitment_bookmarks",
+        help_text="공고 ID",
     )
     user_id = models.ForeignKey(
         "users.User",
-        null = False,
-        on_delete = models.CASCADE,
-        db_column = "user_id",
-        related_name = "recruitment_bookmarks",
-        help_text = "북마크한 유저의 ID"
+        null=False,
+        on_delete=models.CASCADE,
+        db_column="user_id",
+        related_name="recruitment_bookmarks",
+        help_text="북마크한 유저의 ID",
     )
-    created_at = models.DateTimeField(
-        null = False,
-        auto_now_add = True,
-        help_text = "북마크 생성일시"
-    )
-    updated_at = models.DateTimeField(
-        null = True,
-        auto_now = True,
-        help_text = "북마크 수정일시"
-    )
+    created_at = models.DateTimeField(null=False, auto_now_add=True, help_text="북마크 생성일시")
+    updated_at = models.DateTimeField(null=True, auto_now=True, help_text="북마크 수정일시")
 
     class Meta:
         db_table = "recruitment_bookmarks"
         constraints = [
             models.UniqueConstraint(
-                fields = ["user_id", "recruitment_id"],
-                name = "pk_user_recruitment_bookmark",
+                fields=["user_id", "recruitment_id"],
+                name="pk_user_recruitment_bookmark",
             ),
         ]
-        indexes = [
-            models.Index(fields = ["user_id"]),
-            models.Index(fields = ["recruitment_id"])
-        ]
+        indexes = [models.Index(fields=["user_id"]), models.Index(fields=["recruitment_id"])]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user_id} bookmarked {self.recruitment_id}"
