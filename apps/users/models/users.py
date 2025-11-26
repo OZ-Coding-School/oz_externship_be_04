@@ -1,7 +1,7 @@
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import models
 
-from apps.core.models import BaseModel
+from apps.core.models import TimeStampedModel
 
 
 class GenderChoices(models.TextChoices):
@@ -9,7 +9,7 @@ class GenderChoices(models.TextChoices):
     FEMALE = "F", "여성"
 
 
-class User(BaseModel, AbstractBaseUser):
+class User(TimeStampedModel, AbstractBaseUser):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=30)
     nickname = models.CharField(max_length=10, unique=True)
