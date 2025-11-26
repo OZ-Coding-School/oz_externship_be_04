@@ -1,9 +1,9 @@
 from django.db import models
 
-from apps.core.models import TimeStampedModel
+from apps.core.models import BaseModel
 
 
-class Category(TimeStampedModel):
+class Category(BaseModel):
     name = models.CharField(max_length=255, unique=True, help_text="카테고리명")
 
     class Meta:
@@ -14,7 +14,7 @@ class Category(TimeStampedModel):
         return self.name
 
 
-class LectureCategory(TimeStampedModel):
+class LectureCategory(BaseModel):
     pk = models.CompositePrimaryKey("lecture_id", "category_id")
     lecture = models.ForeignKey(
         "lectures.CrawledLecture", on_delete=models.CASCADE, related_name="lecture_categories", help_text="강의 id"
@@ -31,7 +31,7 @@ class LectureCategory(TimeStampedModel):
         return f"[{self.lecture}] {self.category}"
 
 
-class UserPreferCategory(TimeStampedModel):
+class UserPreferCategory(BaseModel):
     pk = models.CompositePrimaryKey("user_id", "category_id")
     user = models.ForeignKey(
         "users.User", on_delete=models.CASCADE, related_name="preferred_categories", help_text="유저 id"

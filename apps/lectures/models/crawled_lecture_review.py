@@ -1,11 +1,11 @@
 from django.db import models
 from django.db.models import IntegerChoices
 
-from apps.core.models import TimeStampedModel
+from apps.core.models import BaseModel
 from apps.lectures.models.crawled_lecture import CrawledLecture
 
 
-class CrawledLectureReview(TimeStampedModel):
+class CrawledLectureReview(BaseModel):
     class RatingEnum(IntegerChoices):
         FIVE = 5, "5점"
         FOUR = 4, "4점"

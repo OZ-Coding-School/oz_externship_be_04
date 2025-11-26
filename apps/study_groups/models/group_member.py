@@ -1,10 +1,10 @@
 from django.db import models
 
-from apps.core.models import TimeStampedModel
+from apps.core.models import BaseModel
 from apps.users.models import User
 
 
-class GroupMember(TimeStampedModel):
+class GroupMember(BaseModel):
     study_group_id = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE)
     # 현재: 멤버가 있어도 스터디 그룹 삭제 가능 (멤버들 자동 Delete 처리)
     # 보호 필요 시: CASCADE-> PROTECT 변경

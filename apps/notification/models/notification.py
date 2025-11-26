@@ -1,9 +1,9 @@
 from django.db import models
 
-from apps.core.models import TimeStampedModel
+from apps.core.models import BaseModel
 
 
-class Notification(TimeStampedModel):
+class Notification(BaseModel):
     class NotificationType(models.TextChoices):
         STUDY_JOIN = "STUDY_JOIN", "스터디 그룹에 새로운 구성원이 참가한 경우 알림"
         STUDY_NOTE_CREATE = "STUDY_NOTE_CREATE", "스터디 구성원이 스터디 기록을 작성한 경우 알림"

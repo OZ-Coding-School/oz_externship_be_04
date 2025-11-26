@@ -1,10 +1,10 @@
 from django.db import models
 from django.db.models.enums import TextChoices
 
-from apps.core.models import TimeStampedModel
+from apps.core.models import BaseModel
 
 
-class CrawledLecture(TimeStampedModel):
+class CrawledLecture(BaseModel):
     class DifficultyEnum(TextChoices):
         EASY = "EASY", "초급"
         NORMAL = "NORMAL", "중급"

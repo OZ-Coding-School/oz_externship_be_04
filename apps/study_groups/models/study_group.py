@@ -1,9 +1,9 @@
 from django.db import models
 
-from apps.core.models import TimeStampedModel
+from apps.core.models import BaseModel
 
 
-class StudyGroup(TimeStampedModel):
+class StudyGroup(BaseModel):
     class StudyGroupStatusChoices(models.TextChoices):
         PENDING = "PENDING"
         ONGOING = "ONGOING"
