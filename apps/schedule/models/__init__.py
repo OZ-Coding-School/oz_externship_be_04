@@ -1,1 +1,2 @@
 from .group_schedule_model import GroupScheduleModel
+from .schedule_participants_model import ScheduleParticipantsModel

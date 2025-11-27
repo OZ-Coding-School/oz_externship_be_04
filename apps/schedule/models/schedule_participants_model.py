@@ -2,6 +2,7 @@ from django.db import models
 
 from ...core.models import TimeStampedModel
 from ..models.group_schedule_model import GroupScheduleModel
+from ...study_groups.models import GroupMembers
 
 
 class ScheduleParticipantsModel(TimeStampedModel):
@@ -14,7 +15,7 @@ class ScheduleParticipantsModel(TimeStampedModel):
         help_text="스케줄",
     )
     member = models.ForeignKey(
-        "group_members",
+        GroupMembers,
         on_delete=models.CASCADE,
         related_name="participants",
         db_column="member_id",
