@@ -41,6 +41,7 @@ class RecruitmentImageCreateSerializer(serializers.ModelSerializer[Any]):
         ]
         extra_kwargs = {"image_url": {"required": True, "help_text": "이미지 URL"}}
 
+
 class RecruitmentImageUpdateSerializer(serializers.ModelSerializer[Any]):
     """
     구인공고 이미지 수정
