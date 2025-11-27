@@ -2,8 +2,8 @@ from django.utils import timezone
 
 from rest_framework import serializers
 
-from apps.schedule.models.group_schedule_model import GroupScheduleModel
-from apps.study_groups.models import StudyGroup
+from ...schedule.models.group_schedule_model import GroupScheduleModel
+from ...study_groups.models import StudyGroup
 
 
 class GroupScheduleSerializer(serializers.ModelSerializer):
