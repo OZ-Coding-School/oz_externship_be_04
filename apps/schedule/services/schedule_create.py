@@ -1,5 +1,6 @@
 from apps.schedule.models.group_schedule_model import GroupScheduleModel
 
+
 class ScheduleCreateService:
     @staticmethod
     def create_schedule(validated_data):

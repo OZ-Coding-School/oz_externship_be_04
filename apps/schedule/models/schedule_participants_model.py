@@ -1,8 +1,8 @@
 from django.db import models
 
 from ...core.models import TimeStampedModel
-from ..models.group_schedule_model import GroupScheduleModel
 from ...study_groups.models import GroupMember
+from ..models.group_schedule_model import GroupScheduleModel
 
 
 class ScheduleParticipantsModel(TimeStampedModel):

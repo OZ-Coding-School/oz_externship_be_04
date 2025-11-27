@@ -1,14 +1,16 @@
+from datetime import date, time, timedelta
+
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
-from datetime import timedelta, time, date
-from django.contrib.auth import get_user_model
 
-from apps.study_groups.models import StudyGroup, GroupMember
 from apps.schedule.models.group_schedule_model import GroupScheduleModel
 from apps.schedule.models.schedule_participants_model import ScheduleParticipantsModel
-from apps.schedule.serializers.schedule_participants_serializer import ScheduleParticipantsSerializer
+from apps.schedule.serializers.schedule_participants_serializer import (
+    ScheduleParticipantsSerializer,
+)
 from apps.schedule.services.schedule_create import ScheduleCreateService
-
+from apps.study_groups.models import GroupMember, StudyGroup
 
 User = get_user_model()
 

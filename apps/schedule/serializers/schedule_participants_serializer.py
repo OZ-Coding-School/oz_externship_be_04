@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
-from ..models.schedule_participants_model import ScheduleParticipantsModel
-from ..models.group_schedule_model import GroupScheduleModel
 from ...study_groups.models import GroupMember
+from ..models.group_schedule_model import GroupScheduleModel
+from ..models.schedule_participants_model import ScheduleParticipantsModel
 
 
 class ScheduleParticipantsSerializer(serializers.ModelSerializer):

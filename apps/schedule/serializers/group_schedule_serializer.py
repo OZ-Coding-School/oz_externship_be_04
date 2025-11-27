@@ -1,5 +1,4 @@
 from django.utils import timezone
-
 from rest_framework import serializers
 
 from ...schedule.models.group_schedule_model import GroupScheduleModel
