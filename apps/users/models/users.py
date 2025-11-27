@@ -1,7 +1,7 @@
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import models
 
-from ..core.models import TimeStampedModel
+from apps.core.models import TimeStampedModel
 
 
 class GenderChoices(models.TextChoices):

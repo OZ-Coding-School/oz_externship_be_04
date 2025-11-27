@@ -1,7 +1,7 @@
 from django.db import models
 
 from apps.core.models import TimeStampedModel
-from apps.users.models import User
+from apps.users.models.users import User
 
 
 class GroupMember(TimeStampedModel):
