@@ -3,6 +3,7 @@ from django.db import models
 from apps.core.models import TimeStampedModel
 from apps.users.models.users import User
 
+
 # 스터디 그룹
 class StudyGroup(models.Model):
     class StudyGroupStatusChoices(models.TextChoices):
