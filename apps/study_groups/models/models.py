@@ -3,7 +3,6 @@ from django.db import models
 from apps.core.models import TimeStampedModel
 from apps.users.models.users import User
 
-
 # 스터디 그룹
 class StudyGroup(models.Model):
     class StudyGroupStatusChoices(models.TextChoices):
@@ -43,3 +42,11 @@ class GroupMember(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.study_group_id.name}의 멤버 {self.user_id.nickname}"
+
+
+class StudyLecture(TimeStampedModel):
+    lecture_id = models.ForeignKey("lectures.CrawledLecture", on_delete=models.CASCADE)
+    study_group_id = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "study_lectures"
