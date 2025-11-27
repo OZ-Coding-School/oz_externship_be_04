@@ -1,9 +1,9 @@
 import random
 import string
-from apps.users.models import User, SocialAccount
+from apps.users.models.users import User, SocialAccount
 
 
-def generate_random_suffix(length=3):
+def generate_random_suffix(length=4):
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 
@@ -13,7 +13,7 @@ class SocialLoginService:
     def get_or_create_user(provider, provider_id, nickname, profile_img_url):
         try:
             account = SocialAccount.objects.get(provider=provider, provider_id=provider_id)
-            return account.user, False
+            return account.user, False  # 신규 아님
         except SocialAccount.DoesNotExist:
             pass
 
@@ -22,8 +22,10 @@ class SocialLoginService:
         while User.objects.filter(nickname=new_nickname).exists():
             new_nickname = f"{base_nickname}_{generate_random_suffix()}"
 
+        dummy_email = f"{provider_id}@{provider}.social"
+
         user = User.objects.create(
-            email=f"{provider_id}@{provider}.social",
+            email=dummy_email,
             nickname=new_nickname,
             profile_img_url=profile_img_url,
             is_active=True,
@@ -32,7 +34,7 @@ class SocialLoginService:
         SocialAccount.objects.create(
             user=user,
             provider=provider,
-            provider_id=str(provider_id)
+            provider_id=str(provider_id),
         )
 
         return user, True
