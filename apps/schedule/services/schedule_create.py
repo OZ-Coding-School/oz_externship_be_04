@@ -1,9 +1,10 @@
 from apps.schedule.models.group_schedule_model import GroupScheduleModel
+from typing import Any, Dict
 
 
 class ScheduleCreateService:
     @staticmethod
-    def create_schedule(validated_data):
+    def create_schedule(validated_data: Dict[str, Any]) -> GroupScheduleModel:
 
         schedule = GroupScheduleModel.objects.create(
             study_group=validated_data.get("study_group"),
