@@ -1,6 +1,6 @@
 from apps.study_groups.models.group_member import GroupMember
 from apps.study_groups.models.study_group import StudyGroup
-from apps.study_groups.models.syudy_lecture import StudyLecture
+from apps.study_groups.models.study_lecture import StudyLecture
 
 # 프로젝트 절대 경로로 import
 
