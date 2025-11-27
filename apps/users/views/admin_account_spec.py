@@ -1,18 +1,19 @@
 from datetime import date, datetime, timezone
 
-from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.users.models import User
 from apps.users.serializers.admin_account import AdminAccountSerializer
-from apps.users.utils.permissions import StaffOrSuperUser
 from apps.users.utils.pagination import Pageable, offset_paginate_list
+from apps.users.utils.permissions import StaffOrSuperUser
 
 
 class AdminAccountListSpec(APIView):
     """
     Spec API 어드민 페이지 회원 목록 조회 API -> mock 데이터입니다.
     """
+
     permission_classes = [StaffOrSuperUser]
 
     def get(self, request, *args, **kwargs):
@@ -22,7 +23,7 @@ class AdminAccountListSpec(APIView):
             email="user1@example.com",
             nickname="user1",
             name="홍승우",
-            birthday=date(2005, 1,1),
+            birthday=date(2005, 1, 1),
             is_active=True,
             is_staff=True,
             is_superuser=True,
@@ -30,7 +31,7 @@ class AdminAccountListSpec(APIView):
             gender="M",
             profile_image_url="http://example.com/user1.png",
         )
-        user1.created_at = datetime(2025,11,25,13,0, tzinfo=timezone.utc)
+        user1.created_at = datetime(2025, 11, 25, 13, 0, tzinfo=timezone.utc)
         user1.status_value = "ACTIVE"
         user1.withdrawal_requested_at = None
 
@@ -39,7 +40,7 @@ class AdminAccountListSpec(APIView):
             email="user2@example.com",
             nickname="user2",
             name="박이준",
-            birthday=date(2007, 12,25),
+            birthday=date(2007, 12, 25),
             is_active=False,
             is_staff=True,
             is_superuser=True,
@@ -47,7 +48,7 @@ class AdminAccountListSpec(APIView):
             gender="M",
             profile_image_url="http://example.com/user2.png",
         )
-        user2.created_at = datetime(2024,2,24,17,0, tzinfo=timezone.utc)
+        user2.created_at = datetime(2024, 2, 24, 17, 0, tzinfo=timezone.utc)
         user2.status_value = "INACTIVE"
         user2.withdrawal_requested_at = None
 
@@ -56,7 +57,7 @@ class AdminAccountListSpec(APIView):
             email="user3@example.com",
             nickname="user3",
             name="머대용",
-            birthday=date(2001, 9,2),
+            birthday=date(2001, 9, 2),
             is_active=True,
             is_staff=False,
             is_superuser=False,
@@ -64,7 +65,7 @@ class AdminAccountListSpec(APIView):
             gender="F",
             profile_image_url="http://example.com/user3.png",
         )
-        user3.created_at = datetime(2021,3,9,10,0, tzinfo=timezone.utc)
+        user3.created_at = datetime(2021, 3, 9, 10, 0, tzinfo=timezone.utc)
         user3.status_value = "WITHDRAWING"
         user3.withdrawal_requested_at = None
 
@@ -77,10 +78,9 @@ class AdminAccountListSpec(APIView):
         if q:
             q_lower = q.lower()
             accounts = [
-                u for u in accounts
-                if q_lower in u.email.lower()
-                or q_lower in u.nickname.lower()
-                or q_lower in u.name.lower()
+                u
+                for u in accounts
+                if q_lower in u.email.lower() or q_lower in u.nickname.lower() or q_lower in u.name.lower()
             ]
 
         role = params.get("role")
@@ -95,10 +95,7 @@ class AdminAccountListSpec(APIView):
         status_param = params.get("status")
         """회원 상태별 확인 (active, inactive, withdrawal)"""
         if status_param:
-            accounts = [
-                u for u in accounts
-                if getattr(u, "status_value", None) == status_param
-            ]
+            accounts = [u for u in accounts if getattr(u, "status_value", None) == status_param]
 
         pageable = Pageable(
             page=params.get("page", 1),

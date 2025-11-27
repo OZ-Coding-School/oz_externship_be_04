@@ -3,13 +3,13 @@ from math import ceil
 from typing import (
     Generic,
     List,
-    TypeVar,
     Sequence,
+    TypeVar,
 )
+
 from django.db.models import QuerySet
 
-
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @dataclass(frozen=True)
@@ -20,8 +20,8 @@ class Pageable:
     def __post_init__(self):
         normalized_page = max(1, int(self.page))
         normalized_size = max(1, int(self.size))
-        object.__setattr__(self, 'page', normalized_page)
-        object.__setattr__(self, 'size', normalized_size)
+        object.__setattr__(self, "page", normalized_page)
+        object.__setattr__(self, "size", normalized_size)
 
     @property
     def offset(self) -> int:
@@ -52,8 +52,8 @@ class OffsetPage(Generic[T]):
 
 
 def offset_paginate_queryset(
-        queryset: QuerySet[T],
-        pageable: Pageable,
+    queryset: QuerySet[T],
+    pageable: Pageable,
 ) -> OffsetPage[T]:
     total_count: int = queryset.count()
     start = pageable.offset
@@ -65,6 +65,7 @@ def offset_paginate_queryset(
         size=pageable.size,
         total_count=total_count,
     )
+
 
 def offset_paginate_list(
     items: Sequence[T],

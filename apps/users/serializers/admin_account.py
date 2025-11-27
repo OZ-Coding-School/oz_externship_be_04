@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from apps.users.models import User
 
 
@@ -19,7 +20,7 @@ class AdminAccountSerializer(serializers.ModelSerializer):
             "role",
             "status",
             "joined_at",
-            "withdrawal_requested_at"
+            "withdrawal_requested_at",
         ]
 
     def get_role(self, obj) -> str:
