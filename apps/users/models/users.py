@@ -1,9 +1,30 @@
-from typing import Optional
+from typing import Any, Optional
 
-from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
 
 from apps.core.models import TimeStampedModel
+
+
+class UserManager(BaseUserManager["User"]):
+
+    def create_user(self, email: str, password: Optional[str] = None, **extra_fields: Any) -> "User":
+        if not email:
+            raise ValueError("알맞은 이메일을 입력하세요.")
+
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email: str, password: Optional[str] = None, **extra_fields: Any) -> "User":
+        user = self.create_user(email, password, **extra_fields)
+        user.is_staff = True
+        user.is_superuser = True
+        user.is_active = True
+        user.save(using=self._db)
+        return user
 
 
 class GenderChoices(models.TextChoices):
