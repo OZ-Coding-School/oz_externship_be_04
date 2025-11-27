@@ -5,7 +5,7 @@ from apps.users.models.users import User
 
 
 # 스터디 그룹
-class StudyGroup(models.Model):
+class StudyGroup(TimeStampedModel):
     class StudyGroupStatusChoices(models.TextChoices):
         PENDING = "PENDING"
         ONGOING = "ONGOING"
@@ -22,8 +22,6 @@ class StudyGroup(models.Model):
         max_length=8,
         default=StudyGroupStatusChoices.PENDING,
     )
-    created_at = models.DateTimeField(auto_now_add=True)  # 처음 생성 시에만 자동 저장
-    updated_at = models.DateTimeField(auto_now=True)  # 갱신 시 저장
 
     class Meta:
         db_table = "study_groups"
