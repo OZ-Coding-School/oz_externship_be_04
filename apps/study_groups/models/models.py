@@ -25,6 +25,17 @@ class StudyGroup(TimeStampedModel):
 
     class Meta:
         db_table = "study_groups"
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(max_headcount__gte=2, max_headcount__lte=10),
+                name="check_study_group_max_headcount_range",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["name"], name="idx_study_group_name"),
+            models.Index(fields=["status"], name="idx_study_group_status"),
+        ]
+        ordering = ["-created_at", "-id"]
 
     def __str__(self) -> str:
         return self.name
