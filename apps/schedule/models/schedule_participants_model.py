@@ -1,12 +1,13 @@
 from django.db import models
 
 from ...core.models import TimeStampedModel
+from ..models.group_schedule_model import GroupScheduleModel
 
 
 class ScheduleParticipantsModel(TimeStampedModel):
 
     schedule = models.ForeignKey(
-        "group_schedules",
+        GroupScheduleModel,
         on_delete=models.CASCADE,
         related_name="participants",
         db_column="schedule_id",

@@ -1,12 +1,12 @@
 from django.db import models
 
 from ...core.models import TimeStampedModel
+from ...study_groups.models import StudyGroup
 
 
 class GroupScheduleModel(TimeStampedModel):
-
     study_group = models.ForeignKey(
-        "study_groups",
+        StudyGroup,
         on_delete=models.CASCADE,
         related_name="schedules",
         db_column="study_group_id",
