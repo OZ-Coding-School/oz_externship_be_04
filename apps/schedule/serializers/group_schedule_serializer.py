@@ -1,3 +1,5 @@
+from datetime import date, time
+
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -28,12 +30,12 @@ class GroupScheduleSerializer(serializers.ModelSerializer[GroupScheduleModel]):
             raise serializers.ValidationError("설명은 500자를 초과할 수 없습니다.")
         return value
 
-    def validate_schedule_date(self, value: timezone.datetime.date) -> timezone.datetime.date:
+    def validate_session_date(self, value: date) -> date:
         if data["session_date"] < timezone.now():
             raise serializers.ValidationError({"detail": "날짜 설정이 잘못 되었습니다."})
         return value
 
-    def validate_schedule_time(self, value: timezone.datetime.time) -> timezone.datetime.time:
+    def validate_start_time(self, value: time) -> time:
         if data["start_time"] >= data["end_time"]:
             raise serializers.ValidationError({"detail": "시간 설정이 잘못 되었습니다."})
         return value
