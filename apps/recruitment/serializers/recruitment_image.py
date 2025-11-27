@@ -41,17 +41,6 @@ class RecruitmentImageCreateSerializer(serializers.ModelSerializer[Any]):
         ]
         extra_kwargs = {"image_url": {"required": True, "help_text": "이미지 URL"}}
 
-    def validate_image_url(self, value: str) -> str:
-        """이미지 URL 검증"""
-        if not value:
-            raise serializers.ValidationError("이미지 URL은 필수입니다.")
-
-        if not value.startswith(("http://", "https://")):
-            raise serializers.ValidationError("유효한 URL 형식이 아닙니다.")
-
-        return value
-
-
 class RecruitmentImageUpdateSerializer(serializers.ModelSerializer[Any]):
     """
     구인공고 이미지 수정
