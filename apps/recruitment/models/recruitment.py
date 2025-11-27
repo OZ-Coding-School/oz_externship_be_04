@@ -42,7 +42,7 @@ class Recruitment(models.Model):
         help_text="예상 모집 인원 (1~10명)",
     )
     views_count = models.PositiveIntegerField(default=0, help_text="조회수")
-    close_at = models.DateTimeField(default=get_default_close_at(), help_text="공고 마감일")
+    close_at = models.DateTimeField(default=get_default_close_at, help_text="공고 마감일")
     is_closed = models.BooleanField(default=False, help_text="공고 마감 상태")
     created_at = models.DateTimeField(auto_now_add=True, help_text="공고 생성일")
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True, help_text="공고 수정일")
