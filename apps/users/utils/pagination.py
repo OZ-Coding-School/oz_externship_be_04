@@ -7,9 +7,9 @@ from typing import (
     TypeVar,
 )
 
-from django.db.models import QuerySet
+from django.db.models import Model, QuerySet
 
-T = TypeVar("T")
+T = TypeVar("T", bound=Model)
 
 
 @dataclass(frozen=True)
@@ -17,7 +17,7 @@ class Pageable:
     page: int = 1
     size: int = 10
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         normalized_page = max(1, int(self.page))
         normalized_size = max(1, int(self.size))
         object.__setattr__(self, "page", normalized_page)

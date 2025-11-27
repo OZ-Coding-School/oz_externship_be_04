@@ -1,5 +1,7 @@
 from datetime import date, datetime, timezone
+from typing import Any
 
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -16,7 +18,7 @@ class AdminAccountListSpec(APIView):
 
     permission_classes = [StaffOrSuperUser]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
 
         user1 = User(
             id=1,
@@ -29,11 +31,11 @@ class AdminAccountListSpec(APIView):
             is_superuser=True,
             phone_number="01012345678",
             gender="M",
-            profile_image_url="http://example.com/user1.png",
+            profile_img_url="https://example.com/profile/user1.png",
         )
         user1.created_at = datetime(2025, 11, 25, 13, 0, tzinfo=timezone.utc)
-        user1.status_value = "ACTIVE"
-        user1.withdrawal_requested_at = None
+        user1.status_value = "ACTIVE"  # type: ignore[attr-defined]
+        user1.withdrawal_requested_at = None  # type: ignore[attr-defined]
 
         user2 = User(
             id=2,
@@ -46,11 +48,11 @@ class AdminAccountListSpec(APIView):
             is_superuser=True,
             phone_number="010111112222",
             gender="M",
-            profile_image_url="http://example.com/user2.png",
+            profile_img_url="https://example.com/profile/user2.png",
         )
         user2.created_at = datetime(2024, 2, 24, 17, 0, tzinfo=timezone.utc)
-        user2.status_value = "INACTIVE"
-        user2.withdrawal_requested_at = None
+        user2.status_value = "INACTIVE"  # type: ignore[attr-defined]
+        user2.withdrawal_requested_at = None  # type: ignore[attr-defined]
 
         user3 = User(
             id=3,
@@ -63,11 +65,11 @@ class AdminAccountListSpec(APIView):
             is_superuser=False,
             phone_number="01033334444",
             gender="F",
-            profile_image_url="http://example.com/user3.png",
+            profile_img_url="https://example.com/profile/user3.png",
         )
         user3.created_at = datetime(2021, 3, 9, 10, 0, tzinfo=timezone.utc)
-        user3.status_value = "WITHDRAWING"
-        user3.withdrawal_requested_at = None
+        user3.status_value = "WITHDRAWING"  # type: ignore[attr-defined]
+        user3.withdrawal_requested_at = None  # type: ignore[attr-defined]
 
         accounts = [user1, user2, user3]
 
@@ -97,9 +99,22 @@ class AdminAccountListSpec(APIView):
         if status_param:
             accounts = [u for u in accounts if getattr(u, "status_value", None) == status_param]
 
+        page_raw = params.get("page")
+        size_raw = params.get("size")
+
+        try:
+            page = int(page_raw) if page_raw is not None else 1
+        except ValueError:
+            page = 1
+
+        try:
+            size = int(size_raw) if size_raw is not None else 10
+        except ValueError:
+            size = 10
+
         pageable = Pageable(
-            page=params.get("page", 1),
-            size=params.get("size", 10),
+            page=page,
+            size=size,
         )
         page_obj = offset_paginate_list(accounts, pageable)
 
