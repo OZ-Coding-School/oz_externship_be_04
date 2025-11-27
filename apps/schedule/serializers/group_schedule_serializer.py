@@ -31,11 +31,20 @@ class GroupScheduleSerializer(serializers.ModelSerializer[GroupScheduleModel]):
         return value
 
     def validate_session_date(self, value: date) -> date:
-        if data["session_date"] < timezone.now():
+        if value < timezone.localdate():
             raise serializers.ValidationError({"detail": "날짜 설정이 잘못 되었습니다."})
         return value
 
     def validate_start_time(self, value: time) -> time:
-        if data["start_time"] >= data["end_time"]:
-            raise serializers.ValidationError({"detail": "시간 설정이 잘못 되었습니다."})
+        end_time_str = self.initial_data.get("end_time")
+        if end_time_str:
+            try:
+                from datetime import time as dt_time
+
+                h, m, s = map(int, end_time_str.split(":"))
+                end_time = dt_time(h, m, s)
+                if value >= end_time:
+                    raise serializers.ValidationError({"detail": "시간 설정이 잘못 되었습니다."})
+            except Exception:
+                pass
         return value
