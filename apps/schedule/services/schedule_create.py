@@ -1,5 +1,6 @@
-from apps.schedule.models.group_schedule_model import GroupScheduleModel
 from typing import Any, Dict
+
+from apps.schedule.models.group_schedule_model import GroupScheduleModel
 
 
 class ScheduleCreateService:
