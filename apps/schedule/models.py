@@ -1,8 +1,8 @@
 from django.db import models
 
 from apps.core.models import TimeStampedModel
-from apps.study_groups.models import StudyGroup
-from apps.study_groups.models import GroupMember
+from apps.study_groups.models import GroupMember, StudyGroup
+
 
 class GroupSchedule(TimeStampedModel):
     study_group = models.ForeignKey(
@@ -23,6 +23,7 @@ class GroupSchedule(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.title
+
 
 class ScheduleParticipants(TimeStampedModel):
 
@@ -45,4 +46,4 @@ class ScheduleParticipants(TimeStampedModel):
         db_table = "schedule_participants"
 
     def __str__(self) -> str:
-        return f"{self.schedule_id} - {self.member_id}"
+        return f"{self.schedule} - {self.member}"
