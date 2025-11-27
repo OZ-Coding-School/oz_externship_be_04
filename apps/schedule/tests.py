@@ -16,7 +16,7 @@ User = get_user_model()
 
 
 class ScheduleCreateServiceTest(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         # 스터디 그룹 생성
         self.study_group = StudyGroup.objects.create(
             name="테스트 그룹",
@@ -55,7 +55,7 @@ class ScheduleCreateServiceTest(TestCase):
             end_time=time(21, 0),
         )
 
-    def test_create_schedule_success(self):
+    def test_create_schedule_success(self) -> None:
         validated_data = {
             "study_group": self.study_group,
             "title": "테스트 스케줄",
@@ -68,7 +68,7 @@ class ScheduleCreateServiceTest(TestCase):
         self.assertIsInstance(schedule, GroupScheduleModel)
         self.assertEqual(schedule.study_group, self.study_group)
 
-    def test_valid_participant_serializer(self):
+    def test_valid_participant_serializer(self) -> None:
         data = {
             "schedule": self.schedule.id,
             "member": self.member.id,
@@ -80,7 +80,7 @@ class ScheduleCreateServiceTest(TestCase):
         self.assertEqual(participant.schedule, self.schedule)
         self.assertEqual(participant.member, self.member)
 
-    def test_invalid_schedule(self):
+    def test_invalid_schedule(self) -> None:
         data = {
             "schedule": 9999,  # 존재하지 않는 스케줄
             "member": self.member.id,
@@ -89,7 +89,7 @@ class ScheduleCreateServiceTest(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn("schedule", serializer.errors)
 
-    def test_invalid_member(self):
+    def test_invalid_member(self) -> None:
         data = {
             "schedule": self.schedule.id,
             "member": 9999,  # 존재하지 않는 멤버
