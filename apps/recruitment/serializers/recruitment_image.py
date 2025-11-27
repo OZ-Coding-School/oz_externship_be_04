@@ -7,7 +7,7 @@ from apps.recruitment.models import RecruitmentImage
 
 class RecruitmentImageSerializer(serializers.ModelSerializer[Any]):
     """
-    구인공고 이미지 조회
+    구인공고 이미지 조회 (목록/상세/응답 공용)
     """
 
     image_url = serializers.URLField(source="img_url", help_text="이미지 URL")
@@ -20,11 +20,7 @@ class RecruitmentImageSerializer(serializers.ModelSerializer[Any]):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = [
-            "id",
-            "created_at",
-            "updated_at",
-        ]
+        read_only_fields = ["id"]
 
 
 class RecruitmentImageCreateSerializer(serializers.ModelSerializer[Any]):
@@ -55,12 +51,6 @@ class RecruitmentImageUpdateSerializer(serializers.ModelSerializer[Any]):
             "image_url",
         ]
 
-    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        """최소 1개 필드 수정 필요"""
-        if not attrs:
-            raise serializers.ValidationError("수정할 필드가 최소 1개 이상 필요합니다.")
-        return attrs
-
 
 class RecruitmentImageListField(serializers.ListField):
     """
@@ -80,25 +70,6 @@ class RecruitmentImageListField(serializers.ListField):
         if not isinstance(data, list):
             raise serializers.ValidationError("이미지 URL은 리스트 형식이어야 합니다.")
 
-        if len(data) > 5:
-            raise serializers.ValidationError("이미지는 최대 5개까지 등록 가능합니다.")
-
         data = list(set(data))
 
         return super().to_internal_value(data)
-
-
-class RecruitmentImageResponseSerializer(serializers.ModelSerializer[Any]):
-    """
-    구인공고 이미지 응답
-    """
-
-    image_url = serializers.URLField(source="img_url", read_only=True)
-
-    class Meta:
-        model = RecruitmentImage
-        fields = [
-            "id",
-            "image_url",
-        ]
-        read_only_fields = fields
