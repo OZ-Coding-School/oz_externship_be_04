@@ -1,53 +1,46 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
-from apps.users.models import SocialAccount
-
-User = get_user_model()
+from apps.users.models.users import User
+from apps.users.models.social_account import SocialAccount
 
 
 class SocialLoginSerializer(serializers.Serializer):
     provider = serializers.CharField()
     provider_id = serializers.CharField()
-    nickname = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-    profile_image = serializers.URLField(required=False, allow_null=True)
-
-    def _generate_unique_nickname(self, base_nickname: str) -> str:
-        nickname = base_nickname
-        counter = 1
-
-        while User.objects.filter(nickname=nickname).exists():
-            nickname = f"{base_nickname}{counter}"
-            counter += 1
-
-        return nickname
+    nickname = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    profile_image = serializers.URLField(required=False, allow_blank=True, allow_null=True)
 
     def create(self, validated_data):
         provider = validated_data["provider"]
         provider_id = validated_data["provider_id"]
-        nickname = validated_data.get("nickname")
-        profile_image = validated_data.get("profile_image")
 
-        try:
-            social_account = SocialAccount.objects.get(provider=provider, provider_id=provider_id)
-            user = social_account.user
-            return user
+        social_account = SocialAccount.objects.filter(
+            provider=provider,
+            provider_id=provider_id
+        ).select_related("user").first()
 
-        except SocialAccount.DoesNotExist:
-            if not nickname:
-                nickname = f"user{provider_id}"
+        if social_account:
+            return social_account.user, False
 
-            nickname = self._generate_unique_nickname(nickname)
+        nickname = validated_data.get("nickname") or "user"
+        original_nickname = nickname
+        suffix = 1
 
-            user = User.objects.create(
-                nickname=nickname,
-                profile_img_url=profile_image or "",
-                is_active=True,
-            )
+        while User.objects.filter(nickname=nickname).exists():
+            nickname = f"{original_nickname}_{suffix}"
+            suffix += 1
 
-            SocialAccount.objects.create(
-                user=user,
-                provider=provider,
-                provider_id=provider_id,
-            )
+        user = User.objects.create(
+            email=f"{provider}_{provider_id}@auto.com",
+            nickname=nickname,
+            name=nickname,
+            is_active=True,
+        )
 
-            return user
+        SocialAccount.objects.create(
+            user=user,
+            provider=provider,
+            provider_id=provider_id
+        )
+
+        return user, True
+
