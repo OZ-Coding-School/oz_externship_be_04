@@ -20,7 +20,7 @@ class SocialLoginSerializer(serializers.Serializer[Dict[str, Any]]):
 from rest_framework import serializers
 
 from apps.users.models.social_account import SocialAccount
-from apps.users.models.users import User
+from apps.users.models.users import SocialUser, User
 
 
 class SocialLoginSerializer(serializers.Serializer):
