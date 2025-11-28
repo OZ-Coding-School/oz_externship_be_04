@@ -19,12 +19,16 @@ class UserManager(BaseUserManager["User"]):
         return user
 
     def create_superuser(self, email: str, password: Optional[str] = None, **extra_fields: Any) -> "User":
-        user = self.create_user(email, password, **extra_fields)
-        user.is_staff = True
-        user.is_superuser = True
-        user.is_active = True
-        user.save(using=self._db)
-        return user
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+
+        if extra_fields.get("is_staff") is not True:
+          raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+          raise ValueError("Superuser must have is_superuser=True.")
+
+        return self.create_user(email, password, **extra_fields)
 
 
 class GenderChoices(models.TextChoices):
@@ -39,11 +43,13 @@ class User(TimeStampedModel, AbstractBaseUser):
     phone_number = models.CharField(max_length=20, unique=True)
     gender = models.CharField(max_length=1, choices=GenderChoices.choices)
     birthday = models.DateField()
-    profile_img_url = models.URLField(max_length=255)
+    profile_img_url = models.URLField(max_length=255, null=True, blank=True)
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+
     USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["nickname", "name", "phone_number", "birthday", "gender"]
 
     _status_value: Optional[str] = None
 
