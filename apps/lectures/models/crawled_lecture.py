@@ -7,7 +7,6 @@ from django.db.models.enums import TextChoices
 
 from apps.core.models import TimeStampedModel
 
-
 if TYPE_CHECKING:
     from apps.lectures.models import Category, CrawledLectureReview
 
@@ -75,6 +74,7 @@ class CrawledLecture(TimeStampedModel):
     def mock_crawled_lecture_reviews(self) -> list[CrawledLectureReview]:
         import random
         from datetime import datetime, timedelta
+
         from apps.lectures.models.crawled_lecture_review import CrawledLectureReview
 
         return [

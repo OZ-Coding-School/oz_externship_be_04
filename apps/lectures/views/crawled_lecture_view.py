@@ -1,6 +1,6 @@
 from django.db.models import QuerySet
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -28,7 +28,6 @@ class CrawledLectureAVIView(APIView):
                 location="query",
                 description="원하는 페이지 번호를 입력하여 해당하는 페이지의 강의 내용을 가져올 수 있습니다.",
                 required=False,
-
             ),
             OpenApiParameter(
                 name="latest",
@@ -72,13 +71,11 @@ class CrawledLectureAVIView(APIView):
                 description="낮은 리뷰 평점순으로 정렬할 때 선택됩니다.",
                 required=False,
             ),
-            ],
+        ],
         responses={
             200: CrawledLectureSerializer(many=True, read_only=True),
-            500: {
-                "error_detail": "서버에서 알 수 없는 오류가 발생했습니다."
-            }
-        }
+            500: {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."},
+        },
     )
     def get(self, request: Request) -> Response:
         import random
