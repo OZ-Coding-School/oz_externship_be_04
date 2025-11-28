@@ -9,6 +9,7 @@ from drf_spectacular.views import (
 
 urlpatterns: list[URLPattern | URLResolver] = [
     path("api/v1", include("apps.lectures.urls")),
+    path("api/v1/notifications", include("apps.notification.urls")),
 ]
 
 if settings.DEBUG:
