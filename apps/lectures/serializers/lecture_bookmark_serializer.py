@@ -1,9 +1,9 @@
 from rest_framework import serializers
+
 from apps.lectures.models import LectureBookmark
 
 
 class LectureBookmarkSerializer(serializers.ModelSerializer[LectureBookmark]):
-
 
     class Meta:
         model = LectureBookmark
@@ -39,4 +39,3 @@ class LectureBookmarkListSerializer(serializers.ModelSerializer[LectureBookmark]
         ]
 
         read_only_fields = fields
-
