@@ -13,7 +13,7 @@ from apps.lectures.serializers.crawled_lecture_serializer import (
 )
 
 
-class CrawledLectureAVIView(APIView):
+class CrawledLectureListAPIView(APIView):
     permission_classes = [AllowAny]
     serializer_class = CrawledLectureSerializer
     pagination_class = PageNumberPagination
