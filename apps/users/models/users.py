@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import models
 
@@ -21,6 +23,16 @@ class User(TimeStampedModel, AbstractBaseUser):
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     USERNAME_FIELD = "email"
+
+    _status_value: Optional[str] = None
+
+    @property
+    def status_value(self) -> Optional[str]:
+        return self._status_value
+
+    @status_value.setter
+    def status_value(self, value: Optional[str]) -> None:
+        self._status_value = value
 
     class Meta:
         db_table = "users"

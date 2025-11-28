@@ -26,16 +26,17 @@ class AdminAccountSerializer(serializers.ModelSerializer[User]):
         ]
 
     def get_role(self, obj: User) -> str:
-        if getattr(obj, "is_superuser", False):
+        if obj.is_superuser:
             return "Admin"
-        if getattr(obj, "is_staff", False):
+        if obj.is_staff:
             return "Staff"
-        return "USER"
+        return "User"
 
     def get_status(self, obj: User) -> str:
-        status: Optional[str] = getattr(obj, "status_value", None)
-        if status is not None:
-            return status
-        if getattr(obj, "is_active", False):
+        status_value: Optional[str] = obj.status_value
+
+        if status_value is not None:
+            return status_value
+        if obj.is_active:
             return "Active"
         return "Inactive"
