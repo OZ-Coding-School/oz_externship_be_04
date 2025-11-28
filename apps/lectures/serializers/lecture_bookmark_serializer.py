@@ -37,5 +37,3 @@ class LectureBookmarkListSerializer(serializers.ModelSerializer[LectureBookmark]
             "platform",
             "url_link",
         ]
-
-
