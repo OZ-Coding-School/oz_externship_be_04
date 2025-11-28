@@ -10,4 +10,8 @@ class StaffOrSuperUser(permissions.BasePermission):
 
     def has_permission(self, request: Request, view: View) -> bool:
         user = request.user
-        return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
+
+        if not user.is_authenticated:
+            return False
+
+        return user.is_staff or user.is_superuser
