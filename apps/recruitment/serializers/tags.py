@@ -17,8 +17,8 @@ class TagSerializer(serializers.ModelSerializer[Tag]):
     def validate_name(self, value: str) -> str:
 
         # 태그 이름 길이 제한
-        if not 1 <= len(value) <= 20:
-            raise ValidationError("태그 이름은 1자 이상, 20자 이하 입니다.")
+        if not 1 <= len(value) < 15:
+            raise ValidationError("태그 이름은 1자 이상, 15자 미만 입니다.")
 
         return value
 
@@ -31,7 +31,7 @@ class RecruitmentTagUpdateSerializer(serializers.Serializer[Any]):
 
     tags = serializers.ListField(
         child=serializers.IntegerField(),
-        allow_empty=True,  # 태그가 없는것도 허용
+        allow_empty=False,
         help_text="공고에 연결할 태그 ID 목록",
     )
 
