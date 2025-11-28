@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from apps.users.models.users import User
+
 from apps.users.models.social_account import SocialAccount
+from apps.users.models.users import User
 
 
 class SocialLoginSerializer(serializers.Serializer):
@@ -13,10 +14,9 @@ class SocialLoginSerializer(serializers.Serializer):
         provider = validated_data["provider"]
         provider_id = validated_data["provider_id"]
 
-        social_account = SocialAccount.objects.filter(
-            provider=provider,
-            provider_id=provider_id
-        ).select_related("user").first()
+        social_account = (
+            SocialAccount.objects.filter(provider=provider, provider_id=provider_id).select_related("user").first()
+        )
 
         if social_account:
             return social_account.user, False
@@ -36,11 +36,6 @@ class SocialLoginSerializer(serializers.Serializer):
             is_active=True,
         )
 
-        SocialAccount.objects.create(
-            user=user,
-            provider=provider,
-            provider_id=provider_id
-        )
+        SocialAccount.objects.create(user=user, provider=provider, provider_id=provider_id)
 
         return user, True
-
