@@ -35,7 +35,7 @@ class AdminAccountListSpec(APIView):
         )
         user1.created_at = datetime(2025, 11, 25, 13, 0, tzinfo=timezone.utc)
         user1.status_value = "ACTIVE"
-        user1.withdrawal_requested_at = None # type: ignore[attr-defined]
+        user1.withdrawal_requested_at = None  # type: ignore[attr-defined]
 
         user2 = User(
             id=2,
@@ -52,7 +52,7 @@ class AdminAccountListSpec(APIView):
         )
         user2.created_at = datetime(2024, 2, 24, 17, 0, tzinfo=timezone.utc)
         user2.status_value = "INACTIVE"
-        user2.withdrawal_requested_at = None # type: ignore[attr-defined]
+        user2.withdrawal_requested_at = None  # type: ignore[attr-defined]
 
         user3 = User(
             id=3,
@@ -69,7 +69,7 @@ class AdminAccountListSpec(APIView):
         )
         user3.created_at = datetime(2021, 3, 9, 10, 0, tzinfo=timezone.utc)
         user3.status_value = "WITHDRAWING"
-        user3.withdrawal_requested_at = None # type: ignore[attr-defined]
+        user3.withdrawal_requested_at = None  # type: ignore[attr-defined]
 
         accounts = [user1, user2, user3]
 
