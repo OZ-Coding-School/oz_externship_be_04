@@ -1,4 +1,4 @@
-from .models import GroupMember, StudyGroup, StudyLecture
+from .study_group import GroupMember, StudyGroup, StudyLecture
 
 __all__ = [
     "StudyGroup",
