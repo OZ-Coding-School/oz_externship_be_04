@@ -2,7 +2,6 @@ from django.db import models
 from django.db.models import IntegerChoices
 
 from apps.core.models import TimeStampedModel
-from apps.lectures.models.crawled_lecture import CrawledLecture
 
 
 class CrawledLectureReview(TimeStampedModel):
@@ -14,7 +13,7 @@ class CrawledLectureReview(TimeStampedModel):
         ONE = 1, "1점"
 
     lecture = models.ForeignKey(
-        CrawledLecture,
+        "lectures.CrawledLecture",
         on_delete=models.CASCADE,
         related_name="reviews",
         help_text="리뷰가 달린 강의의 id",
