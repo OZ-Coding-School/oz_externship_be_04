@@ -1,17 +1,22 @@
 from typing import Any, Dict
 
+from django.db import IntegrityError, transaction
+from rest_framework.exceptions import ValidationError
+
 from apps.users.models import User
 
 
 class AuthService:
     def signup(self, validated_data: Dict[str, Any]) -> User:
-        user = User.objects.create_user(  # type: ignore
-            email=validated_data["email"],
-            password=validated_data["password"],
-            name=validated_data["name"],
-            nickname=validated_data["nickname"],
-            phone_number=validated_data["phone_number"],
-            birthday=validated_data["birthday"],
-            gender=validated_data["gender"],
-        )
-        return user  # type: ignore
+        email = validated_data.pop("email")
+        password = validated_data.pop("password")
+
+        try:
+            with transaction.atomic():
+                user = User.objects.create_user(email=email, password=password, **validated_data)
+                return user
+
+        except IntegrityError:
+            raise ValidationError("데이터 처리중 오류가 발생했습니다.")
+        except Exception as e:
+            raise ValidationError(f"회원가입 도중 오류가 발생했습니다. (Error: {str(e)})")
