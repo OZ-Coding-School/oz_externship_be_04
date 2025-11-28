@@ -31,3 +31,4 @@ class CrawledLectureSerializer(serializers.ModelSerializer[CrawledLecture]):
             "categories",
             "reviews",
         ]
+        read_only_fields = fields
