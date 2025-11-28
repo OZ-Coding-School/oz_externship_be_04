@@ -9,7 +9,6 @@ class NotificationSerializer(serializers.ModelSerializer["Notification"]):
         model = Notification
         fields = [
             "id",
-            "user",
             "type",
             "content",
             "is_read",
@@ -24,3 +23,9 @@ class NotificationReadSerializer(serializers.ModelSerializer["Notification"]):
     class Meta:
         model = Notification
         fields = ["is_read"]
+
+    # is_read False -> True만 가능 하도록
+    def validate_is_read(self, value: bool) -> bool:
+        if value is not True:
+            raise serializers.ValidationError("is_read는 True만 가능합니다.")
+        return value
