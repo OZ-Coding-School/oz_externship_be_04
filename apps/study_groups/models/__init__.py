@@ -1,3 +1,4 @@
+from .schedule import GroupSchedule, ScheduleParticipants
 from .study_group import GroupMember, StudyGroup, StudyLecture
 
 from .study_note import StudyNote
@@ -11,4 +12,6 @@ __all__ = [
     "StudyNoteAttachment",
     "GroupMember",
     "StudyLecture",
+    "GroupSchedule",
+    "ScheduleParticipants",
 ]
