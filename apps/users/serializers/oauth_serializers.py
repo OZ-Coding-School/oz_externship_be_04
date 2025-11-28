@@ -1,41 +1,25 @@
+from typing import Any, Dict
+
 from rest_framework import serializers
 
-from apps.users.models.social_account import SocialAccount
-from apps.users.models.users import SocialUser, User
+from apps.users.models.social_user import SocialUser
+from apps.users.models.users import User
 
 
-class SocialLoginSerializer(serializers.Serializer):
-    provider = serializers.CharField()
-    provider_id = serializers.CharField()
-    nickname = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    profile_image = serializers.URLField(required=False, allow_blank=True, allow_null=True)
+class KakaoLoginSerializer(serializers.Serializer[Dict[str, Any]]):
+    access_token = serializers.CharField()
 
-    def create(self, validated_data):
-        provider = validated_data["provider"]
-        provider_id = validated_data["provider_id"]
+    def create_user(self, data: Dict[str, Any]) -> User:
+        provider_id = data["provider_id"]
+        nickname = data.get("nickname", "user")
 
-        social_account = (
-            SocialAccount.objects.filter(provider=provider, provider_id=provider_id).select_related("user").first()
-        )
-
-        if social_account:
-            return social_account.user, False
-
-        nickname = validated_data.get("nickname") or "user"
-        original_nickname = nickname
-        suffix = 1
-
-        while User.objects.filter(nickname=nickname).exists():
-            nickname = f"{original_nickname}_{suffix}"
-            suffix += 1
-
-        user = User.objects.create(
-            email=f"{provider}_{provider_id}@auto.com",
+        user, _ = User.objects.get_or_create(
             nickname=nickname,
-            name=nickname,
-            is_active=True,
+            defaults={"email": "", "is_active": True},
         )
-
-        SocialAccount.objects.create(user=user, provider=provider, provider_id=provider_id)
-
-        return user, True
+        SocialUser.objects.get_or_create(
+            user=user,
+            provider="kakao",
+            provider_id=provider_id,
+        )
+        return user
