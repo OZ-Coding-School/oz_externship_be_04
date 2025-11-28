@@ -18,7 +18,7 @@ class UserSignUpSerializer(serializers.ModelSerializer[UserModel]):
     phone_number = serializers.CharField(
         required=True, validators=[UniqueValidator(queryset=User.objects.all(), message="이미 가입된 전화번호 입니다.")]
     )
-    password = serializers.CharField(style={"input_type": "password"}, write_only=True, required=True)
+    password = serializers.CharField(style={"input_type": "password"}, write_only=True, required=True, min_length=8)
 
     class Meta:
         model = User
