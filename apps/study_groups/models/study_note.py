@@ -33,4 +33,4 @@ class StudyNote(TimeStampedModel):
         ]
 
     def __str__(self) -> str:
-        return f"{self.title} ({self.study_group_id})"
+        return f"{self.title} ({self.study_group})"

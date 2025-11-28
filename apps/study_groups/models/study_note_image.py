@@ -21,4 +21,4 @@ class StudyNoteImage(TimeStampedModel):
         indexes = [models.Index(fields=["study_note"], name="idx_note_image_note")]
 
     def __str__(self) -> str:
-        return f"{self.study_note_id} - {self.img_url}"
+        return f"{self.study_note} - {self.img_url}"

@@ -24,4 +24,4 @@ class StudyNoteAttachment(TimeStampedModel):
         ]
 
     def __str__(self) -> str:
-        return f"{self.study_note_id} - {self.file_name}"
+        return f"{self.study_note} - {self.file_name}"
