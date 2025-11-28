@@ -35,7 +35,7 @@ class RecruitmentAttachmentUpdateSerializer(serializers.ModelSerializer[Any]):
         fields = ["file_name", "file_url"]
 
 
-class RecruitmentAttachmentItemSerializer(serializers.Serializer):
+class RecruitmentAttachmentItemSerializer(serializers.Serializer[Any]):
     """첨부파일 단일 아이템 검증용"""
 
     file_name = serializers.CharField(max_length=255, required=True)
