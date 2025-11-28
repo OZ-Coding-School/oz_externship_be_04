@@ -8,7 +8,7 @@ class LectureBookmarkSerializer(serializers.ModelSerializer[LectureBookmark]):
     class Meta:
         model = LectureBookmark
         fields = ["user", "lecture", "created_at", "updated_at"]
-        read_only_fields = ("user", "created_at", "updated_at")
+        read_only_fields = ["user", "created_at", "updated_at"]
 
 
 class LectureBookmarkListSerializer(serializers.ModelSerializer[LectureBookmark]):
@@ -38,4 +38,4 @@ class LectureBookmarkListSerializer(serializers.ModelSerializer[LectureBookmark]
             "url_link",
         ]
 
-        read_only_fields = fields
+
