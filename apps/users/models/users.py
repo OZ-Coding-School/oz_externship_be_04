@@ -51,6 +51,8 @@ class User(TimeStampedModel, AbstractBaseUser):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["nickname", "name", "phone_number", "birthday", "gender"]
 
+    objects = UserManager()
+
     _status_value: Optional[str] = None
 
     @property
