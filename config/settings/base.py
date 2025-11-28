@@ -42,6 +42,7 @@ CUSTOM_APPS: list[str] = [
     "apps.application",
     "apps.notification",
     "apps.schedule",
+    "apps.note",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + CUSTOM_APPS
 
