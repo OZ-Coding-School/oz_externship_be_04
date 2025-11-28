@@ -17,8 +17,8 @@ class TagSerializer(serializers.ModelSerializer[Tag]):
     def validate_name(self, value: str) -> str:
 
         # 태그 이름 길이 제한
-        if not 1 <= len(value) < 15:
-            raise ValidationError("태그 이름은 1자 이상, 15자 미만 입니다.")
+        if not 1 <= len(value) <= 20:
+            raise ValidationError("태그 이름은 1자 이상, 20자 이하 입니다.")
 
         return value
 
@@ -36,6 +36,10 @@ class RecruitmentTagUpdateSerializer(serializers.Serializer[Any]):
     )
 
     def validate_tags(self, value: List[int]) -> List[int]:
+
+        # 태그는 최소 1개
+        if len(value) < 1:
+            raise ValidationError("태그는 1개이상 작성 부탁드립니다.")
 
         # 태그는 최대 5개까지 허용
         if len(value) > 5:
