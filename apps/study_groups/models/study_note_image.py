@@ -1,6 +1,7 @@
 from django.db import models
 
 from apps.core.models import TimeStampedModel
+
 from .study_note import StudyNote
 
 

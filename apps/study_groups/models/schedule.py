@@ -23,6 +23,7 @@ class GroupSchedule(TimeStampedModel):
     def __str__(self) -> str:
         return self.title
 
+
 class ScheduleParticipants(TimeStampedModel):
 
     schedule = models.ForeignKey(

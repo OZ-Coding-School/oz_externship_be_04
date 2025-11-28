@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 
 from apps.core.models import TimeStampedModel
+
 from .study_group import StudyGroup
 
 
