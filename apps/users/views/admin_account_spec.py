@@ -99,23 +99,13 @@ class AdminAccountListSpec(APIView):
         if status_param:
             accounts = [u for u in accounts if u.status_value == status_param]
 
-        page_raw = params.get("page")
-        size_raw = params.get("size")
+        params = request.query_params
 
-        try:
-            page = int(page_raw) if page_raw is not None else 1
-        except ValueError:
-            page = 1
-
-        try:
-            size = int(size_raw) if size_raw is not None else 10
-        except ValueError:
-            size = 10
-
-        pageable = Pageable(
-            page=page,
-            size=size,
+        pageable = Pageable.from_params(
+            page_raw=params.get("page"),
+            size_raw=params.get("size"),
         )
+
         page_obj = offset_paginate_list(accounts, pageable)
 
         serializer = AdminAccountSerializer(page_obj.items, many=True)
