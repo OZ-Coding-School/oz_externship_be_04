@@ -5,6 +5,8 @@ from typing import (
     List,
     Sequence,
     TypeVar,
+    Union,
+    Optional,
 )
 
 from django.db.models import Model, QuerySet
@@ -14,14 +16,25 @@ T = TypeVar("T", bound=Model)
 
 @dataclass(frozen=True)
 class Pageable:
-    page: int = 1
-    size: int = 10
+    page: Optional[Union[int, str]] = 1
+    size: Optional[Union[int, str]] = 10
 
     def __post_init__(self) -> None:
-        normalized_page = max(1, int(self.page))
-        normalized_size = max(1, int(self.size))
-        object.__setattr__(self, "page", normalized_page)
-        object.__setattr__(self, "size", normalized_size)
+        try:
+            page = int(self.page) if self.page is not None else 1
+        except (TypeError, ValueError):
+            page = 1
+
+        try:
+            size = int(self.size) if self.size is not None else 10
+        except (TypeError, ValueError):
+            size = 10
+
+        page = max(1, page)
+        size = max(1, size)
+
+        object.__setattr__(self, "page", page)
+        object.__setattr__(self, "size", size)
 
     @property
     def offset(self) -> int:
