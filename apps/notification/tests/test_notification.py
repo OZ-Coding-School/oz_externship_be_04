@@ -2,6 +2,7 @@ from typing import Any
 
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.notification.models import Notification
 from apps.notification.serializers.notification_serializers import (
@@ -23,7 +24,17 @@ class NotificationTests(TestCase):
 
 class NotificationSerializerTests(TestCase):
     def setUp(self) -> None:
-        self.user: User = User.objects.create(email="test@example.com", password="password123")
+        self.user: User = User.objects.create(
+            email="test@example.com",
+            password="password123",
+            name="test",
+            nickname="test",
+            phone_number="01012345678",
+            gender="M",
+            birthday=timezone.now().date(),  # 오늘 날짜로 설정
+            profile_img_url="http://example.com/profile.jpg",
+            is_active=True,
+        )
 
     def test_serializer_valid_data(self) -> None:
         notification: Notification = Notification.objects.create(
