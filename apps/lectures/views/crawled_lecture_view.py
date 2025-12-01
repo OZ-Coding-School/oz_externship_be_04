@@ -1,7 +1,7 @@
 from typing import cast
 
 from django.conf import settings
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_field
 from rest_framework.pagination import PageNumberPagination
@@ -40,13 +40,13 @@ class CrawledLectureListAPIView(APIView):
         filterset = self.filterset_class(data=self.request.GET, queryset=queryset, request=self.request)
         queryset = cast(QuerySet[CrawledLecture], filterset.qs)
 
-        for field in self.search_fields:
-            search = self.request.GET.get("search")
-            if search:
-                queryset = queryset.filter(**{f"{field}__icontains": search})
+        q = Q()
+        if search := self.request.GET.get("search"):
+            for field in self.search_fields:
+                q |= Q(**{f"{field}__icontains": search})
+            queryset = queryset.filter(q)
 
-        sort_key = self.request.GET.get("sort")
-        if sort_key in self.sort_map:
+        if (sort_key := self.request.GET.get("sort")) in self.sort_map:
             queryset = queryset.order_by(self.sort_map[sort_key])
 
         return queryset
