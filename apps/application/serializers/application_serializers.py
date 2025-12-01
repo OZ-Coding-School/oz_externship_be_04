@@ -139,7 +139,7 @@ class RecruiterApplicationDetailSerializer(ApplicationCommonFieldsMixin, Applica
 class ApplicantApplicationListSerializer(ApplicationCommonFieldsMixin):
     """REQ-APLY-006: 내가 지원한 목록"""
 
-    recruitment = RecruitmentSummarySerializer(read_only=True)  # ★ 이름 변경 적용
+    recruitment = RecruitmentSummarySerializer(read_only=True)
 
     class Meta(ApplicationCommonFieldsMixin.Meta):
         fields = ApplicationCommonFieldsMixin.Meta.fields + ["recruitment"]
