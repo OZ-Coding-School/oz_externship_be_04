@@ -8,8 +8,10 @@ from apps.users.models import User
 
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
+
 class AppliedAtSerializerMixin:
     applied_at = serializers.DateTimeField(source="created_at", format=DATE_TIME_FORMAT, read_only=True)
+
 
 class AdminApplicantSummarySerializer(serializers.ModelSerializer["User"]):
     """(Admin) 지원자 요약 정보"""
@@ -29,11 +31,10 @@ class AdminRecruitmentSummarySerializer(serializers.ModelSerializer["Recruitment
         read_only_fields = ["id", "uuid", "title"]
 
 
-
 class AdminApplicationListSerializer(AppliedAtSerializerMixin, serializers.ModelSerializer["Application"]):
     """(Admin Page) 지원서 목록 조회"""
 
-    id = serializers.IntegerField(read_only=True) 
+    id = serializers.IntegerField(read_only=True)
     recruitment = AdminRecruitmentSummarySerializer(read_only=True)
     applicant = AdminApplicantSummarySerializer(read_only=True)
     updated_at = serializers.DateTimeField(format=DATE_TIME_FORMAT, read_only=True)
