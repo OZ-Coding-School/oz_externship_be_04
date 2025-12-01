@@ -7,7 +7,6 @@ from drf_spectacular.utils import (
     OpenApiParameter,
     extend_schema,
 )
-from rest_framework import serializers
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -16,16 +15,6 @@ from rest_framework.views import APIView
 from apps.users.models import User
 from apps.users.serializers.admin_account import AdminAccountSerializer
 from apps.users.utils.permissions import StaffOrSuperUser
-
-
-class ErrorResponseSerializer(serializers.Serializer[Any]):
-    """
-    {
-        "error_detail": str,
-    }
-    """
-
-    error_detail = serializers.CharField()
 
 
 class AdminAccountListSpec(APIView):
@@ -76,8 +65,8 @@ class AdminAccountListSpec(APIView):
         ],
         responses={
             200: AdminAccountSerializer,
-            401: ErrorResponseSerializer,
-            403: ErrorResponseSerializer,
+            401: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
         },
         examples=[
             OpenApiExample(
