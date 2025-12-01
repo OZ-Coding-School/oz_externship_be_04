@@ -40,26 +40,3 @@ class RecruitmentAttachmentItemSerializer(serializers.Serializer[Any]):
 
     file_name = serializers.CharField(max_length=255, required=True)
     file_url = serializers.URLField(required=True)
-
-
-class RecruitmentAttachmentListField(serializers.ListField):
-    """첨부파일 리스트 필드 (최대 5개, 중복 방지)"""
-
-    def __init__(self, **kwargs: Any) -> None:
-        kwargs.setdefault("required", False)
-        kwargs.setdefault("allow_empty", True)
-        kwargs.setdefault("max_length", 5)
-        kwargs["child"] = RecruitmentAttachmentItemSerializer()
-        super().__init__(**kwargs)
-
-    def to_internal_value(self, data: Any) -> list[dict[str, str]]:
-        if not isinstance(data, list):
-            raise ValidationError("파일은 리스트 형식이어야 합니다.")
-
-        processed = super().to_internal_value(data)
-
-        file_names = {item.get["file_name"] for item in processed if item.get("file_name")}
-        if len(file_names) != len(processed):
-            raise ValidationError("중복된 파일명이 있습니다.")
-
-        return processed
