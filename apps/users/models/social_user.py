@@ -14,5 +14,5 @@ class SocialUser(TimeStampedModel):
     provider_id = models.CharField(max_length=255)
 
     class Meta:
-        db_table = "social_user"
+        db_table = "social_users"
         unique_together = ("provider", "provider_id")
