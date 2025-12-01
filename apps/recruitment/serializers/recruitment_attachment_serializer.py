@@ -2,7 +2,6 @@ from typing import Any
 
 from rest_framework import serializers
 
-
 from apps.recruitment.models import RecruitmentAttachment
 
 
@@ -37,6 +36,7 @@ class RecruitmentAttachmentUpdateSerializer(serializers.ModelSerializer[Any]):
             "file_name": {"required": True, "max_length": 50},
             "file_url": {"required": True},
         }
+
 
 class RecruitmentAttachmentItemSerializer(serializers.Serializer[Any]):
     """첨부파일 단일 아이템 검증용"""
