@@ -17,7 +17,7 @@ class ChatRoomService:
         """
         exists = GroupMember.objects.filter(
             study_group_id=study_group.id,
-            user_id=user.id, # mypy 오류로 user 대신 user.id를 넘겼습니다.
+            user_id=user.id,  # mypy 오류로 user 대신 user.id를 넘겼습니다.
         ).exists()
 
         # 스터디 그룹 비회원이면 채팅방 접근 금지
