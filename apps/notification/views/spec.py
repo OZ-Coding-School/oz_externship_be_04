@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, cast
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,7 +15,7 @@ from apps.users.models import User
 
 # 모킹
 class NotificationListSpec(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         user = cast(User, request.user)
