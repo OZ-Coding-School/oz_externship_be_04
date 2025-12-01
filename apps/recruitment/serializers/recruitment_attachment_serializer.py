@@ -5,7 +5,7 @@ from rest_framework import serializers
 from apps.recruitment.models import RecruitmentAttachment
 
 
-class RecruitmentAttachmentSerializer(serializers.ModelSerializer[Any]):
+class RecruitmentAttachmentSerializer(serializers.ModelSerializer[RecruitmentAttachment]):
     """구인공고 첨부파일 조회 (목록/상세/응답 공용)"""
 
     class Meta:
@@ -14,7 +14,7 @@ class RecruitmentAttachmentSerializer(serializers.ModelSerializer[Any]):
         read_only_fields = ["id", "created_at", "updated_at"]
 
 
-class RecruitmentAttachmentCreateSerializer(serializers.ModelSerializer[Any]):
+class RecruitmentAttachmentCreateSerializer(serializers.ModelSerializer[RecruitmentAttachment]):
     """구인공고 첨부파일 생성"""
 
     class Meta:
@@ -26,7 +26,7 @@ class RecruitmentAttachmentCreateSerializer(serializers.ModelSerializer[Any]):
         }
 
 
-class RecruitmentAttachmentUpdateSerializer(serializers.ModelSerializer[Any]):
+class RecruitmentAttachmentUpdateSerializer(serializers.ModelSerializer[RecruitmentAttachment]):
     """구인공고 첨부파일 수정"""
 
     class Meta:
