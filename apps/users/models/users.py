@@ -1,12 +1,13 @@
-from typing import Optional
+from typing import Optional, Any
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
 
 from apps.core.models import TimeStampedModel
 
-class UserManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
+
+class UserManager(BaseUserManager["User"]):
+    def create_user(self, email:str, password:str|None =None, **extra_fields:Any)->"User":
         if not email:
             raise ValueError("이메일 주소가 필요 합니다.")
 
@@ -16,7 +17,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password, **extra_fields):
+    def create_superuser(self, email:str, password:str|None =None, **extra_fields:Any)->"User":
         return self.create_user(
             email,
             password=password,
