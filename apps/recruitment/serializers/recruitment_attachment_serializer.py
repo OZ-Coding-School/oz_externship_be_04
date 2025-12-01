@@ -1,7 +1,7 @@
 from typing import Any
 
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
+
 
 from apps.recruitment.models import RecruitmentAttachment
 
@@ -22,7 +22,7 @@ class RecruitmentAttachmentCreateSerializer(serializers.ModelSerializer[Any]):
         model = RecruitmentAttachment
         fields = ["file_name", "file_url"]
         extra_kwargs = {
-            "file_name": {"required": True, "max_length": 255},
+            "file_name": {"required": True, "max_length": 50},
             "file_url": {"required": True},
         }
 
@@ -33,10 +33,13 @@ class RecruitmentAttachmentUpdateSerializer(serializers.ModelSerializer[Any]):
     class Meta:
         model = RecruitmentAttachment
         fields = ["file_name", "file_url"]
-
+        extra_kwargs = {
+            "file_name": {"required": True, "max_length": 50},
+            "file_url": {"required": True},
+        }
 
 class RecruitmentAttachmentItemSerializer(serializers.Serializer[Any]):
     """첨부파일 단일 아이템 검증용"""
 
-    file_name = serializers.CharField(max_length=255, required=True)
+    file_name = serializers.CharField(max_length=50, required=True)
     file_url = serializers.URLField(required=True)
