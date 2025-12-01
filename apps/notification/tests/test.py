@@ -1,3 +1,10 @@
-from django.test import TestCase
+from typing import Any
 
-# Create your tests here.
+from django.test import Client
+from django.urls import reverse
+
+
+def test_mock_notification(client: Client) -> None:
+    url = reverse("notification:notification-list")
+    resp: Any = client.get(url)
+    assert resp.status_code == 200
