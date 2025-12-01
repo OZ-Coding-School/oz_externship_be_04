@@ -12,9 +12,14 @@ from apps.users.models import User
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
-class AppliedAtSerializerMixin:
-    applied_at = serializers.DateTimeField(source="created_at", format=DATE_TIME_FORMAT, read_only=True)
+class AppliedAtSerializerMixin(serializers.Serializer):
+    applied_at = serializers.SerializerMethodField()
 
+    def get_applied_at(self, obj):
+        created = getattr(obj, "created_at", None)
+        if created is None:
+            return None
+        return created.strftime("%Y-%m-%d %H:%M")
 
 class ApplicationCommonFieldsMixin(AppliedAtSerializerMixin, serializers.ModelSerializer["Application"]):
     """모든 List/Detail 조회에 공통으로 포함되는 필드 정의"""
