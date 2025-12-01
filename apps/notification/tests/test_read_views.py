@@ -1,12 +1,13 @@
 from django.contrib.auth import get_user_model
-from rest_framework import status
-from rest_framework.test import APITestCase
 from django.urls import reverse
-from apps.notification.models import Notification
+from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.test import APITestCase
 
+from apps.notification.models import Notification
 
 User = get_user_model()
+
 
 class NotificationReadAPITestCase(APITestCase):
     def setUp(self) -> None:
@@ -20,41 +21,43 @@ class NotificationReadAPITestCase(APITestCase):
             birthday="2000-12-31",
             gender="M",
         )
+        # 로그인 처리
+        self.client.force_authenticate(user=self.user)
 
         self.notification_unread = Notification.objects.create(
-            user = self.user,
+            user=self.user,
             content="읽지 않은 알림",
-            is_read = False,
+            is_read=False,
         )
         self.notification_read = Notification.objects.create(
-            user = self.user,
-            content = "읽음 처리된 알림",
-            is_read = True,
+            user=self.user,
+            content="읽음 처리된 알림",
+            is_read=True,
         )
 
     # 읽지 않은 알림을 읽음 처리할 때 is_read=Ture로 처리
-    def test_mark_notification_read(self):
-        url = reverse("notification-read", kwargs={"notification_id": self.notification_unread.id})
+    def test_mark_notification_read(self) -> None:
+        url = reverse("notification:notification-read", kwargs={"notification_id": self.notification_unread.id})
         response: Response = self.client.post(url)
         self.notification_unread.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.notification_unread.is_read)
-        self.assertEqual(response.data["is_read"], "알림 읽음처리에 성공하였습니다.")
+        self.assertTrue(self.notification_unread.is_read)
+        self.assertEqual(response.data["detail"], "알림 읽음처리에 성공하였습니다.")
 
     # 이미 읽은 알림에 다시 POST 요청하면 200 OK, 상태는 유지
     def test_mark_notification_already_read(self) -> None:
-        url = reverse("notifications:notification-read", kwargs={"notification_id": self.notification_read.id})
+        url = reverse("notification:notification-read", kwargs={"notification_id": self.notification_read.id})
         response: Response = self.client.post(url)
         self.notification_read.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(self.notification_read.is_read)
-        self.assertEqual(response.data["detail"], "ok")
+        self.assertEqual(response.data["detail"], "알림 읽음처리에 성공하였습니다.")
 
     # 존재하지 않는 알림 id로 요청시 404
     def test_mark_notification_not_found(self) -> None:
-        url = reverse("notifications:notification-read", kwargs={"notification_id": 9999999})
+        url = reverse("notification:notification-read", kwargs={"notification_id": 9999999})
         response: Response = self.client.post(url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -63,7 +66,7 @@ class NotificationReadAPITestCase(APITestCase):
     # 읽지 않은 모든 알림을 한 번에 읽음 처리
     def test_mark_all_notifications_as_read(self) -> None:
 
-        url = reverse("notifications:notification-read-all")
+        url = reverse("notification:notification-read-all")
         response: Response = self.client.post(url)
 
         unread_count = Notification.objects.filter(user=self.user, is_read=False).count()

@@ -4,6 +4,7 @@ from apps.notification.views.read_views import (
     NotificationReadAllViews,
     NotificationReadView,
 )
+
 app_name = "notification"
 
 urlpatterns = [
