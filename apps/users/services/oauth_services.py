@@ -1,7 +1,9 @@
-from typing import Dict, Any
+from typing import Any, Dict
+
 from django.db import transaction
+
+from apps.users.models.social_user import ProviderChoices, SocialUser
 from apps.users.models.users import User
-from apps.users.models.social_user import SocialUser, ProviderChoices
 
 
 class SocialLoginService:
@@ -10,10 +12,9 @@ class SocialLoginService:
         provider_id = user_info["provider_id"]
         nickname = user_info.get("nickname", "user")
 
-        social_user = SocialUser.objects.filter(
-            provider=provider,
-            provider_id=provider_id
-        ).select_related("user").first()
+        social_user = (
+            SocialUser.objects.filter(provider=provider, provider_id=provider_id).select_related("user").first()
+        )
 
         if social_user:
             return social_user.user, False
