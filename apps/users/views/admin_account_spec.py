@@ -1,6 +1,13 @@
 from datetime import date, datetime, timezone
 from typing import Any
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    extend_schema,
+)
+from rest_framework import serializers
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,6 +18,23 @@ from apps.users.serializers.admin_account import AdminAccountSerializer
 from apps.users.utils.permissions import StaffOrSuperUser
 
 
+class AdminAccountListResponseSerializer(serializers.Serializer[Any]):
+    count = serializers.IntegerField()
+    next = serializers.CharField(allow_null=True)
+    previous = serializers.CharField(allow_null=True)
+    result = AdminAccountSerializer(many=True)
+
+
+class ErrorResponseSerializer(serializers.Serializer[Any]):
+    """
+    {
+        "error_detail": str,
+    }
+    """
+
+    error_detail = serializers.CharField()
+
+
 class AdminAccountListSpec(APIView):
     """
     Spec API 어드민 페이지 회원 목록 조회 API -> mock 데이터입니다.
@@ -18,6 +42,81 @@ class AdminAccountListSpec(APIView):
 
     permission_classes = [StaffOrSuperUser]
 
+    @extend_schema(
+        tags=["V1"],
+        summary="어드민 페이지 회원 목록 조회 Spec",
+        description="어드민 페이지 회원 목록 조회용 Spec API입니다.",
+        parameters=[
+            OpenApiParameter(
+                name="page",
+                type=OpenApiTypes.INT,
+                location="query",
+                description="페이지 번호 / 기본값: 1",
+            ),
+            OpenApiParameter(
+                name="page_size",
+                type=OpenApiTypes.INT,
+                location="query",
+                description="페이지 당 개수 / 기본값: 10",
+            ),
+            OpenApiParameter(
+                name="q",
+                type=OpenApiTypes.STR,
+                location="query",
+                description="검색 (이메일, 닉네임, 이름)",
+            ),
+            OpenApiParameter(
+                name="role",
+                type=OpenApiTypes.STR,
+                location="query",
+                description="권한 필터 (user, staff, admin)",
+            ),
+            OpenApiParameter(
+                name="status",
+                type=OpenApiTypes.STR,
+                location="query",
+                description="상세 필터 (active, inactive, withdrew)",
+            ),
+        ],
+        responses={
+            200: AdminAccountListResponseSerializer(),
+            401: ErrorResponseSerializer(),
+            403: ErrorResponseSerializer(),
+        },
+        examples=[
+            OpenApiExample(
+                name="Success Example",
+                value={
+                    "count": 4018,
+                    "next": "http://api.ozcoding.site/api/v1/admin/accounts?page=1&page_size=10",
+                    "previous": None,
+                    "results": [
+                        {
+                            "id": 1,
+                            "email": "user@example.com",
+                            "nickname": "string",
+                            "name": "string",
+                            "birthday": "2025-11-20",
+                            "status": "active",
+                            "role": "user",
+                            "withdraw_at": "2025-10-30T14:01:57.505250+09:00",
+                            "created_at": "2025-10-30T14:01:57.505250+09:00",
+                        }
+                    ],
+                },
+            ),
+            OpenApiExample(
+                name="Unauthorized Example",
+                value={"error_detail: 자격 인증 데이터가 제공되지 않았습니다."},
+                status_codes=["401"],
+            ),
+            OpenApiExample(
+                name="Forbidden Example",
+                value={"error_detail: 권한이 없습니다."},
+                status_codes=["403"],
+            ),
+        ],
+    )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
 
         user1 = User(
@@ -69,7 +168,7 @@ class AdminAccountListSpec(APIView):
         )
         user3.created_at = datetime(2021, 3, 9, 10, 0, tzinfo=timezone.utc)
         user3.status_value = "withdrew"
-        user3.withdraw_at = datetime(2025, 12, 1, 10,56, 505250, tzinfo=timezone.utc)  # type: ignore[attr-defined]
+        user3.withdraw_at = datetime(2025, 12, 1, 10, 56, 505250, tzinfo=timezone.utc)  # type: ignore[attr-defined]
 
         accounts = [user1, user2, user3]
 
