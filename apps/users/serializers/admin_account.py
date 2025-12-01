@@ -1,5 +1,3 @@
-from typing import Optional
-
 from rest_framework import serializers
 
 from apps.users.models import User
@@ -33,10 +31,10 @@ class AdminAccountSerializer(serializers.ModelSerializer[User]):
         return "user"
 
     def get_status(self, obj: User) -> str:
-        status_value: Optional[str] = obj.status_value
-
-        if status_value is not None:
-            return status_value
         if obj.is_active:
             return "active"
-        return "inactive"
+        else:
+            if obj.withdrawals.exists():
+                return "withdrew"
+            else:
+                return "inactive"
