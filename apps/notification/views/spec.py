@@ -35,7 +35,8 @@ class NotificationListSpec(APIView):
         serializer = NotificationSerializer([notif], many=True)
         return Response(
             {
+                "next": "http://api.ozcoding.site/api/v1/notifications?cursor=mocked_cursor&page_size=10",
+                "previous": None,
                 "results": serializer.data,
-                "next_cursor": "mocked_cursor_for_next_page",
             }
         )
