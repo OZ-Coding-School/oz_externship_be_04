@@ -8,21 +8,14 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from rest_framework import serializers
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.pagination import Pageable, offset_paginate_list
 from apps.users.models import User
 from apps.users.serializers.admin_account import AdminAccountSerializer
 from apps.users.utils.permissions import StaffOrSuperUser
-
-
-class AdminAccountListResponseSerializer(serializers.Serializer[Any]):
-    count = serializers.IntegerField()
-    next = serializers.CharField(allow_null=True)
-    previous = serializers.CharField(allow_null=True)
-    results = AdminAccountSerializer(many=True)
 
 
 class ErrorResponseSerializer(serializers.Serializer[Any]):
@@ -41,6 +34,7 @@ class AdminAccountListSpec(APIView):
     """
 
     permission_classes = [StaffOrSuperUser]
+    pagination_class = PageNumberPagination
 
     @extend_schema(
         tags=["V1"],
@@ -70,18 +64,20 @@ class AdminAccountListSpec(APIView):
                 type=OpenApiTypes.STR,
                 location="query",
                 description="권한 필터 (user, staff, admin)",
+                enum=["user", "staff", "admin"],
             ),
             OpenApiParameter(
                 name="status",
                 type=OpenApiTypes.STR,
                 location="query",
                 description="상세 필터 (active, inactive, withdrew)",
+                enum=["active", "inactive", "withdrew"],
             ),
         ],
         responses={
-            200: AdminAccountListResponseSerializer(),
-            401: ErrorResponseSerializer(),
-            403: ErrorResponseSerializer(),
+            200: AdminAccountSerializer,
+            401: ErrorResponseSerializer,
+            403: ErrorResponseSerializer,
         },
         examples=[
             OpenApiExample(
@@ -198,42 +194,14 @@ class AdminAccountListSpec(APIView):
         if status_param:
             accounts = [u for u in accounts if u.status_value == status_param]
 
-        params = request.query_params
-
-        pageable = Pageable.from_params(
-            page_raw=params.get("page"),
-            size_raw=params.get("page_size"),
+        paginator = self.pagination_class()
+        page: list[User] | None = paginator.paginate_queryset(
+            accounts,  # type: ignore[arg-type]
+            request,
+            view=self,
         )
+        if page is None:
+            page = []
 
-        page_obj = offset_paginate_list(accounts, pageable)
-
-        serializer = AdminAccountSerializer(page_obj.items, many=True)
-
-        base_url = request.build_absolute_uri(request.path)
-        current_page = page_obj.current_page
-        page_size = page_obj.size
-
-        def build_page_url(page: int) -> str:
-            query_params = params.copy()
-            query_params["page"] = str(page)
-            query_params["page_size"] = str(page_size)
-            return f"{base_url}?{query_params.urlencode()}"
-
-        if page_obj.has_next:
-            next_url: str | None = build_page_url(current_page + 1)
-        else:
-            next_url = None
-
-        if page_obj.has_prev:
-            previous_url: str | None = build_page_url(current_page - 1)
-        else:
-            previous_url = None
-
-        response_data = {
-            "count": page_obj.total_count,
-            "next": next_url,
-            "previous": previous_url,
-            "results": serializer.data,
-        }
-
-        return Response(response_data)
+        serializer = AdminAccountSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
