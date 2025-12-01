@@ -30,6 +30,7 @@ class AdminCrawledLectureRetrieveSerializer(serializers.ModelSerializer[CrawledL
             "id",
             "title",
             "instructor",
+            "description",
             "total_class_time",
             "original_price",
             "discounted_price",
