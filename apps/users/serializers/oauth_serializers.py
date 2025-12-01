@@ -1,5 +1,9 @@
-from rest_framework import serializers
+from typing import Any, Dict
 
 
-class KakaoLoginSerializer(serializers.Serializer):
-    code = serializers.CharField(required=True)
+class SocialLoginSerializer(serializers.Serializer):
+    provider = serializers.CharField()
+    provider_id = serializers.CharField()
+
+    def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:
+        return super().validate(attrs)
