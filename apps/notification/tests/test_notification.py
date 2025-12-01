@@ -1,4 +1,5 @@
-from typing import Any
+import random
+from typing import Any, cast
 
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -22,11 +23,12 @@ class NotificationSchemaTests(TestCase):
         self.assertEqual(resp.status_code, 200)
 
         json_data = resp.json()
-        if json_data["results"]:
-            first_item = json_data["results"][0]
-            self.assertIn("type", first_item)
-            self.assertIn("content", first_item)
-            self.assertIn("back_url_link", first_item)
+        self.assertIn("results", json_data)
+        for item in json_data["results"]:
+            self.assertIn("type", item)
+            self.assertIn("content", item)
+            self.assertIn("back_url_link", item)
+            self.assertIn("is_read", item)
 
     def test_notification_is_read_filters(self) -> None:
         url = reverse("notification:notification-list")
@@ -59,14 +61,21 @@ class NotificationSerializerTests(TestCase):
         )
 
     def test_serializer_valid_data(self) -> None:
+        notification_type = cast(str, random.choice(Notification.NotificationType.choices))
         notification: Notification = Notification.objects.create(
-            user=self.user, content="test", type=Notification.NotificationType.STUDY_JOIN, back_url_link="/test/url"
+            user=self.user,
+            content="test",
+            type=notification_type,
+            back_url_link="/test/url",
+            is_read=True,
         )
         data = NotificationSerializer(notification).data
 
         self.assertIn("type", data)
         self.assertIn("content", data)
         self.assertIn("back_url_link", data)
+        self.assertIn("is_read", data)
         self.assertEqual(data["type"], notification.type)
         self.assertEqual(data["content"], notification.content)
         self.assertEqual(data["back_url_link"], notification.back_url_link)
+        self.assertEqual(data["is_read"], notification.is_read)
