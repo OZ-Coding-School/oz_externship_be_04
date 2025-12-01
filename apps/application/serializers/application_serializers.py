@@ -12,16 +12,15 @@ from apps.users.models import User
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
-class AppliedAtSerializerMixin(serializers.Serializer):
-    applied_at = serializers.SerializerMethodField()
+class AppliedAtSerializerMixin(serializers.Serializer[Any]):
+    applied_at = serializers.DateTimeField(
+        source="created_at",
+        format=DATE_TIME_FORMAT,
+        read_only=True,
+    )
 
-    def get_applied_at(self, obj):
-        created = getattr(obj, "created_at", None)
-        if created is None:
-            return None
-        return created.strftime("%Y-%m-%d %H:%M")
 
-class ApplicationCommonFieldsMixin(AppliedAtSerializerMixin, serializers.ModelSerializer["Application"]):
+class ApplicationCommonFieldsMixin(AppliedAtSerializerMixin, serializers.ModelSerializer[Application]):
     """모든 List/Detail 조회에 공통으로 포함되는 필드 정의"""
 
     uuid = serializers.UUIDField(read_only=True)
@@ -54,7 +53,7 @@ class ApplicationDetailFieldsMixin:
     ]
 
 
-class ApplicantSummarySerializer(serializers.ModelSerializer["User"]):
+class ApplicantSummarySerializer(serializers.ModelSerializer[User]):
     """지원자 요약 정보"""
 
     class Meta:
@@ -63,7 +62,7 @@ class ApplicantSummarySerializer(serializers.ModelSerializer["User"]):
         read_only_fields = ["nickname", "gender", "profile_img_url"]
 
 
-class RecruitmentSummarySerializer(serializers.ModelSerializer["Recruitment"]):
+class RecruitmentSummarySerializer(serializers.ModelSerializer[Recruitment]):
     """공고 요약 정보"""
 
     class Meta:
@@ -72,7 +71,7 @@ class RecruitmentSummarySerializer(serializers.ModelSerializer["Recruitment"]):
         read_only_fields = ["uuid", "title", "expected_headcount", "close_at"]
 
 
-class ApplicationCreateSerializer(serializers.ModelSerializer["Application"]):
+class ApplicationCreateSerializer(serializers.ModelSerializer[Application]):
     """REQ-APLY-001: 지원서 작성"""
 
     class Meta:

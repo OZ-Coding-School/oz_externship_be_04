@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from rest_framework import serializers
 
 from apps.application.models import Application
@@ -11,17 +13,15 @@ from .application_serializers import ApplicationDetailFieldsMixin
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
-class AppliedAtSerializerMixin(serializers.Serializer):
-    applied_at = serializers.SerializerMethodField()
-
-    def get_applied_at(self, obj):
-        created = getattr(obj, "created_at", None)
-        if created is None:
-            return None
-        return created.strftime("%Y-%m-%d %H:%M")
+class AppliedAtSerializerMixin(serializers.Serializer[Any]):
+    applied_at = serializers.DateTimeField(
+        source="created_at",
+        format=DATE_TIME_FORMAT,
+        read_only=True,
+    )
 
 
-class AdminApplicationCommonFieldsMixin(AppliedAtSerializerMixin, serializers.ModelSerializer["Application"]):
+class AdminApplicationCommonFieldsMixin(AppliedAtSerializerMixin, serializers.ModelSerializer[Application]):
     """Admin List/Detail 조회에 공통으로 사용되는 필드"""
 
     id = serializers.IntegerField(read_only=True)
@@ -35,7 +35,7 @@ class AdminApplicationCommonFieldsMixin(AppliedAtSerializerMixin, serializers.Mo
         read_only_fields = ["id", "uuid", "status", "applied_at", "updated_at"]
 
 
-class AdminApplicantSummarySerializer(serializers.ModelSerializer["User"]):
+class AdminApplicantSummarySerializer(serializers.ModelSerializer[User]):
     """(Admin) 지원자 요약 정보"""
 
     class Meta:
@@ -44,7 +44,7 @@ class AdminApplicantSummarySerializer(serializers.ModelSerializer["User"]):
         read_only_fields = ["id", "nickname", "email", "profile_img_url"]
 
 
-class AdminRecruitmentSummarySerializer(serializers.ModelSerializer["Recruitment"]):
+class AdminRecruitmentSummarySerializer(serializers.ModelSerializer[Recruitment]):
     """(Admin) 공고 요약 정보"""
 
     class Meta:
