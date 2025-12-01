@@ -29,7 +29,7 @@ class MockCursorPagination(CursorPagination):
     page_size = 10
     max_page_size = 100
 
-    def paginate_queryset(self, queryset, request, view=...) -> Optional[list[Any]]:  # type: ignore
+    def paginate_queryset(self, queryset, request, view=...) -> Optional[list[Any]]:  # type: ignore # pragma: no cover
         self.request = request
         self.page_size = cast(int, self.get_page_size(request))
         if not self.page_size:
@@ -110,7 +110,7 @@ class MockCursorPagination(CursorPagination):
 
         return self.page
 
-    def decode_cursor(self, request: Request) -> Optional[Cursor]:
+    def decode_cursor(self, request: Request) -> Optional[Cursor]:  # pragma: no cover
         """
         Given a request with a cursor, return a `Cursor` instance.
         """
