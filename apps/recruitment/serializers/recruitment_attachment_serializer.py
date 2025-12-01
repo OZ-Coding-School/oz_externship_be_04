@@ -58,7 +58,7 @@ class RecruitmentAttachmentListField(serializers.ListField):
 
         processed = super().to_internal_value(data)
 
-        file_names = {item["file_name"] for item in processed}
+        file_names = {item.get["file_name"] for item in processed if item.get("file_name")}
         if len(file_names) != len(processed):
             raise ValidationError("중복된 파일명이 있습니다.")
 
