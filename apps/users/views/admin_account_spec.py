@@ -27,15 +27,15 @@ class AdminAccountListSpec(APIView):
             name="홍승우",
             birthday=date(2005, 1, 1),
             is_active=True,
-            is_staff=True,
-            is_superuser=True,
+            is_staff=False,
+            is_superuser=False,
             phone_number="01012345678",
             gender="M",
             profile_img_url="https://example.com/profile/user1.png",
         )
         user1.created_at = datetime(2025, 11, 25, 13, 0, tzinfo=timezone.utc)
-        user1.status_value = "ACTIVE"
-        user1.withdrawal_requested_at = None  # type: ignore[attr-defined]
+        user1.status_value = "active"
+        user1.withdraw_at = None  # type: ignore[attr-defined]
 
         user2 = User(
             id=2,
@@ -43,16 +43,16 @@ class AdminAccountListSpec(APIView):
             nickname="user2",
             name="박이준",
             birthday=date(2007, 12, 25),
-            is_active=False,
+            is_active=True,
             is_staff=True,
-            is_superuser=True,
+            is_superuser=False,
             phone_number="010111112222",
             gender="M",
             profile_img_url="https://example.com/profile/user2.png",
         )
         user2.created_at = datetime(2024, 2, 24, 17, 0, tzinfo=timezone.utc)
-        user2.status_value = "INACTIVE"
-        user2.withdrawal_requested_at = None  # type: ignore[attr-defined]
+        user2.status_value = "active"
+        user2.withdraw_at = None  # type: ignore[attr-defined]
 
         user3 = User(
             id=3,
@@ -60,7 +60,7 @@ class AdminAccountListSpec(APIView):
             nickname="user3",
             name="머대용",
             birthday=date(2001, 9, 2),
-            is_active=True,
+            is_active=False,
             is_staff=False,
             is_superuser=False,
             phone_number="01033334444",
@@ -68,8 +68,8 @@ class AdminAccountListSpec(APIView):
             profile_img_url="https://example.com/profile/user3.png",
         )
         user3.created_at = datetime(2021, 3, 9, 10, 0, tzinfo=timezone.utc)
-        user3.status_value = "WITHDRAWING"
-        user3.withdrawal_requested_at = None  # type: ignore[attr-defined]
+        user3.status_value = "withdrew"
+        user3.withdraw_at = datetime(2025, 12, 1, 10,56, 505250, tzinfo=timezone.utc)  # type: ignore[attr-defined]
 
         accounts = [user1, user2, user3]
 
@@ -87,15 +87,15 @@ class AdminAccountListSpec(APIView):
 
         role = params.get("role")
         """권한별 확인 (admin, staff, superuser)"""
-        if role == "ADMIN":
+        if role == "admin":
             accounts = [u for u in accounts if u.is_superuser]
-        elif role == "STAFF":
+        elif role == "staff":
             accounts = [u for u in accounts if u.is_staff and not u.is_superuser]
-        elif role == "USER":
+        elif role == "user":
             accounts = [u for u in accounts if not u.is_staff and not u.is_superuser]
 
         status_param = params.get("status")
-        """회원 상태별 확인 (ACTIVE, INACTIVE, WITHDRAWING)"""
+        """회원 상태별 확인 (active, inactive, withdrew)"""
         if status_param:
             accounts = [u for u in accounts if u.status_value == status_param]
 
@@ -103,20 +103,38 @@ class AdminAccountListSpec(APIView):
 
         pageable = Pageable.from_params(
             page_raw=params.get("page"),
-            size_raw=params.get("size"),
+            size_raw=params.get("page_size"),
         )
 
         page_obj = offset_paginate_list(accounts, pageable)
 
         serializer = AdminAccountSerializer(page_obj.items, many=True)
 
+        base_url = request.build_absolute_uri(request.path)
+        current_page = page_obj.current_page
+        page_size = page_obj.size
+
+        def build_page_url(page: int) -> str:
+            query_params = params.copy()
+            query_params["page"] = str(page)
+            query_params["page_size"] = str(page_size)
+            return f"{base_url}?{query_params.urlencode()}"
+
+        if page_obj.has_next:
+            next_url: str | None = build_page_url(current_page + 1)
+        else:
+            next_url = None
+
+        if page_obj.has_prev:
+            previous_url: str | None = build_page_url(current_page - 1)
+        else:
+            previous_url = None
+
         response_data = {
             "count": page_obj.total_count,
-            "page": page_obj.current_page,
-            "size": page_obj.size,
-            "total_pages": page_obj.total_pages,
-            "has_next": page_obj.has_next,
-            "has_prev": page_obj.has_prev,
+            "next": next_url,
+            "previous": previous_url,
             "results": serializer.data,
         }
+
         return Response(response_data)
