@@ -1,7 +1,9 @@
 from rest_framework import serializers
+from typing import Any, Dict
 from apps.lectures.models import LectureBookmark
-from apps.lectures.serializers.bookmark_lecture_serializer import BookmarkLectureSerializer
-
+from apps.lectures.serializers.bookmark_lecture_serializer import (
+    BookmarkLectureSerializer,
+)
 
 
 class LectureBookmarkSerializer(serializers.ModelSerializer[LectureBookmark]):
@@ -17,7 +19,7 @@ class LectureBookmarkListSerializer(serializers.ModelSerializer[LectureBookmark]
         model = LectureBookmark
         fields = ["lecture"]
 
-    def to_representation(self, instance):
-        lecture_data = BookmarkLectureSerializer(instance.lecture).data
-        return lecture_data
-
+    def to_representation(self, instance: LectureBookmark) -> Dict[str, Any]:
+        lecture = instance.lecture
+        data = BookmarkLectureSerializer(lecture).data
+        return dict(data)
