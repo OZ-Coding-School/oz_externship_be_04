@@ -22,7 +22,7 @@ class AdminAccountListResponseSerializer(serializers.Serializer[Any]):
     count = serializers.IntegerField()
     next = serializers.CharField(allow_null=True)
     previous = serializers.CharField(allow_null=True)
-    result = AdminAccountSerializer(many=True)
+    results = AdminAccountSerializer(many=True)
 
 
 class ErrorResponseSerializer(serializers.Serializer[Any]):
@@ -107,12 +107,12 @@ class AdminAccountListSpec(APIView):
             ),
             OpenApiExample(
                 name="Unauthorized Example",
-                value={"error_detail: 자격 인증 데이터가 제공되지 않았습니다."},
+                value={"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
                 status_codes=["401"],
             ),
             OpenApiExample(
                 name="Forbidden Example",
-                value={"error_detail: 권한이 없습니다."},
+                value={"error_detail": "권한이 없습니다."},
                 status_codes=["403"],
             ),
         ],
