@@ -1,3 +1,4 @@
+import uuid
 from typing import Any, Dict
 
 from django.db import transaction
@@ -10,7 +11,9 @@ class SocialLoginService:
     @transaction.atomic
     def login_or_signup(self, provider: str, user_info: Dict[str, Any]) -> tuple[User, bool]:
         provider_id = user_info["provider_id"]
-        nickname = user_info.get("nickname", "user")
+
+        if provider not in ProviderChoices.values:
+            raise ValueError("유효하지 않은 소셜 로그인 제공자입니다.")
 
         social_user = (
             SocialUser.objects.filter(provider=provider, provider_id=provider_id).select_related("user").first()
@@ -21,7 +24,7 @@ class SocialLoginService:
 
         user = User.objects.create(
             email=f"{provider}_{provider_id}@auto.com",
-            nickname=self._generate_unique_nickname(nickname),
+            nickname=self._generate_unique_nickname(),
             is_active=True,
         )
 
@@ -33,10 +36,5 @@ class SocialLoginService:
 
         return user, True
 
-    def _generate_unique_nickname(self, base_nickname: str) -> str:
-        nickname = base_nickname
-        suffix = 1
-        while User.objects.filter(nickname=nickname).exists():
-            nickname = f"{base_nickname}_{suffix}"
-            suffix += 1
-        return nickname
+    def _generate_unique_nickname(self) -> str:
+        return f"user_{uuid.uuid4().hex[:8]}"
