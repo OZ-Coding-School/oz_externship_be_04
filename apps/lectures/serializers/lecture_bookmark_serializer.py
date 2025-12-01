@@ -1,5 +1,7 @@
-from rest_framework import serializers
 from typing import Any, Dict
+
+from rest_framework import serializers
+
 from apps.lectures.models import LectureBookmark
 from apps.lectures.serializers.bookmark_lecture_serializer import (
     BookmarkLectureSerializer,
