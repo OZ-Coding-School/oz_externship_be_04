@@ -1,32 +1,25 @@
-from typing import Any
+from typing import Optional
 
 from django.conf import settings
 from rest_framework import serializers
 
 from apps.lectures.models import CrawledLecture
-from apps.recruitment.models import RecruitmentBookmarks, tags
+from apps.recruitment.models import RecruitmentBookmarks, Tag, tags
 
 
-class RecruitmentLectureSerializer(serializers.ModelSerializer[Any]):
+class RecruitmentLectureSerializer(serializers.ModelSerializer[CrawledLecture]):
     class Meta:
         model = CrawledLecture
-        fields = (
-            "id",
-            "title",
-            "instructor"
-        )
+        fields = ("id", "title", "instructor")
 
 
-class RecruitmentTagSerializer(serializers.ModelSerializer[Any]):
+class RecruitmentTagSerializer(serializers.ModelSerializer[Tag]):
     class Meta:
         model = tags
-        fields = (
-            "id",
-            "name"
-        )
+        fields = ("id", "name")
 
 
-class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[Any]):
+class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[RecruitmentBookmarks]):
     #  스터디 구인 공고 제목
     study_group_recruitment_title = serializers.CharField(
         source="recruitment.title",
@@ -88,16 +81,25 @@ class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[Any]):
             "bookmark_count",
         )
 
-    def get_thumbnail_img_url(self, obj):
-        images = getattr(obj.recruitment, "first_image_list", None)
-        first_img = None
+    def get_thumbnail_img_url(self, obj: "RecruitmentBookmarks") -> Optional[str]:
+        recruitment = getattr(obj, "recruitment_id", None)
+        if recruitment is None:
+            return getattr(settings, "DEFAULT_THUMBNAIL_IMG_URL", None)
+
+        images = getattr(recruitment, "first_image_list", None)
+        first_img: Optional[object] = None
 
         if isinstance(images, list):
             first_img = images[0] if images else None
         elif images is not None and hasattr(images, "first"):
             first_img = images.first()
 
-        if first_img and getattr(first_img, "img_url", None):
-            return first_img.img_url
+        if first_img is not None:
+            img_url = getattr(first_img, "img_url", None)
+            if img_url is not None:
+                return str(img_url)
+            url = getattr(first_img, "url", None)
+            if url is not None:
+                return str(url)
 
         return getattr(settings, "DEFAULT_THUMBNAIL_IMG_URL", None)
