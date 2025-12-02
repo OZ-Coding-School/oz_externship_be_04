@@ -1,9 +1,10 @@
 from typing import Any, Optional
 
 from django.core.exceptions import PermissionDenied
-from django.db.models import QuerySet
+from django.db.models import Count, QuerySet
 
 from apps.chat.models.chat_message import ChatMessage
+from apps.chat.models.last_read_message import LastReadMessage
 from apps.chat.services.last_read_service import LastReadService
 from apps.study_groups.models import GroupMember, StudyGroup
 from apps.users.models import User
@@ -31,24 +32,52 @@ class ChatRoomService:
         # 채팅방 목록 조회
         memberships = GroupMember.objects.filter(user_id=user.id).select_related("study_group_id")
 
+        groups = [m.study_group_id for m in memberships]
+        group_ids = [g.id for g in groups]
+
+        if not group_ids:
+            return []
+
+        # 최신 메시지 가져오기
+        last_messages = (
+            ChatMessage.objects.filter(study_group_id__in=group_ids)
+            .select_related("sender", "study_group")
+            .order_by("study_group_id", "-created_at")
+        )
+
+        last_message_map: dict[int, ChatMessage] = {}
+        for msg in last_messages:
+            if msg.study_group_id not in last_message_map:
+                last_message_map[msg.study_group_id] = msg
+
+        # last_read 조회
+        last_reads = LastReadMessage.objects.filter(
+            user_id=user.id,
+            study_group_id__in=group_ids,
+        ).select_related("message")
+
+        last_read_map = {lr.study_group_id: lr for lr in last_reads}
+
+        # 총 메시지 수
+        count_map = dict(
+            ChatMessage.objects.filter(study_group_id__in=group_ids)
+            .values_list("study_group_id")
+            .annotate(total=Count("id"))
+        )
+
         results: list[dict[str, Any]] = []
 
-        for member in memberships:
-            group = member.study_group_id  # FK 객체
-
-            last_message: Optional[ChatMessage] = (
-                ChatMessage.objects.filter(study_group=group).order_by("-created_at").first()
-            )
-
-            last_read = LastReadService.get_last_read(group, user)
+        for group in groups:
+            last_message = last_message_map.get(group.id)
+            last_read = last_read_map.get(group.id)
 
             if last_read:
                 unread_count = ChatMessage.objects.filter(
-                    study_group=group,
+                    study_group_id=group.id,
                     created_at__gt=last_read.message.created_at,
                 ).count()
             else:
-                unread_count = ChatMessage.objects.filter(study_group=group).count()
+                unread_count = count_map.get(group.id, 0)
 
             results.append(
                 {
@@ -99,8 +128,7 @@ class ChatRoomService:
         )
 
         queryset = ChatMessage.objects.filter(
-            study_group=study_group,
-            # 가입 이후만 보여주기
+            study_group_id=study_group.id,
             created_at__gte=membership.created_at,
         ).select_related("sender")
 
@@ -114,7 +142,7 @@ class ChatRoomService:
         # 채팅방 접속시 사용자가 이전에 읽지 않은 메시지를 가장 최신 메시지 기준으로 전부 읽음 처리
         ChatRoomService.validate_member(study_group, user)
 
-        last_message = ChatMessage.objects.filter(study_group=study_group).order_by("-created_at").first()
+        last_message = ChatMessage.objects.filter(study_group_id=study_group.id).order_by("-created_at").first()
 
         if last_message:
             LastReadService.update_last_read(
