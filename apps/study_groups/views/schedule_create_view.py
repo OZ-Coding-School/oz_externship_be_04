@@ -11,7 +11,7 @@ from apps.study_groups.serializers.schedule_serializers import GroupScheduleSeri
 from apps.study_groups.services.schedule_create_service import ScheduleCreateService
 
 
-class ScheduleListCreateView(APIView):
+class ScheduleCreateView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = schedule_serializers.GroupScheduleSerializer
 

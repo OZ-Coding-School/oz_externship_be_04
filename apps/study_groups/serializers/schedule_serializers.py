@@ -72,7 +72,10 @@ class ScheduleParticipantsSerializer(serializers.ModelSerializer[SchedulePartici
         schedule = attrs.get("group_schedule")
         member = attrs.get("group_member")
 
-        if ScheduleParticipants.objects.filter(group_schedule=schedule, group_member=member).exists():
+        if schedule is None or member is None:
+            raise serializers.ValidationError("스케줄과 멤버를 입력해주세요.")
+
+        if ScheduleParticipants.objects.filter(schedule=schedule, member=member).exists():
             raise serializers.ValidationError("이미 참가자로 등록되어 있습니다.")
 
         if schedule.study_group_id != member.study_group_id:
