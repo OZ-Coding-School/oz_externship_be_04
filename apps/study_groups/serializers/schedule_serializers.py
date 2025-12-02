@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from typing import TypedDict
 from django.utils import timezone
-from datetime import date, time
+from datetime import datetime, time
 from apps.study_groups.models import StudyGroup, GroupMember
 from apps.study_groups.models.schedule import GroupSchedule, ScheduleParticipants
 
@@ -10,7 +10,7 @@ class GroupScheduleAttrs(TypedDict):
     study_group: StudyGroup
     title: str
     objective: str | None
-    session_date: date
+    session_date: datetime
     start_time: time
     end_time: time
 
@@ -37,8 +37,8 @@ class GroupScheduleSerializer(serializers.ModelSerializer[GroupSchedule]):
             raise serializers.ValidationError("설명은 500자를 초과할 수 없습니다.")
         return value
 
-    def validate_session_date(self, value: date) -> date:
-        if value < timezone.localdate():
+    def validate_session_date(self, value: datetime) -> datetime:
+        if value.date() < timezone.localdate():
             raise serializers.ValidationError({"detail": "날짜 설정이 잘못 되었습니다."})
         return value
 
