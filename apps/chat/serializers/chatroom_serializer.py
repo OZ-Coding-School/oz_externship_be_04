@@ -42,7 +42,7 @@ class ChatroomSerializer(serializers.ModelSerializer[StudyGroup]):
 
         return LastMessageSummarySerializer(last, context=self.context).data
 
-    def get_unread_count(self, obj: StudyGroup) -> Optional[int]:
+    def get_unread_message(self, obj: StudyGroup) -> Optional[int]:
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return None
