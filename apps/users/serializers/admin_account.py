@@ -7,6 +7,7 @@ class AdminAccountSerializer(serializers.ModelSerializer[User]):
     """
     어드민 회원 목록 조회용 serializer
     """
+
     role = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField(read_only=True)
@@ -42,10 +43,12 @@ class AdminAccountSerializer(serializers.ModelSerializer[User]):
             else:
                 return "inactive"
 
+
 class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
     """
     어드민 회원 정보 상세 조회용 serializer
     """
+
     role = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField(read_only=True)
@@ -54,16 +57,16 @@ class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
         model = User
         fields = [
             "id",
-            "email",
-            "nickname",
             "name",
-            "phone_number",
-            "birthday",
             "gender",
-            "status",
+            "nickname",
+            "birthday",
+            "phone_number",
+            "email",
             "role",
-            "profile_img_url",
+            "status",
             "created_at",
+            "profile_img_url",
         ]
 
         def get_role(self, obj: User) -> str:
