@@ -13,26 +13,28 @@ from .application_serializers import ApplicationDetailFieldsMixin
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
-class AppliedAtSerializerMixin(serializers.Serializer[Any]):
-    applied_at = serializers.DateTimeField(
-        source="created_at",
+class TimestampSerializerMixin(serializers.Serializer[Any]):
+    created_at = serializers.DateTimeField(
+        format=DATE_TIME_FORMAT,
+        read_only=True,
+    )
+    updated_at = serializers.DateTimeField(
         format=DATE_TIME_FORMAT,
         read_only=True,
     )
 
 
-class AdminApplicationCommonFieldsMixin(AppliedAtSerializerMixin, serializers.ModelSerializer[Application]):
+class AdminApplicationCommonFieldsMixin(TimestampSerializerMixin, serializers.ModelSerializer[Application]):
     """Admin List/Detail 조회에 공통으로 사용되는 필드"""
 
     id = serializers.IntegerField(read_only=True)
     uuid = serializers.UUIDField(read_only=True)
     status = serializers.CharField(read_only=True)
-    updated_at = serializers.DateTimeField(format=DATE_TIME_FORMAT, read_only=True)
 
     class Meta:
         model = Application
-        fields = ["id", "uuid", "status", "applied_at", "updated_at"]
-        read_only_fields = ["id", "uuid", "status", "applied_at", "updated_at"]
+        fields = ["id", "uuid", "status", "created_at", "updated_at"]
+        read_only_fields = ["id", "uuid", "status", "created_at", "updated_at"]
 
 
 class AdminApplicantSummarySerializer(serializers.ModelSerializer[User]):
