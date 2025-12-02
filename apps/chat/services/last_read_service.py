@@ -1,8 +1,9 @@
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 
 from apps.chat.models.chat_message import ChatMessage
 from apps.chat.models.last_read_message import LastReadMessage
-from apps.study_groups.models import StudyGroup
+from apps.study_groups.models import GroupMember, StudyGroup
 from apps.users.models import User
 
 
@@ -14,6 +15,17 @@ class LastReadService:
     """
 
     @staticmethod
+    def _validate_member(study_group: StudyGroup, user: User) -> None:
+        # 해당 유저가 그룹 멤버인지 확인
+        is_member = GroupMember.objects.filter(
+            study_group_id=study_group.id,
+            user_id=user.id,
+        ).exists()
+
+        if not is_member:
+            raise PermissionDenied("그룹 멤버만 읽음 정보를 수정할 수 있습니다.")
+
+    @staticmethod
     @transaction.atomic
     def update_last_read(
         study_group: StudyGroup,
@@ -21,12 +33,11 @@ class LastReadService:
         message: ChatMessage,
     ) -> LastReadMessage:
         """
-        사용자가 스터디 그룹에서 마지막으로 읽은 메시지를 갱신합니다
-
-        동작 방식
-        - 동일한 (study_group, user) 조합은 하나만 존재해야 하므로 update_or_create 사용
-        - 동시에 여러 요청이 올라와도 atomic 처리로 race condition 방지
+        사용자가 스터디 그룹에서 마지막으로 읽은 메시지를 갱신
         """
+        # 그룹 구성원이 맞는지 검증
+        LastReadService._validate_member(study_group, user)
+
         last_read, _ = LastReadMessage.objects.update_or_create(
             study_group=study_group,
             user=user,

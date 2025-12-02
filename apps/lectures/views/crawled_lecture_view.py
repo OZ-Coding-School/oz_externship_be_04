@@ -1,12 +1,16 @@
-from django.db.models import QuerySet
+from typing import cast
+
+from django.conf import settings
+from django.db.models import Q, QuerySet
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_field
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.lectures.filters.crawled_lecture_filter import CrawledLectureFilter
 from apps.lectures.models import CrawledLecture
 from apps.lectures.serializers.crawled_lecture_serializer import (
     CrawledLectureSerializer,
@@ -17,6 +21,35 @@ class CrawledLectureListAPIView(APIView):
     permission_classes = [AllowAny]
     serializer_class = CrawledLectureSerializer
     pagination_class = PageNumberPagination
+    search_fields = ["title", "instructor"]
+    filterset_class = CrawledLectureFilter
+
+    sort_map = {
+        "latest": "-created_at",
+        "oldest": "created_at",
+        "low_price": "discount_price",
+        "high_price": "-discount_price",
+        "high_rating": "-average_rating",
+        "low_rating": "average_rating",
+    }
+
+    @extend_schema_field(dict)
+    def get_queryset(self) -> QuerySet[CrawledLecture]:
+        queryset = CrawledLecture.objects.all()
+
+        filterset = self.filterset_class(data=self.request.GET, queryset=queryset, request=self.request)
+        queryset = cast(QuerySet[CrawledLecture], filterset.qs)
+
+        q = Q()
+        if search := self.request.GET.get("search"):
+            for field in self.search_fields:
+                q |= Q(**{f"{field}__icontains": search})
+            queryset = queryset.filter(q)
+
+        if (sort_key := self.request.GET.get("sort")) in self.sort_map:
+            queryset = queryset.order_by(self.sort_map[sort_key])
+
+        return queryset
 
     @extend_schema(
         tags=["lectures"],
@@ -30,45 +63,33 @@ class CrawledLectureListAPIView(APIView):
                 required=False,
             ),
             OpenApiParameter(
-                name="latest",
+                name="search",
                 type=OpenApiTypes.STR,
                 location="query",
-                description="최신순으로 정렬할 때 선택됩니다.",
+                description="강의 제목 또는 강사 이름으로 검색합니다.",
                 required=False,
             ),
             OpenApiParameter(
-                name="oldest",
+                name="sort",
                 type=OpenApiTypes.STR,
                 location="query",
-                description="오래된순으로 정렬할 때 선택됩니다.",
-                required=False,
-            ),
-            OpenApiParameter(
-                name="low_price",
-                type=OpenApiTypes.STR,
-                location="query",
-                description="낮은 가격순으로 정렬할 때 선택됩니다.",
-                required=False,
-            ),
-            OpenApiParameter(
-                name="high_price",
-                type=OpenApiTypes.STR,
-                location="query",
-                description="높은 가격순으로 정렬할 때 선택됩니다.",
-                required=False,
-            ),
-            OpenApiParameter(
-                name="high_rating",
-                type=OpenApiTypes.STR,
-                location="query",
-                description="높은 리뷰 평점순으로 정렬할 때 선택됩니다.",
-                required=False,
-            ),
-            OpenApiParameter(
-                name="low_rating",
-                type=OpenApiTypes.STR,
-                location="query",
-                description="낮은 리뷰 평점순으로 정렬할 때 선택됩니다.",
+                enum=[
+                    "latest",
+                    "oldest",
+                    "low_price",
+                    "high_price",
+                    "high_rating",
+                    "low_rating",
+                ],
+                description="""
+아래의 정렬 기준을 선택할 수 있습니다:
+- latest : 최신순으로 정렬
+- oldest : 오래된순으로 정렬
+- low_price : 낮은 가격순으로 정렬
+- high_price : 높은 가격순으로 정렬
+- high_rating : 높은 리뷰 평점순으로 정렬
+- low_rating : 낮은 리뷰 평점순으로 정렬
+                """,
                 required=False,
             ),
         ],
@@ -98,8 +119,14 @@ class CrawledLectureListAPIView(APIView):
             )
             for i in range(15)
         ]
-
         paginator = self.pagination_class()
-        page: list[CrawledLecture] | None = paginator.paginate_queryset(mock_data, request)  # type: ignore[arg-type]
+        page: list[CrawledLecture] | None
+
+        if settings.DEBUG:
+            page = paginator.paginate_queryset(mock_data, request)  # type: ignore[arg-type]
+        else:
+            queryset = self.get_queryset()
+            page = paginator.paginate_queryset(queryset, request)
+
         serializer = self.serializer_class(page, many=True)
         return paginator.get_paginated_response(serializer.data)
