@@ -33,6 +33,9 @@ class CrawledLecture(TimeStampedModel):
     discount_price = models.BigIntegerField(null=True, default=0, help_text="강의 할인가격")
     url_link = models.URLField(max_length=255, help_text="강의 바로가기 링크")
     thumbnail_img_url = models.URLField(null=True, max_length=255, help_text="강의 썸네일 이미지")
+    categories = models.ManyToManyField(
+        "lectures.Category", through="lectures.LectureCategory", related_name="lectures"
+    )
 
     class Meta:
         ordering = ["-created_at", "-id"]
