@@ -23,7 +23,17 @@ class ChatroomSerializer(serializers.ModelSerializer[StudyGroup]):
 
     class Meta:
         model = StudyGroup
-        fields = ("id", "name", "profile_img_url", "start_at", "end_at", "created_at", "updated_at")
+        fields = (
+            "id",
+            "name",
+            "profile_img_url",
+            "start_at",
+            "end_at",
+            "last_message",
+            "unread_count",
+            "created_at",
+            "updated_at",
+        )
 
     def get_last_message(self, obj: StudyGroup) -> Optional[Dict[str, Any]]:
         last: Optional[ChatMessage] = obj.chat_messages.order_by("-created_at").select_related("sender").first()
