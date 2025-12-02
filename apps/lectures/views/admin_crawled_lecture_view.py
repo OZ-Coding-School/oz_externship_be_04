@@ -1,5 +1,6 @@
 import random
 from decimal import Decimal
+from typing import cast
 
 from django.db.models import QuerySet
 from django.utils import timezone
@@ -82,7 +83,6 @@ class AdminCrawledLectureView(APIView):
         ]
 
         paginator = self.pagination_class()
-        from typing import cast
 
         queryset_like = cast(QuerySet[CrawledLecture], mock_data)
         paginated_qs = paginator.paginate_queryset(queryset_like, request)
