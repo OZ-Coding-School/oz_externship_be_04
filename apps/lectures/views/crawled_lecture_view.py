@@ -63,6 +63,13 @@ class CrawledLectureListAPIView(APIView):
                 required=False,
             ),
             OpenApiParameter(
+                name="page_size",
+                type=OpenApiTypes.INT,
+                location="query",
+                description="한 페이지에 나타내는 강의 목록의 수를 조절할 수 있습니다.",
+                required=False,
+            ),
+            OpenApiParameter(
                 name="search",
                 type=OpenApiTypes.STR,
                 location="query",
@@ -95,7 +102,7 @@ class CrawledLectureListAPIView(APIView):
         ],
         responses={
             200: CrawledLectureSerializer(many=True, read_only=True),
-            500: {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."},
+            500: {"example": {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."}},
         },
     )
     def get(self, request: Request) -> Response:
@@ -120,6 +127,8 @@ class CrawledLectureListAPIView(APIView):
             for i in range(15)
         ]
         paginator = self.pagination_class()
+        page_size = self.request.GET.get("page_size")
+        paginator.page_size = max(int(page_size), 1) if page_size and page_size.isdigit() else 12
         page: list[CrawledLecture] | None
 
         if settings.DEBUG:
