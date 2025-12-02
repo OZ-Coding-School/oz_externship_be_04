@@ -7,11 +7,11 @@ from .study_note_image import StudyNoteImage
 
 __all__ = [
     "StudyGroup",
+    "GroupMember",
+    "StudyLecture",
     "StudyNote",
     "StudyNoteImage",
     "StudyNoteAttachment",
-    "GroupMember",
-    "StudyLecture",
     "GroupSchedule",
     "ScheduleParticipants",
     "Review",
