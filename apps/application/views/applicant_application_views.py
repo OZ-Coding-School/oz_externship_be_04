@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from django.shortcuts import get_object_or_404
+from django.contrib.auth.models import AnonymousUser
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -15,15 +16,23 @@ from apps.application.serializers.application_serializers import (
     ApplicantApplicationListSerializer,
     ApplicationCreateSerializer,
 )
-from apps.application.serializers.cancel_application_serializers import (
-    ApplicationCancelSerializer,
-)
 from apps.recruitment.models import Recruitment
+from apps.users.models import User
 
+
+def get_authenticated_user(request: Request) -> User:
+    user = request.user
+
+    if isinstance(request.user, AnonymousUser):
+        raise PermissionDenied("로그인이 필요합니다.")
+    assert isinstance(user, User)
+
+    return user
 
 
 class ApplicationCreateView(APIView):
     """[REQ-APLY-001] 지원서 제출"""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -33,22 +42,33 @@ class ApplicationCreateView(APIView):
         tags=["Application - Applicant"],
     )
     def post(self, request: Request, recruitment_uuid: str) -> Response:
-        recruitment = get_object_or_404(Recruitment, uuid=recruitment_uuid)
+        try:
+            recruitment = Recruitment.objects.get(uuid=recruitment_uuid)
+        except Recruitment.DoesNotExist:
+            return Response({"error_detail": "해당 공고를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        user = get_authenticated_user(request)
+
+        if Application.objects.filter(recruitment=recruitment, applicant=user).exists():
+            return Response(
+                {"error_detail": "해당 공고에 이미 지원한 내역이 존재합니다."},
+                status=status.HTTP_409_CONFLICT,
+            )
 
         serializer = ApplicationCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        application=Application.objects.create(
+        Application.objects.create(
             recruitment=recruitment,
-            applicant=request.user,
+            applicant=user,
             **serializer.validated_data,
         )
 
-        return Response({"detail": "지원이 완료되었습니다."}, status=status.HTTP_200_OK)
+        return Response({"detail": "지원이 완료되었습니다."}, status=status.HTTP_201_CREATED)
 
 
 class MyApplicationListView(APIView):
     """[REQ-APLY-006] 내가 지원한 공고 목록 조회"""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -61,7 +81,8 @@ class MyApplicationListView(APIView):
         tags=["Application - Applicant"],
     )
     def get(self, request: Request) -> Response:
-        user = request.user
+        # TODO: CursorPagination 적용 필요(현재는 전체 목록 반환)
+        user = get_authenticated_user(request)
         applications = Application.objects.filter(applicant=user).order_by("-created_at")
         serializer = ApplicantApplicationListSerializer(applications, many=True)
 
@@ -70,6 +91,7 @@ class MyApplicationListView(APIView):
 
 class MyApplicationDetailView(APIView):
     """[REQ-APLY-007] 내가 지원한 상세 조회"""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -78,8 +100,10 @@ class MyApplicationDetailView(APIView):
         tags=["Application - Applicant"],
     )
     def get(self, request: Request, application_uuid: str) -> Response:
-        user = request.user
-        application = Application.objects.filter(uuid=application_uuid, applicant=user).first()
+        user = get_authenticated_user(request)
+        application = (
+            Application.objects.filter(uuid=application_uuid, applicant=user).select_related("recruitment").first()
+        )
 
         if application is None:
             return Response(
@@ -93,15 +117,16 @@ class MyApplicationDetailView(APIView):
 
 class ApplicationCancelView(APIView):
     """[REQ-APLY-008] 지원 취소"""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
         summary="지원 취소",
-        responses={200: ApplicationCancelSerializer},
+        responses={200: OpenApiTypes.OBJECT},
         tags=["Application - Applicant"],
     )
     def post(self, request: Request, application_uuid: str) -> Response:
-        user = request.user
+        user = get_authenticated_user(request)
         application = Application.objects.filter(uuid=application_uuid, applicant=user).first()
 
         if application is None:
@@ -113,5 +138,4 @@ class ApplicationCancelView(APIView):
         application.status = ApplicationStatus.CANCELED
         application.save(update_fields=["status"])
 
-        serializer = ApplicationCancelSerializer(application)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"detail": "지원 내역이 취소되었습니다."}, status=status.HTTP_200_OK)
