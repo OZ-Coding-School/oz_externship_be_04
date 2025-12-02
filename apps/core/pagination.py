@@ -1,11 +1,6 @@
 from dataclasses import dataclass, field
 from math import ceil
-from typing import (
-    Generic,
-    List,
-    Sequence,
-    TypeVar,
-)
+from typing import Generic, List, Sequence, TypeVar
 
 from django.db.models import Model, QuerySet
 
@@ -18,10 +13,25 @@ class Pageable:
     size: int = 10
 
     def __post_init__(self) -> None:
-        normalized_page = max(1, int(self.page))
-        normalized_size = max(1, int(self.size))
+        normalized_page = max(1, self.page)
+        normalized_size = max(1, self.size)
         object.__setattr__(self, "page", normalized_page)
         object.__setattr__(self, "size", normalized_size)
+
+    @classmethod
+    def from_params(cls, page_raw: str | None, size_raw: str | None) -> "Pageable":
+
+        def parse_int(raw: str | None, default: int) -> int:
+            if raw is None:
+                return default
+            try:
+                return int(raw)
+            except ValueError:
+                return default
+
+        page = parse_int(page_raw, 1)
+        size = parse_int(size_raw, 10)
+        return cls(page=page, size=size)
 
     @property
     def offset(self) -> int:
