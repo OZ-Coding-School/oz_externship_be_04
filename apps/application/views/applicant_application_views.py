@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from typing import cast
-
+from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -19,10 +18,12 @@ from apps.application.serializers.application_serializers import (
 from apps.application.serializers.cancel_application_serializers import (
     ApplicationCancelSerializer,
 )
-from apps.users.models import User
+from apps.recruitment.models import Recruitment
+
 
 
 class ApplicationCreateView(APIView):
+    """[REQ-APLY-001] 지원서 제출"""
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -32,14 +33,14 @@ class ApplicationCreateView(APIView):
         tags=["Application - Applicant"],
     )
     def post(self, request: Request, recruitment_uuid: str) -> Response:
+        recruitment = get_object_or_404(Recruitment, uuid=recruitment_uuid)
+
         serializer = ApplicationCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = cast(User, request.user)
-
-        Application.objects.create(
-            applicant=user,
-            recruitment_id=recruitment_uuid,
+        application=Application.objects.create(
+            recruitment=recruitment,
+            applicant=request.user,
             **serializer.validated_data,
         )
 
@@ -47,6 +48,7 @@ class ApplicationCreateView(APIView):
 
 
 class MyApplicationListView(APIView):
+    """[REQ-APLY-006] 내가 지원한 공고 목록 조회"""
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -59,16 +61,15 @@ class MyApplicationListView(APIView):
         tags=["Application - Applicant"],
     )
     def get(self, request: Request) -> Response:
-        user = cast(User, request.user)
-
+        user = request.user
         applications = Application.objects.filter(applicant=user).order_by("-created_at")
-
         serializer = ApplicantApplicationListSerializer(applications, many=True)
 
         return Response({"next": None, "previous": None, "results": serializer.data})
 
 
 class MyApplicationDetailView(APIView):
+    """[REQ-APLY-007] 내가 지원한 상세 조회"""
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -77,8 +78,7 @@ class MyApplicationDetailView(APIView):
         tags=["Application - Applicant"],
     )
     def get(self, request: Request, application_uuid: str) -> Response:
-        user = cast(User, request.user)
-
+        user = request.user
         application = Application.objects.filter(uuid=application_uuid, applicant=user).first()
 
         if application is None:
@@ -92,6 +92,7 @@ class MyApplicationDetailView(APIView):
 
 
 class ApplicationCancelView(APIView):
+    """[REQ-APLY-008] 지원 취소"""
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -100,8 +101,7 @@ class ApplicationCancelView(APIView):
         tags=["Application - Applicant"],
     )
     def post(self, request: Request, application_uuid: str) -> Response:
-        user = cast(User, request.user)
-
+        user = request.user
         application = Application.objects.filter(uuid=application_uuid, applicant=user).first()
 
         if application is None:
