@@ -10,7 +10,7 @@ from apps.users.models.users import User
 
 class ScheduleAPITest(TestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.client = APIClient()
 
         # 스터디 그룹 생성
@@ -41,17 +41,16 @@ class ScheduleAPITest(TestCase):
             is_leader=False,
         )
 
-    def test_create_schedule(self):
+    def test_create_schedule(self) -> None:
         payload = {
             "title": "첫 스케줄",
             "objective": "설명",
-            "session_date": str(timezone.localdate() + timezone.timedelta(days=1)),
+            "session_date": str(timezone.localdate() + timedelta(days=1)),
             "start_time": "10:00:00",
             "end_time": "12:00:00",
         }
 
-        response = self.client.post(f"/study-groups/{self.group.id}/schedules/", payload, format="json")
-
+        response = self.client.post(f"/api/v1/study-groups/{self.group.id}/schedules/", payload, format="json")
         self.assertEqual(response.status_code, 201)
-        self.assertTrue(response.data["success"])
-        self.assertEqual(response.data["data"]["title"], "첫 스케줄")
+        self.assertTrue(response.json()["success"])
+        self.assertEqual(response.json()["data"]["title"], "첫 스케줄")

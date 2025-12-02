@@ -23,11 +23,6 @@ class GroupScheduleSerializer(serializers.ModelSerializer[GroupSchedule]):
         model = GroupSchedule
         fields = "__all__"
 
-    def validate_study_group(self, value: StudyGroup) -> StudyGroup:
-        if not StudyGroup.objects.filter(id=value.id).exists():
-            raise serializers.ValidationError("스터디 그룹이 존재하지 않습니다.")
-        return value
-
     def validate_title(self, value: str) -> str:
         if len(value) < 1:
             raise serializers.ValidationError("제목을 입력해주세요.")
@@ -72,16 +67,6 @@ class ScheduleParticipantsSerializer(serializers.ModelSerializer[SchedulePartici
     class Meta:
         model = ScheduleParticipants
         fields = "__all__"
-
-    def validate_group_schedule(self, value: GroupSchedule) -> GroupSchedule:
-        if not GroupSchedule.objects.filter(id=value.id).exists():
-            raise serializers.ValidationError("해당 스케줄이 존재하지 않습니다.")
-        return value
-
-    def validate_group_member(self, value: GroupMember) -> GroupMember:
-        if not GroupMember.objects.filter(id=value.id).exists():
-            raise serializers.ValidationError("해당 멤버가 존재하지 않습니다.")
-        return value
 
     def validate(self, attrs: ScheduleParticipantsAttrs) -> ScheduleParticipantsAttrs:
         schedule = attrs.get("group_schedule")
