@@ -42,10 +42,10 @@ class ChatroomSerializer(serializers.ModelSerializer[StudyGroup]):
 
         return LastMessageSummarySerializer(last, context=self.context).data
 
-    def get_unread_count(self, obj: StudyGroup) -> int:
+    def get_unread_count(self, obj: StudyGroup) -> Optional[int]:
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
-            return 0
+            return None
 
         user = request.user
 
@@ -55,6 +55,8 @@ class ChatroomSerializer(serializers.ModelSerializer[StudyGroup]):
             LastReadMessage.objects.filter(study_group=obj, user=user).select_related("message").first()
         )
         if not last_read or not getattr(last_read, "message", None):
-            return obj.chat_messages.count()
+            count = obj.chat_messages.count()
+            return count if count > 0 else None
 
-        return obj.chat_messages.filter(created_at__gt=last_read.message.created_at).count()
+        count = obj.chat_messages.filter(created_at__gt=last_read.message.created_at).count()
+        return count if count > 0 else None
