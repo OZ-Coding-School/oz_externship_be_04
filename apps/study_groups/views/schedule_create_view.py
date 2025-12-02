@@ -1,15 +1,13 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from django.http import Http404
+from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiExample
-from django.http import Http404
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-
-from apps.study_groups.models import StudyGroup, GroupSchedule
+from apps.study_groups.models import GroupSchedule, StudyGroup
 from apps.study_groups.serializers import schedule_serializers
-from apps.study_groups.serializers.schedule_serializers import (GroupScheduleSerializer)
+from apps.study_groups.serializers.schedule_serializers import GroupScheduleSerializer
 from apps.study_groups.services.schedule_create_service import ScheduleCreateService
 
 
@@ -31,13 +29,12 @@ class ScheduleListCreateView(APIView):
                     "objective": "스케줄 설명 예시!",
                     "session_date": "2025-12-01",
                     "start_time": "10:00:00",
-                    "end_time": "12:00:00"
+                    "end_time": "12:00:00",
                 },
             )
         ],
     )
-
-    def post(self, request, group_id: int):
+    def post(self, request, group_id: int) -> Response:
         try:
             study_group = StudyGroup.objects.get(id=group_id)
         except StudyGroup.DoesNotExist:
@@ -55,11 +52,9 @@ class ScheduleListCreateView(APIView):
         schedule = ScheduleCreateService.create_schedule(serializer.validated_data)
         response_data = GroupScheduleSerializer(schedule).data
 
-        return Response(
-            {"success": True, "data": response_data}, status=status.HTTP_201_CREATED
-        )
+        return Response({"success": True, "data": response_data}, status=status.HTTP_201_CREATED)
 
-    def get(self, request, group_id: int):
+    def get(self, request, group_id: int) -> Response:
         schedules = GroupSchedule.objects.filter(study_group_id=group_id)
         serializer = GroupScheduleSerializer(schedules, many=True)
         return Response({"success": True, "data": serializer.data})

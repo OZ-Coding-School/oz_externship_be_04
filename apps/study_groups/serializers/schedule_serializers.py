@@ -1,8 +1,10 @@
-from rest_framework import serializers
-from typing import TypedDict
-from django.utils import timezone
 from datetime import datetime, time
-from apps.study_groups.models import StudyGroup, GroupMember
+from typing import TypedDict
+
+from django.utils import timezone
+from rest_framework import serializers
+
+from apps.study_groups.models import GroupMember, StudyGroup
 from apps.study_groups.models.schedule import GroupSchedule, ScheduleParticipants
 
 
@@ -13,6 +15,7 @@ class GroupScheduleAttrs(TypedDict):
     session_date: datetime
     start_time: time
     end_time: time
+
 
 class GroupScheduleSerializer(serializers.ModelSerializer[GroupSchedule]):
 
@@ -47,6 +50,7 @@ class GroupScheduleSerializer(serializers.ModelSerializer[GroupSchedule]):
         if end_time_str:
             try:
                 from datetime import time as dt_time
+
                 h, m, s = map(int, end_time_str.split(":"))
                 end_time = dt_time(h, m, s)
                 if value >= end_time:
@@ -58,9 +62,11 @@ class GroupScheduleSerializer(serializers.ModelSerializer[GroupSchedule]):
     def validate(self, attrs: GroupScheduleAttrs) -> GroupScheduleAttrs:
         return attrs
 
+
 class ScheduleParticipantsAttrs(TypedDict):
     group_schedule: GroupSchedule
     group_member: GroupMember
+
 
 class ScheduleParticipantsSerializer(serializers.ModelSerializer[ScheduleParticipants]):
     class Meta:

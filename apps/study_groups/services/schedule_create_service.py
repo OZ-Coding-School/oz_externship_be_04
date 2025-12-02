@@ -1,6 +1,7 @@
 from apps.study_groups.models import GroupSchedule
 from apps.study_groups.serializers.schedule_serializers import GroupScheduleAttrs
 
+
 class ScheduleCreateService:
     @staticmethod
     def create_schedule(validated_data: GroupScheduleAttrs) -> GroupSchedule:

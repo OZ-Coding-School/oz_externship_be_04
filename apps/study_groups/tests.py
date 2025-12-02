@@ -1,10 +1,10 @@
-from django.test import TestCase
-from rest_framework.test import APIClient
-from django.utils import timezone
 from datetime import date, timedelta
 
+from django.test import TestCase
+from django.utils import timezone
+from rest_framework.test import APIClient
 
-from apps.study_groups.models import StudyGroup, GroupMember, GroupSchedule
+from apps.study_groups.models import GroupMember, GroupSchedule, StudyGroup
 from apps.users.models.users import User
 
 
@@ -47,14 +47,10 @@ class ScheduleAPITest(TestCase):
             "objective": "설명",
             "session_date": str(timezone.localdate() + timezone.timedelta(days=1)),
             "start_time": "10:00:00",
-            "end_time": "12:00:00"
+            "end_time": "12:00:00",
         }
 
-        response = self.client.post(
-            f"/study-groups/{self.group.id}/schedules/",
-            payload,
-            format="json"
-        )
+        response = self.client.post(f"/study-groups/{self.group.id}/schedules/", payload, format="json")
 
         self.assertEqual(response.status_code, 201)
         self.assertTrue(response.data["success"])
