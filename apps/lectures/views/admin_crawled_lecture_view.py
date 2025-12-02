@@ -1,4 +1,8 @@
+import random
+from decimal import Decimal
+
 from django.db.models import QuerySet
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -63,10 +67,6 @@ class AdminCrawledLectureView(APIView):
         },
     )
     def get(self, request: Request) -> Response:
-        import random
-
-        from django.utils import timezone
-
         mock_data = [
             models.CrawledLecture(
                 id=i,
@@ -107,11 +107,6 @@ class AdminCrawledLectureRetrieveView(APIView):
         },
     )
     def get(self, request: Request, lecture_id: int) -> Response:
-        import random
-        from decimal import Decimal
-
-        from django.utils import timezone
-
         mock_data = CrawledLecture(
             id=lecture_id,
             title=f"제목 {lecture_id}",
