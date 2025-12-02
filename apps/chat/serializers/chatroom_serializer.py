@@ -19,7 +19,7 @@ class LastMessageSummarySerializer(serializers.ModelSerializer[ChatMessage]):
 class ChatroomSerializer(serializers.ModelSerializer[StudyGroup]):
     # study group 채팅방
     last_message = serializers.SerializerMethodField()
-    unread_count = serializers.SerializerMethodField()
+    unread_message = serializers.SerializerMethodField()
 
     class Meta:
         model = StudyGroup
@@ -30,7 +30,7 @@ class ChatroomSerializer(serializers.ModelSerializer[StudyGroup]):
             "start_at",
             "end_at",
             "last_message",
-            "unread_count",
+            "unread_message",
             "created_at",
             "updated_at",
         )
