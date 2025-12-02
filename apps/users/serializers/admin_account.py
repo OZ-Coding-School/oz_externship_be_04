@@ -50,4 +50,4 @@ class AdminAccountDetailSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=("active", "inactive", "withdrew"))
     role = serializers.ChoiceField(choices=("user", "staff", "admin"))
     profile_img_url = serializers.URLField()
-    created_at = serializers.DateTimeField()
+    created_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S.%f%z")
