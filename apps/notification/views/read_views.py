@@ -10,9 +10,8 @@ from rest_framework.views import APIView
 from apps.notification.models import Notification
 from apps.users.models import User
 
-
 # 전제 알림 읽음 처리
-class NotificationReadAllViews(APIView):
+class NotificationReadAllView(APIView):
     permission_classes = [AllowAny]  # 유저 구현되기 전 AllowAny로 지정
 
     @extend_schema(
@@ -23,12 +22,10 @@ class NotificationReadAllViews(APIView):
             401: {"type": "object", "example": {"error_detail": "자격 인증 데이터가 제공되지 않았습니다."}},
         },
     )
-    #
     def post(self, request: Request) -> Response:
         user = cast(User, request.user)
         Notification.objects.filter(user=user, is_read=False).update(is_read=True)
-        return Response({"detail": "알림 읽음처리에 성공하였습니다."}, status=status.HTTP_200_OK)
-
+        return Response({"detail": "모든 알림 읽음처리에 성공하였습니다."}, status=status.HTTP_200_OK)
 
 # 단건 알림 조회
 class NotificationReadView(APIView):
@@ -45,17 +42,21 @@ class NotificationReadView(APIView):
         },
     )
     def post(self, request: Request, notification_id: int) -> Response:
-        notification = self.get_object(notification_id)
+        # request한 user == users.modles.User
+        user = cast(User, request.user)
+
+        notification = self.get_object(user, notification_id)
+
         if not notification:
-            return Response({"error": "해당 알림 내역을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
-        self.check_object_permissions(request, notification)
+            return Response({"error_detail": "해당 알림 내역을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+
         notification.is_read = True
         notification.save(update_fields=["is_read"])
-
         return Response({"detail": "알림 읽음처리에 성공하였습니다."}, status=status.HTTP_200_OK)
 
-    def get_object(self, notification_id: int) -> Optional[Notification]:
+
+    def get_object(self,  user: User, notification_id: int) -> Optional[Notification]:
         try:
-            return Notification.objects.get(id=notification_id)
+            return Notification.objects.get(id=notification_id, user=user)
         except Notification.DoesNotExist:
             return None
