@@ -38,3 +38,16 @@ class AdminAccountSerializer(serializers.ModelSerializer[User]):
                 return "withdrew"
             else:
                 return "inactive"
+
+class AdminAccountDetailSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    email = serializers.EmailField()
+    nickname = serializers.CharField()
+    name = serializers.CharField()
+    phone_number = serializers.CharField()
+    birthday = serializers.DateField(format="%Y-%m-%d")
+    gender = serializers.ChoiceField(choices=("M", "F"))
+    status = serializers.ChoiceField(choices=("active", "inactive", "withdrew"))
+    role = serializers.ChoiceField(choices=("user", "staff", "admin"))
+    profile_img_url = serializers.URLField()
+    created_at = serializers.DateTimeField()
