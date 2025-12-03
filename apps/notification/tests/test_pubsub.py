@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, AsyncGenerator
+from typing import Any, AsyncGenerator, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from asgiref.sync import async_to_sync
@@ -59,7 +59,7 @@ class RedisPubSubServiceTests(TestCase):
         fake_pubsub: MagicMock = MagicMock()
 
         # 메시지 계속 스트리밍하지 않고 한번만.
-        async def fake_listen()-> AsyncGenerator[Dict[str, Any], None]:
+        async def fake_listen() -> AsyncGenerator[Dict[str, Any], None]:
             yield {"type": "message", "data": json.dumps({"v": 999})}
 
         fake_pubsub.listen = fake_listen
