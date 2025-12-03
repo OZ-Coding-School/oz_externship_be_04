@@ -29,7 +29,7 @@ class AdminAccountListSpec(APIView):
     pagination_class = PageNumberPagination
 
     @extend_schema(
-        tags=["V1"],
+        tags=["Admin"],
         summary="어드민 페이지 회원 목록 조회 Spec",
         description="어드민 페이지 회원 목록 조회용 Spec API입니다.",
         parameters=[
@@ -207,7 +207,7 @@ class AdminAccountDetailSpec(APIView):
     permission_classes = [StaffOrSuperUser]
 
     @extend_schema(
-        tags=["V1"],
+        tags=["Admin"],
         summary="어드민 페이지 회원 정보 상세 조회 Spec",
         description="어드민 페이지 회원 정보 상세 조회용 Spec API입니다.",
         responses={
