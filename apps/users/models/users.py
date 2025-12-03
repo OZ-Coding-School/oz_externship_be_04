@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any, Optional
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
@@ -8,7 +8,7 @@ from apps.core.models import TimeStampedModel
 
 
 class UserManager(BaseUserManager["User"]):
-    def create_user(self, email:str, password:str|None =None, **extra_fields:Any)->"User":
+    def create_user(self, email: str, password: str | None = None, **extra_fields: Any) -> "User":
         if not email:
             raise ValueError("이메일 주소가 필요 합니다.")
 
@@ -18,14 +18,14 @@ class UserManager(BaseUserManager["User"]):
         user.save()
         return user
 
-    def create_superuser(self, email:str, password:str|None =None, **extra_fields:Any)->"User":
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('is_active', True)
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError(('Superuser must have is_staff=True.'))
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError(('Superuser must have is_superuser=True.'))
+    def create_superuser(self, email: str, password: str | None = None, **extra_fields: Any) -> "User":
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError(("Superuser must have is_staff=True."))
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError(("Superuser must have is_superuser=True."))
         return self.create_user(email, password, **extra_fields)
 
 
@@ -49,8 +49,9 @@ class User(TimeStampedModel, PermissionsMixin, AbstractBaseUser):
     REQUIRED_FIELDS = []
     objects = UserManager()
 
-    def __str__(self)-> str:
+    def __str__(self) -> str:
         return self.email
+
     _status_value: Optional[str] = None
 
     @property
