@@ -1,6 +1,7 @@
 from datetime import date, datetime, timezone
 from typing import Any
 
+from django.http import Http404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -252,6 +253,9 @@ class AdminAccountDetailSpec(APIView):
         ],
     )
     def get(self, request: Request, account_id: int, *args: Any, **kwargs: Any) -> Response:
+
+        if account_id != 1:
+            raise Http404
 
         user = User(
             id=account_id,
