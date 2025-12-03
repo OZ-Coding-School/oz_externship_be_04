@@ -6,27 +6,44 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from apps.application.models import Application
-from apps.recruitment.models import Recruitment
+from apps.lectures.models import CrawledLecture
+from apps.recruitment.models import Recruitment, Tag
 from apps.users.models import User
 
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
-class AppliedAtSerializerMixin:
-    applied_at = serializers.DateTimeField(source="created_at", format=DATE_TIME_FORMAT, read_only=True)
+class TimestampSerializerMixin(serializers.Serializer[Any]):
+    created_at = serializers.DateTimeField(
+        format=DATE_TIME_FORMAT,
+        read_only=True,
+    )
+    updated_at = serializers.DateTimeField(
+        format=DATE_TIME_FORMAT,
+        read_only=True,
+    )
 
 
-class ApplicationCommonFieldsMixin(AppliedAtSerializerMixin, serializers.ModelSerializer["Application"]):
+class ApplicantRecruitmentMinimalSerializer(serializers.ModelSerializer[Recruitment]):
+    """지원자 상세 조회에서 사용되는 최소한의 공고 정보"""
+
+    class Meta:
+        model = Recruitment
+        fields = ["uuid", "title"]
+        read_only_fields = ["uuid", "title"]
+
+
+class ApplicationCommonFieldsMixin(TimestampSerializerMixin, serializers.ModelSerializer[Application]):
     """모든 List/Detail 조회에 공통으로 포함되는 필드 정의"""
 
+    id = serializers.IntegerField(read_only=True)
     uuid = serializers.UUIDField(read_only=True)
     status = serializers.CharField(read_only=True)
-    updated_at = serializers.DateTimeField(format=DATE_TIME_FORMAT, read_only=True)
 
     class Meta:
         model = Application
-        fields = ["uuid", "status", "applied_at", "updated_at"]
-        read_only_fields = ["uuid", "status", "applied_at", "updated_at"]
+        fields = ["id", "uuid", "status", "created_at", "updated_at"]
+        read_only_fields = ["id", "uuid", "status", "created_at", "updated_at"]
 
 
 class ApplicationDetailFieldsMixin:
@@ -49,31 +66,65 @@ class ApplicationDetailFieldsMixin:
     ]
 
 
-class ApplicantSummarySerializer(serializers.ModelSerializer["User"]):
+class ApplicantSummarySerializer(serializers.ModelSerializer[User]):
     """지원자 요약 정보"""
 
     class Meta:
         model = User  # 002, 003에서 요구하는 필드: 닉네임, 성별, 프로필 이미지 url
-        fields = ["nickname", "gender", "profile_img_url"]
-        read_only_fields = ["nickname", "gender", "profile_img_url"]
+        fields = ["id", "nickname", "gender", "profile_img_url"]
+        read_only_fields = ["id", "nickname", "gender", "profile_img_url"]
 
 
-class RecruitmentSummarySerializer(serializers.ModelSerializer["Recruitment"]):
+class LectureSummarySerializer(serializers.ModelSerializer[CrawledLecture]):
+    """강의 요약 정보"""
+
+    class Meta:
+        model = CrawledLecture
+        fields = ["id", "title", "instructor"]
+        read_only_fields = ["id", "title", "instructor"]
+
+
+class TagSummarySerializer(serializers.ModelSerializer[Tag]):
+    """태그 요약 정보"""
+
+    class Meta:
+        model = Tag
+        fields = ["id", "name"]
+        read_only_fields = ["id", "name"]
+
+
+class RecruitmentSummarySerializer(serializers.ModelSerializer[Recruitment]):
     """공고 요약 정보"""
+
+    lectures = LectureSummarySerializer(many=True, read_only=True)
+    tags = TagSummarySerializer(many=True, read_only=True)
+    end_at = serializers.DateTimeField(source="study_group.end_at", read_only=True)
+    thumbnail_img_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Recruitment  # 006에서 요구하는 필드: 제목, 예상 모집 인원, 마감 기한
-        fields = ["uuid", "title", "expected_headcount", "close_at"]
-        read_only_fields = ["uuid", "title", "expected_headcount", "close_at"]
+        fields = ["uuid", "title", "expected_headcount", "thumbnail_img_url", "close_at", "end_at", "lectures", "tags"]
+        read_only_fields = [
+            "uuid",
+            "title",
+            "expected_headcount",
+            "thumbnail_img_url",
+            "close_at",
+            "end_at",
+            "lectures",
+            "tags",
+        ]
+
+    def get_thumbnail_img_url(self, obj: Recruitment) -> str:
+        return f"/default/recruitment/{obj.uuid}/thumbnail.png"
 
 
-class ApplicationCreateSerializer(serializers.ModelSerializer["Application"]):
+class ApplicationCreateSerializer(serializers.ModelSerializer[Application]):
     """REQ-APLY-001: 지원서 작성"""
 
     class Meta:
         model = Application
         fields = [
-            "recruitment",
             "self_introduction",
             "motivation",
             "objective",
@@ -149,8 +200,12 @@ class ApplicantApplicationListSerializer(ApplicationCommonFieldsMixin):
 class ApplicantApplicationDetailSerializer(ApplicationCommonFieldsMixin, ApplicationDetailFieldsMixin):
     """REQ-APLY-007: 본인 지원 내역 상세"""
 
+    recruitment = ApplicantRecruitmentMinimalSerializer(read_only=True)
+
     class Meta(ApplicationCommonFieldsMixin.Meta):
-        fields = ApplicationCommonFieldsMixin.Meta.fields + ApplicationDetailFieldsMixin.DETAIL_FIELDS
+        fields = ApplicationCommonFieldsMixin.Meta.fields + ApplicationDetailFieldsMixin.DETAIL_FIELDS + ["recruitment"]
         read_only_fields = (
-            ApplicationCommonFieldsMixin.Meta.read_only_fields + ApplicationDetailFieldsMixin.DETAIL_FIELDS
+            ApplicationCommonFieldsMixin.Meta.read_only_fields
+            + ApplicationDetailFieldsMixin.DETAIL_FIELDS
+            + ["recruitment"]
         )

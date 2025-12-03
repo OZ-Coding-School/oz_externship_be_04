@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from rest_framework import serializers
 
 from apps.application.models import Application
@@ -11,25 +13,31 @@ from .application_serializers import ApplicationDetailFieldsMixin
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
-class AppliedAtSerializerMixin:
-    applied_at = serializers.DateTimeField(source="created_at", format=DATE_TIME_FORMAT, read_only=True)
+class TimestampSerializerMixin(serializers.Serializer[Any]):
+    created_at = serializers.DateTimeField(
+        format=DATE_TIME_FORMAT,
+        read_only=True,
+    )
+    updated_at = serializers.DateTimeField(
+        format=DATE_TIME_FORMAT,
+        read_only=True,
+    )
 
 
-class AdminApplicationCommonFieldsMixin(AppliedAtSerializerMixin, serializers.ModelSerializer["Application"]):
+class AdminApplicationCommonFieldsMixin(TimestampSerializerMixin, serializers.ModelSerializer[Application]):
     """Admin List/Detail 조회에 공통으로 사용되는 필드"""
 
     id = serializers.IntegerField(read_only=True)
     uuid = serializers.UUIDField(read_only=True)
     status = serializers.CharField(read_only=True)
-    updated_at = serializers.DateTimeField(format=DATE_TIME_FORMAT, read_only=True)
 
     class Meta:
         model = Application
-        fields = ["id", "uuid", "status", "applied_at", "updated_at"]
-        read_only_fields = ["id", "uuid", "status", "applied_at", "updated_at"]
+        fields = ["id", "uuid", "status", "created_at", "updated_at"]
+        read_only_fields = ["id", "uuid", "status", "created_at", "updated_at"]
 
 
-class AdminApplicantSummarySerializer(serializers.ModelSerializer["User"]):
+class AdminApplicantSummarySerializer(serializers.ModelSerializer[User]):
     """(Admin) 지원자 요약 정보"""
 
     class Meta:
@@ -38,7 +46,7 @@ class AdminApplicantSummarySerializer(serializers.ModelSerializer["User"]):
         read_only_fields = ["id", "nickname", "email", "profile_img_url"]
 
 
-class AdminRecruitmentSummarySerializer(serializers.ModelSerializer["Recruitment"]):
+class AdminRecruitmentSummarySerializer(serializers.ModelSerializer[Recruitment]):
     """(Admin) 공고 요약 정보"""
 
     class Meta:
