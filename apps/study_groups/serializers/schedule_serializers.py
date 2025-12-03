@@ -36,12 +36,12 @@ class GroupScheduleSerializer(serializers.ModelSerializer[GroupSchedule]):
             raise serializers.ValidationError("제목은 100자를 초과할 수 없습니다.")
         return value
 
-    def validate_objective(self, value: str) -> str:
+    def validate_objective(self, value: str | None) -> str | None:
         if len(value) > 500:
             raise serializers.ValidationError("설명은 500자를 초과할 수 없습니다.")
         return value
 
-    def validate_session_date(self, value) -> date:
+    def validate_session_date(self, value: date | datetime) -> date:
         today = timezone.localdate()
 
         if isinstance(value, datetime):
@@ -67,7 +67,7 @@ class GroupScheduleSerializer(serializers.ModelSerializer[GroupSchedule]):
                 pass
         return value
 
-    def validate(self, attrs) -> GroupSchedule:
+    def validate(self, attrs: GroupScheduleAttrs) -> GroupScheduleAttrs:
         study_group = attrs.get("study_group")
         participant_ids: list[int] = attrs.get("participants", [])
 

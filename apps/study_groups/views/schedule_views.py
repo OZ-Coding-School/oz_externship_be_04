@@ -1,5 +1,6 @@
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -32,7 +33,7 @@ class ScheduleCreateView(APIView):
             )
         ],
     )
-    def post(self, request, group_id: int) -> Response:
+    def post(self, request: Request, group_id: int) -> Response:
         try:
             study_group = StudyGroup.objects.get(id=group_id)
         except StudyGroup.DoesNotExist:

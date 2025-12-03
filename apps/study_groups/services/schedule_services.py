@@ -1,9 +1,11 @@
+from typing import Any
+
 from apps.study_groups.models import GroupMember, GroupSchedule, ScheduleParticipants
 
 
 class ScheduleService:
     @staticmethod
-    def create_schedule(validated_data) -> GroupSchedule:
+    def create_schedule(validated_data: dict[str, Any]) -> GroupSchedule:
         print("create_schedule received:", validated_data)
 
         participant_ids = validated_data.pop("participants", [])
