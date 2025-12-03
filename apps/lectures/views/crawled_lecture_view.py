@@ -17,10 +17,16 @@ from apps.lectures.serializers.crawled_lecture_serializer import (
 )
 
 
+class CrawledLecturePagination(PageNumberPagination):
+    page_size = 12
+    page_size_query_param = "page_size"
+    max_page_size = 50
+
+
 class CrawledLectureListAPIView(APIView):
     permission_classes = [AllowAny]
     serializer_class = CrawledLectureSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = CrawledLecturePagination
     search_fields = ["title", "instructor"]
     filterset_class = CrawledLectureFilter
 
@@ -63,6 +69,13 @@ class CrawledLectureListAPIView(APIView):
                 required=False,
             ),
             OpenApiParameter(
+                name="page_size",
+                type=OpenApiTypes.INT,
+                location="query",
+                description="한 페이지에 나타내는 강의 목록의 수를 조절할 수 있습니다.",
+                required=False,
+            ),
+            OpenApiParameter(
                 name="search",
                 type=OpenApiTypes.STR,
                 location="query",
@@ -95,7 +108,7 @@ class CrawledLectureListAPIView(APIView):
         ],
         responses={
             200: CrawledLectureSerializer(many=True, read_only=True),
-            500: {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."},
+            500: {"example": {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."}},
         },
     )
     def get(self, request: Request) -> Response:
