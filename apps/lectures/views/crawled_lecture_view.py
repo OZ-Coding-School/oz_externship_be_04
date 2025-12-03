@@ -17,10 +17,16 @@ from apps.lectures.serializers.crawled_lecture_serializer import (
 )
 
 
+class CrawledLecturePagination(PageNumberPagination):
+    page_size = 12
+    page_size_query_param = "page_size"
+    max_page_size = 50
+
+
 class CrawledLectureListAPIView(APIView):
     permission_classes = [AllowAny]
     serializer_class = CrawledLectureSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = CrawledLecturePagination
     search_fields = ["title", "instructor"]
     filterset_class = CrawledLectureFilter
 
@@ -127,8 +133,6 @@ class CrawledLectureListAPIView(APIView):
             for i in range(15)
         ]
         paginator = self.pagination_class()
-        page_size = self.request.GET.get("page_size")
-        paginator.page_size = max(int(page_size), 1) if page_size and page_size.isdigit() else 12
         page: list[CrawledLecture] | None
 
         if settings.DEBUG:
