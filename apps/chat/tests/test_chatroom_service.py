@@ -124,8 +124,19 @@ class TestChatRoomService(TestCase):
         result = ChatRoomService.get_chatrooms(self.user)
 
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["group_name"], self.group.name)
-        self.assertEqual(result[0]["last_message_content"], self.msg2.content)
+
+        room = result[0]
+
+        # 그룹 id 검증
+        self.assertEqual(room["group_id"], self.group.id)
+
+        # 그룹 이름 검증
+        self.assertEqual(room["group_name"], self.group.name)
+
+        # last_read x -> unread count = 전체 메시지 개수
+        total_messages = ChatMessage.objects.filter(study_group=self.group).count()
+
+        self.assertEqual(room["unread_count"], total_messages)
 
     def test_get_chatrooms_with_last_read(self) -> None:
         LastReadMessage.objects.create(
