@@ -1,10 +1,11 @@
 from typing import Optional
+from uuid import UUID
 
 from django.conf import settings
 from rest_framework import serializers
 
 from apps.lectures.models import CrawledLecture
-from apps.recruitment.models import RecruitmentBookmarks, Tag, tags
+from apps.recruitment.models import RecruitmentBookmarks, Tag
 
 
 class RecruitmentLectureSerializer(serializers.ModelSerializer[CrawledLecture]):
@@ -15,7 +16,7 @@ class RecruitmentLectureSerializer(serializers.ModelSerializer[CrawledLecture]):
 
 class RecruitmentTagSerializer(serializers.ModelSerializer[Tag]):
     class Meta:
-        model = tags
+        model = Tag
         fields = ("id", "name")
 
 
@@ -103,3 +104,10 @@ class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[RecruitmentB
                 return str(url)
 
         return getattr(settings, "DEFAULT_THUMBNAIL_IMG_URL", None)
+
+
+class RecruitmentBookmarkCreateSerializer(serializers.Serializer):
+    recruitment_uuid = serializers.UUIDField()
+
+    def validate_recruitment_uuid(self, value: UUID) -> UUID:
+        return value
