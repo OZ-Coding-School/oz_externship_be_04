@@ -32,7 +32,7 @@ class ChatRoomService:
         # 채팅방 목록 조회
         memberships = GroupMember.objects.filter(user_id=user.id).select_related("study_group_id")
 
-        groups = [m.study_group_id for m in memberships]
+        groups = [m.study_group for m in memberships]
         group_ids = [g.id for g in groups]
 
         if not group_ids:
@@ -100,7 +100,7 @@ class ChatRoomService:
 
         member_list = [
             {
-                "nickname": m.user_id.nickname,
+                "nickname": m.user.nickname,
                 "is_leader": m.is_leader,
             }
             for m in members

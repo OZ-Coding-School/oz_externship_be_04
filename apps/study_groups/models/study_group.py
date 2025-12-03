@@ -43,20 +43,20 @@ class StudyGroup(TimeStampedModel):
 
 # 그룹 멤버
 class GroupMember(TimeStampedModel):
-    study_group_id = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE)
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    study_group = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     is_leader = models.BooleanField(default=False)
 
     class Meta:
         db_table = "study_members"
 
     def __str__(self) -> str:
-        return f"{self.study_group_id.name}의 멤버 {self.user_id.nickname}"
+        return f"{self.study_group_id}의 멤버 {self.user_id}"
 
 
 class StudyLecture(TimeStampedModel):
-    lecture_id = models.ForeignKey("lectures.CrawledLecture", on_delete=models.CASCADE)
-    study_group_id = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE)
+    lecture = models.ForeignKey("lectures.CrawledLecture", on_delete=models.CASCADE)
+    study_group = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE)
 
     class Meta:
         db_table = "study_lectures"
