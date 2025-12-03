@@ -7,12 +7,12 @@ from apps.users.views.admin_account_spec import (
 
 urlpatterns = [
     path(
-        "api/v1/admin/account",
+        "/admin/account",
         AdminAccountListSpec.as_view(),
         name="admin_account_list",
     ),
     path(
-        "api/v1/admin/account/<int:account_id>",
+        "/admin/account/<int:account_id>",
         AdminAccountDetailSpec.as_view(),
         name="admin_account_detail",
     ),
