@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 
 from apps.core.S3_constants import S3Constants
 
+
 class S3FileValidator:
     """S3 파일 검증 클래스"""
 
