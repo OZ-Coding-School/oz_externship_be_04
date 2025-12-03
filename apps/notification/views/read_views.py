@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from apps.notification.models import Notification
 from apps.users.models import User
 
+
 # 전제 알림 읽음 처리
 class NotificationReadAllView(APIView):
     permission_classes = [AllowAny]  # 유저 구현되기 전 AllowAny로 지정
@@ -26,6 +27,7 @@ class NotificationReadAllView(APIView):
         user = cast(User, request.user)
         Notification.objects.filter(user=user, is_read=False).update(is_read=True)
         return Response({"detail": "모든 알림 읽음처리에 성공하였습니다."}, status=status.HTTP_200_OK)
+
 
 # 단건 알림 조회
 class NotificationReadView(APIView):
@@ -54,8 +56,7 @@ class NotificationReadView(APIView):
         notification.save(update_fields=["is_read"])
         return Response({"detail": "알림 읽음처리에 성공하였습니다."}, status=status.HTTP_200_OK)
 
-
-    def get_object(self,  user: User, notification_id: int) -> Optional[Notification]:
+    def get_object(self, user: User, notification_id: int) -> Optional[Notification]:
         try:
             return Notification.objects.get(id=notification_id, user=user)
         except Notification.DoesNotExist:

@@ -1,12 +1,10 @@
-from apps.users.models import User
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.test import APITestCase
 
 from apps.notification.models import Notification
-
-
+from apps.users.models import User
 
 
 class NotificationReadAPITestCase(APITestCase):
@@ -27,22 +25,15 @@ class NotificationReadAPITestCase(APITestCase):
             gender="M",
         )
 
-
     # 로그인 처리
     def setUp(self) -> None:
         self.client.force_authenticate(user=self.user)
 
         self.notification_unread = Notification.objects.create(
-            user=self.user,
-            content="읽지 않은 알림",
-            is_read=False,
-            back_url_link= ""
+            user=self.user, content="읽지 않은 알림", is_read=False, back_url_link=""
         )
         self.notification_read = Notification.objects.create(
-            user=self.user,
-            content="읽음 처리된 알림",
-            is_read=True,
-            back_url_link=""
+            user=self.user, content="읽음 처리된 알림", is_read=True, back_url_link=""
         )
 
     # 읽지 않은 알림을 읽음 처리할 때 is_read=Ture로 처리
@@ -83,5 +74,6 @@ class NotificationReadAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("알림 읽음처리에 성공하였습니다.", response.data["detail"])
         self.assertEqual(unread_count, 0)
+
 
 # todo 로그인 된 유저만 알림 확인 할 수 있는 테스트 추가 하기
