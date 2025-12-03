@@ -1,9 +1,10 @@
 from datetime import timedelta
-from django.test import TestCase
-from rest_framework.test import APIClient
-from django.utils import timezone
 
-from apps.study_groups.models import StudyGroup, GroupMember, GroupSchedule
+from django.test import TestCase
+from django.utils import timezone
+from rest_framework.test import APIClient
+
+from apps.study_groups.models import GroupMember, GroupSchedule, StudyGroup
 from apps.users.models.users import User
 
 

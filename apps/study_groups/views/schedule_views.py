@@ -1,4 +1,4 @@
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -46,4 +46,3 @@ class ScheduleCreateView(APIView):
 
         schedule = ScheduleService.create_schedule(serializer.validated_data)
         return Response({"success": True, "data": GroupScheduleSerializer(schedule).data}, status=201)
-

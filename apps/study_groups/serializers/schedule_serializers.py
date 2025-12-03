@@ -79,8 +79,6 @@ class GroupScheduleSerializer(serializers.ModelSerializer[GroupSchedule]):
             user_id__in=participant_ids,
         )
         if members.count() != len(participant_ids):
-            raise serializers.ValidationError(
-                {"participants": "유효하지 않은 스터디 그룹 멤버가 포함되어 있습니다."}
-            )
+            raise serializers.ValidationError({"participants": "유효하지 않은 스터디 그룹 멤버가 포함되어 있습니다."})
 
         return attrs

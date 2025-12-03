@@ -1,5 +1,4 @@
-from apps.study_groups.models import GroupSchedule, ScheduleParticipants
-from apps.study_groups.models import GroupMember
+from apps.study_groups.models import GroupMember, GroupSchedule, ScheduleParticipants
 
 
 class ScheduleService:
