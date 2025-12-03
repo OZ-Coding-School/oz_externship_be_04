@@ -22,12 +22,15 @@ class SocialLoginService:
         if social_user:
             return social_user.user, False
 
-        user = User.objects.create(
-            email=f"{provider}_{provider_id}@auto.com",
-            nickname=self._generate_unique_nickname(),
-            is_active=True,
-        )
+        nickname = self._generate_unique_nickname(provider)
+        email = f"{provider}_{provider_id}@auto.com"
 
+        user = User.objects.create(
+            email=email,
+            nickname=nickname,
+            is_active=True,
+            name=nickname,
+        )
         SocialUser.objects.create(
             user=user,
             provider=provider,
@@ -36,5 +39,5 @@ class SocialLoginService:
 
         return user, True
 
-    def _generate_unique_nickname(self) -> str:
-        return f"user_{uuid.uuid4().hex[:8]}"
+    def _generate_unique_nickname(self, provider: str) -> str:
+        return f"{provider}_{uuid.uuid4().hex[:8]}"
