@@ -11,6 +11,7 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("api/v1", include("apps.lectures.urls")),
     path("api/v1/notifications", include("apps.notification.urls", "notification")),
     path("api/v1/", include("apps.application.urls")),
+    path("api/v1/", include("apps.users.urls.user_signup_url")),
 ]
 
 if settings.DEBUG:
