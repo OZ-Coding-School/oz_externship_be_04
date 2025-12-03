@@ -1,11 +1,13 @@
 import json
-from typing import Any, AsyncGenerator, Dict
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from asgiref.sync import async_to_sync
 from django.test import TestCase
 
 from apps.notification.services.pubsub_creator import RedisPubSubService
+from apps.study_groups.models import StudyGroup
+from apps.users.models import User
 
 
 class RedisPubSubServiceTests(TestCase):
@@ -13,6 +15,27 @@ class RedisPubSubServiceTests(TestCase):
 
     def setUp(self) -> None:
         self.service = RedisPubSubService()
+
+    def _validate_and_subscribe(self, original_fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        user_id: Optional[int] = kwargs.get("user_id")
+        group_id: Optional[List[int]] = kwargs.get("group_id")
+
+        if user_id is not None and not isinstance(user_id, int):
+            raise TypeError("user_id는 int여야 합니다.")
+        if group_id is not None:
+            if not isinstance(group_id, list) or not all(isinstance(x, int) for x in group_id):
+                raise TypeError("group_id는 list[int]여야 합니다.")
+
+        if user_id is not None:
+            if not User.objects.filter(id=user_id).exists():
+                raise ValueError("User가 존재하지 않습니다.")
+
+        if group_id:
+            missing = [gid for gid in group_id if not StudyGroup.objects.filter(id=gid).exists()]
+            if missing:
+                raise ValueError(f"Group을 찾으 수 없습니다. {missing}")
+
+        return original_fn(*args, **kwargs)
 
     def test_publish_notification(self) -> None:
         channel: str = "notification:user_1"
@@ -65,6 +88,9 @@ class RedisPubSubServiceTests(TestCase):
         fake_pubsub.listen = fake_listen
         fake_pubsub.subscribe = AsyncMock()
         fake_pubsub.close = AsyncMock()
+
+        with patch.object(self.service, "subscribe_notification", wraps=self.service.subscribe_notification) as wrapped:
+            wrapped.side_effect = lambda *a, **kw: self._validate_and_subscribe(wrapped.original, *a, **kw)
 
         with patch.object(self.service.redis_client, "pubsub", return_value=fake_pubsub):
             gen = self.service.subscribe_notification(user_id=10)
