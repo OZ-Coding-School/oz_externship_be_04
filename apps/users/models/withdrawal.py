@@ -17,7 +17,7 @@ class Withdrawal(TimeStampedModel):
         max_length=100,
         choices=WithdrawalReason.choices,
     )
-    reason_detail = models.CharField(max_length=500, blank=True, default="")
+    reason_detail = models.CharField(max_length=500)
     due_date = models.DateField()
 
     class Meta:
