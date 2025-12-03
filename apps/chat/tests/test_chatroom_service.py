@@ -1,7 +1,10 @@
+import time
+
 from django.core.exceptions import PermissionDenied
 from django.test import TestCase
 
 from apps.chat.models.chat_message import ChatMessage
+from apps.chat.models.last_read_message import LastReadMessage
 from apps.chat.services.chatroom_service import ChatRoomService
 from apps.study_groups.models import GroupMember, StudyGroup
 from apps.users.models.users import User
@@ -51,6 +54,7 @@ class TestChatRoomService(TestCase):
             sender=self.user,
             content="첫 번째 메시지",
         )
+        time.sleep(0.001)  # 생성 시간 차이를 내려고 넣었습니다
 
         self.msg2 = ChatMessage.objects.create(
             study_group=self.group,
@@ -81,12 +85,56 @@ class TestChatRoomService(TestCase):
 
     def test_mark_all_read(self) -> None:
         ChatRoomService.mark_all_read(self.group, self.user)
-        # 최신 메시지가 message2
-        # last_read가 정상적으로 업데이트 됐는지 확인
-        from apps.chat.models.last_read_message import LastReadMessage
 
         record = LastReadMessage.objects.get(
             study_group=self.group,
             user=self.user,
         )
         self.assertEqual(record.message.id, self.msg2.id)
+
+    def test_mark_all_read_no_messages(self) -> None:
+        # 메시지가 전혀 없는 새로운 그룹 생성
+        empty_group = StudyGroup.objects.create(
+            name="Empty Group",
+            introduction="메시지 없음",
+            max_headcount=5,
+            start_at="2025-12-01T00:00:00Z",
+            end_at="2025-12-30T00:00:00Z",
+        )
+
+        GroupMember.objects.create(
+            study_group_id=empty_group,
+            user_id=self.user,
+            is_leader=True,
+        )
+
+        # 실행
+        ChatRoomService.mark_all_read(empty_group, self.user)
+
+        # 메시지가 없으면 last_read 레코드도 x
+        record = LastReadMessage.objects.filter(
+            study_group=empty_group,
+            user=self.user,
+        ).first()
+
+        self.assertIsNone(record)
+
+    def test_get_chatrooms_basic(self) -> None:
+        # 채팅방 목록 조회 기본 테스트
+        result = ChatRoomService.get_chatrooms(self.user)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["group_name"], self.group.name)
+        self.assertEqual(result[0]["last_message_content"], self.msg2.content)
+
+    def test_get_chatrooms_with_last_read(self) -> None:
+        LastReadMessage.objects.create(
+            study_group=self.group,
+            user=self.user,
+            message=self.msg1,
+        )
+
+        result = ChatRoomService.get_chatrooms(self.user)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["unread_count"], 1)
