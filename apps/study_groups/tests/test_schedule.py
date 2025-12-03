@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.test import TestCase
 from django.utils import timezone
+from rest_framework.response import Response
 from rest_framework.test import APIClient
 
 from apps.study_groups.models import GroupMember, GroupSchedule, StudyGroup
@@ -9,7 +10,7 @@ from apps.users.models.users import User
 
 
 class ScheduleAPITest(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.client = APIClient()
         self.user = User.objects.create(
             email="tester@example.com",
@@ -38,7 +39,7 @@ class ScheduleAPITest(TestCase):
             is_leader=True,
         )
 
-    def test_create_schedule(self):
+    def test_create_schedule(self) -> None:
         payload = {
             "title": "첫 스케줄",
             "objective": "설명",
@@ -48,15 +49,11 @@ class ScheduleAPITest(TestCase):
             "participants": [self.user.id],
         }
 
-        response = self.client.post(
+        response: Response = self.client.post(
             f"/api/v1/study-groups/{self.group.id}/schedules/",
             payload,
             format="json",
         )
-        print("RESPONSE STATUS:", response.status_code)
-        print("RESPONSE DATA:", response.content.decode())
-        print("STATUS CODE:", response.status_code)
-        print("RESPONSE BODY:", response.content.decode())
 
         self.assertEqual(response.status_code, 201)
         self.assertTrue(response.data["success"])

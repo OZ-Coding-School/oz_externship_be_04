@@ -37,7 +37,7 @@ class GroupScheduleSerializer(serializers.ModelSerializer[GroupSchedule]):
         return value
 
     def validate_objective(self, value: str | None) -> str | None:
-        if len(value) > 500:
+        if value is not None and len(value) > 500:
             raise serializers.ValidationError("설명은 500자를 초과할 수 없습니다.")
         return value
 
