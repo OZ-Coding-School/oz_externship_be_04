@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import cast
 
 from django.test import TestCase
 from django.utils import timezone
@@ -49,11 +50,12 @@ class ScheduleAPITest(TestCase):
             "participants": [self.user.id],
         }
 
-        response: Response = self.client.post(
+        raw_response = self.client.post(
             f"/api/v1/study-groups/{self.group.id}/schedules/",
             payload,
             format="json",
         )
+        response = cast(Response, raw_response)
 
         self.assertEqual(response.status_code, 201)
         self.assertTrue(response.data["success"])
