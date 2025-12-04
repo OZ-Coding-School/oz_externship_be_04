@@ -1,4 +1,4 @@
-from typing import Any, Optional, cast
+from typing import Optional, cast
 
 from rest_framework import serializers
 from rest_framework.request import Request
@@ -63,3 +63,7 @@ class MessageSerializer(serializers.ModelSerializer[ChatMessage]):
             return False
 
         return obj.created_at <= last_read.message.created_at
+
+
+class MessageCreateRequestSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    content = serializers.CharField()
