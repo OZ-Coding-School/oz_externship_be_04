@@ -1,6 +1,7 @@
 from datetime import date, datetime, timezone
 from typing import Any
 
+from django.http import Http404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -13,20 +14,23 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.users.models import User
-from apps.users.serializers.admin_account import AdminAccountSerializer
+from apps.users.serializers.admin_account import (
+    AdminAccountDetailSerializer,
+    AdminAccountSerializer,
+)
 from apps.users.utils.permissions import StaffOrSuperUser
 
 
 class AdminAccountListSpec(APIView):
     """
-    Spec API 어드민 페이지 회원 목록 조회 API -> mock 데이터입니다.
+    Spec API 어드민 페이지 회원 목록 조회 -> mock 데이터입니다.
     """
 
     permission_classes = [StaffOrSuperUser]
     pagination_class = PageNumberPagination
 
     @extend_schema(
-        tags=["V1"],
+        tags=["Admin"],
         summary="어드민 페이지 회원 목록 조회 Spec",
         description="어드민 페이지 회원 목록 조회용 Spec API입니다.",
         parameters=[
@@ -194,3 +198,79 @@ class AdminAccountListSpec(APIView):
 
         serializer = AdminAccountSerializer(page, many=True)
         return paginator.get_paginated_response(serializer.data)
+
+
+class AdminAccountDetailSpec(APIView):
+    """
+    Spec API 어드민 페이지 회원 정보 상세 조회 -> mock 데이터입니다.
+    """
+
+    permission_classes = [StaffOrSuperUser]
+
+    @extend_schema(
+        tags=["Admin"],
+        summary="어드민 페이지 회원 정보 상세 조회 Spec",
+        description="어드민 페이지 회원 정보 상세 조회용 Spec API입니다.",
+        responses={
+            200: AdminAccountDetailSerializer,
+            401: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+        },
+        examples=[
+            OpenApiExample(
+                name="Success Example",
+                value={
+                    "id": 1,
+                    "name": "홍승우",
+                    "gender": "M",
+                    "nickname": "user1",
+                    "birthday": "2005-01-01",
+                    "phone_number": "01012345678",
+                    "email": "user1@example.com",
+                    "role": "user",
+                    "status": "active",
+                    "created_at": "2005-01-01T13:00:47.50525+09:00",
+                    "profile_img_url": "https://example.com/profile/user1.png",
+                },
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                name="Unauthorized Example",
+                value={"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                status_codes=["401"],
+            ),
+            OpenApiExample(
+                name="Forbidden Example",
+                value={"error_detail": "권한이 없습니다."},
+                status_codes=["403"],
+            ),
+            OpenApiExample(
+                name="Notfound Example",
+                value={"error_detail": "사용자 정보를 찾을 수 없습니다."},
+                status_codes=["404"],
+            ),
+        ],
+    )
+    def get(self, request: Request, account_id: int, *args: Any, **kwargs: Any) -> Response:
+
+        if account_id != 1:
+            raise Http404
+
+        user = User(
+            id=account_id,
+            email="user1@example.com",
+            nickname="user1",
+            name="홍승우",
+            birthday=date(2005, 1, 1),
+            is_active=True,
+            is_staff=False,
+            is_superuser=False,
+            phone_number="01012345678",
+            gender="M",
+            profile_img_url="https://example.com/profile/user1.png",
+        )
+        user.created_at = datetime(2005, 1, 1, 13, 00, 47, 50525, tzinfo=timezone.utc)
+
+        serializer = AdminAccountDetailSerializer(user)
+        return Response(serializer.data)

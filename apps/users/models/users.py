@@ -34,5 +34,21 @@ class User(TimeStampedModel, AbstractBaseUser):
     def status_value(self, value: Optional[str]) -> None:
         self._status_value = value
 
+    @property
+    def role(self) -> str:
+        if self.is_superuser:
+            return "admin"
+        if self.is_staff:
+            return "staff"
+        return "user"
+
+    @property
+    def status(self) -> str:
+        if self.is_active:
+            return "active"
+        if self.withdrawals.exists():
+            return "withdrew"
+        return "inactive"
+
     class Meta:
         db_table = "users"
