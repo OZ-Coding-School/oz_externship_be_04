@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time
 from typing import TypedDict
 
 from django.utils import timezone
@@ -12,78 +12,73 @@ class GroupScheduleAttrs(TypedDict):
     study_group: StudyGroup
     title: str
     objective: str | None
-    session_date: datetime
+    session_date: date
     start_time: time
     end_time: time
-    participants: list[GroupMember]
+    participants: list[int]
 
 
-class GroupScheduleSerializer(serializers.ModelSerializer):
-    participants = serializers.PrimaryKeyRelatedField(
-        queryset=GroupMember.objects.all(),
-        many=True,
-        write_only=True,
-    )
-    session_date = serializers.DateTimeField()
-
-    title = serializers.CharField(
-        min_length=1,
-        max_length=100,
-        allow_blank=False,
-        error_messages={
-            "blank": "제목을 입력해주세요.",
-            "min_length": "제목을 입력해주세요.",
-            "max_length": "제목은 100자를 초과할 수 없습니다.",
-        },
-    )
-    objective = serializers.CharField(
-        max_length=500,
-        allow_blank=True,
+class GroupScheduleSerializer(serializers.ModelSerializer[GroupSchedule]):
+    participants = serializers.ListField(
+        child=serializers.IntegerField(),
         required=False,
-        error_messages={
-            "max_length": "설명은 500자를 초과할 수 없습니다.",
-        },
+        write_only=True,
     )
 
     class Meta:
         model = GroupSchedule
-        fields = ["id", "title", "objective", "session_date", "start_time", "end_time", "participants"]
+        fields = ["id", "study_group", "title", "objective", "session_date", "start_time", "end_time", "participants"]
 
-    def validate_session_date(self, value: datetime) -> datetime:
-        today = timezone.now()
-        if value < today:
-            raise serializers.ValidationError("session_date는 오늘보다 이전일 수 없습니다.")
+    def validate_title(self, value: str) -> str:
+        if len(value) < 1:
+            raise serializers.ValidationError("제목을 입력해주세요.")
+        if len(value) > 100:
+            raise serializers.ValidationError("제목은 100자를 초과할 수 없습니다.")
+        return value
+
+    def validate_objective(self, value: str | None) -> str | None:
+        if value is not None and len(value) > 500:
+            raise serializers.ValidationError("설명은 500자를 초과할 수 없습니다.")
+        return value
+
+    def validate_session_date(self, value: date | datetime) -> date:
+        today = timezone.localdate()
+
+        if isinstance(value, datetime):
+            value_date = value.date()
+        else:
+            value_date = value
+
+        if value_date < today:
+            raise serializers.ValidationError("날짜 설정이 잘못되었습니다.")
         return value
 
     def validate_start_time(self, value: time) -> time:
-        end_time = self.initial_data.get("end_time")
-        if isinstance(end_time, str):
+        end_time_str = self.initial_data.get("end_time")
+        if end_time_str:
             try:
-                h, m, s = map(int, end_time.split(":"))
-                end_time = time(h, m, s)
+                from datetime import time as dt_time
+
+                h, m, s = map(int, end_time_str.split(":"))
+                end_time = dt_time(h, m, s)
+                if value >= end_time:
+                    raise serializers.ValidationError({"detail": "시간 설정이 잘못 되었습니다."})
             except Exception:
-                return value
-        if isinstance(end_time, time):
-            if value >= end_time:
-                raise serializers.ValidationError({"detail": "시작 시간은 종료 시간과 같거나 이후일 수 없습니다."})
-            if (datetime.combine(date.today(), end_time) - datetime.combine(date.today(), value)) < timedelta(
-                minutes=5
-            ):
-                raise serializers.ValidationError({"detail": "스케줄의 최소 설정시간은 5분 입니다."})
+                pass
         return value
 
     def validate(self, attrs: GroupScheduleAttrs) -> GroupScheduleAttrs:
-        study_group = self.context.get("study_group")
-        participants = attrs.get("participants", [])
+        study_group = attrs.get("study_group")
+        participant_ids: list[int] = attrs.get("participants", [])
 
-        if study_group and participants:
-            invalid_ids = []
-            for member in participants:
-                if member.study_group_id != study_group.id:
-                    invalid_ids.append(member.id)
+        if not participant_ids:
+            return attrs
 
-            if invalid_ids:
-                ids_str = ", ".join(str(i) for i in invalid_ids)
-                raise serializers.ValidationError({"participants": f"유효하지 않은 스터디 그룹 멤버 id: {ids_str}"})
+        members = GroupMember.objects.filter(
+            study_group_id=study_group,
+            user_id__in=participant_ids,
+        )
+        if members.count() != len(participant_ids):
+            raise serializers.ValidationError({"participants": "유효하지 않은 스터디 그룹 멤버가 포함되어 있습니다."})
 
         return attrs
