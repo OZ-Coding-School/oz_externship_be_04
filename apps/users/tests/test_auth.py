@@ -7,7 +7,7 @@ User = get_user_model()
 
 
 class test_user_register(APITestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.client = APIClient()
         self.signup_url = reverse("signup")
         self.valid_user_data = {
@@ -22,10 +22,10 @@ class test_user_register(APITestCase):
             "profile_img_url": "https://example.com/profile.jpg",
         }
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         User.objects.all().delete()
 
-    def test_success_register(self):
+    def test_success_register(self) -> None:
         before = User.objects.count()
         print("before", before)
 
@@ -41,7 +41,7 @@ class test_user_register(APITestCase):
         self.assertEqual(user.name, self.valid_user_data["name"])
         self.assertFalse(user.is_active)
 
-    def test_field_missed(self):
+    def test_field_missed(self) -> None:
         required_fields = ["email", "password", "name", "nickname", "phone_number", "gender"]
         for field in required_fields:
             with self.subTest(field=field):
@@ -55,7 +55,7 @@ class test_user_register(APITestCase):
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
                 self.assertIn(field, response.data)
 
-    def test_email(self):
+    def test_email(self) -> None:
         response = self.client.post(self.signup_url, self.valid_user_data)
         print("response status", response.status_code)
         second_response = self.client.post(self.signup_url, self.valid_user_data)
@@ -64,7 +64,7 @@ class test_user_register(APITestCase):
         self.assertEqual(second_response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("email", second_response.data)
 
-    def test_nickname(self):
+    def test_nickname(self) -> None:
         User.objects.create_user(
             email="test2@test.com",
             password="dfgasfgseirk123",
@@ -81,7 +81,7 @@ class test_user_register(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("nickname", response.data)
 
-    def test_phone_number(self):
+    def test_phone_number(self) -> None:
         User.objects.create_user(
             email="other@test.com",
             password="gsprelpo123",
