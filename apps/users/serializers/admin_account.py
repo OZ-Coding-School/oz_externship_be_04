@@ -11,7 +11,7 @@ class AdminAccountSerializer(serializers.ModelSerializer[User]):
     role = serializers.CharField(read_only=True)
     status = serializers.CharField(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
-    withdraw_at = serializers.DateTimeField(read_only=True, allow_null=True)
+    withdraw_at = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -26,6 +26,12 @@ class AdminAccountSerializer(serializers.ModelSerializer[User]):
             "withdraw_at",
             "created_at",
         ]
+
+    def get_withdraw_at(self, obj: User):
+        withdrawal = obj.withdrawals.order_by("-created_at").first()
+        if withdrawal is None:
+            return None
+        return withdrawal.created_at
 
 
 class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
