@@ -106,7 +106,7 @@ class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[RecruitmentB
         return getattr(settings, "DEFAULT_THUMBNAIL_IMG_URL", None)
 
 
-class RecruitmentBookmarkCreateSerializer(serializers.Serializer):
+class RecruitmentBookmarkCreateSerializer(serializers.Serializer[RecruitmentBookmarks]):
     recruitment_uuid = serializers.UUIDField()
 
     def validate_recruitment_uuid(self, value: UUID) -> UUID:
