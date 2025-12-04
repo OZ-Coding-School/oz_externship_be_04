@@ -1,10 +1,9 @@
 from typing import Any, Type
 
-from django.db import IntegrityError
-from django.db.models import Q, QuerySet
+from django.db.models import Exists, OuterRef, Q, QuerySet
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
-from rest_framework import permissions, status
+from rest_framework import permissions, request, status
 from rest_framework.pagination import CursorPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -37,24 +36,31 @@ class RecruitmentBookmarkListCreateAPIView(APIView):
         description="Cursor Pagination 기반 북마크 목록 조회, 타이틀 검색 가능",
         responses={200: RecruitmentBookmarkCardSerializer},
     )
-    def get(self, reqeust: Request, *args: Any, **kwargs: Any) -> Response:
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         queryset = self.get_queryset()
         paginator = self.pagination_class()
-        page = paginator.paginate_queryset(queryset, self.request)
+        page = paginator.paginate_queryset(queryset, request)
         serializer = RecruitmentBookmarkCardSerializer(page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
     def get_queryset(self) -> QuerySet[RecruitmentBookmarks]:
         user = self.request.user
-        q = self.request.query_params.get("q")
+
+        if user.is_anonymous or user.id is None:
+            return RecruitmentBookmarks.objects.none()
+
+        user_bookmarks = RecruitmentBookmarks.objects.filter(user_id=user.id)
 
         if user.is_anonymous:
             return RecruitmentBookmarks.objects.none()
 
-        queryset = RecruitmentBookmarks.objects.select_related("recruitment").filter(user_id=user.id)
+        queryset = RecruitmentBookmarks.objects.select_related("recruitment_id").annotate(
+            is_bookmarked_by_user=Exists(user_bookmarks.filter(recruitment_id=OuterRef("recruitment_id"))),
+        )
 
+        q = self.request.query_params.get("q")
         if q:
-            queryset = queryset.filter(Q(recruitment__title__icontains=q))
+            queryset = queryset.filter(recruitment_id__title__icontains=q)
         return queryset
 
     @extend_schema(
@@ -86,15 +92,13 @@ class RecruitmentBookmarkListCreateAPIView(APIView):
 
         user = request.user
 
-        try:
-            bookmark, created = RecruitmentBookmarks.objects.get_or_create(
-                user_id=user.id,
-                recruitment_id=recruitment.id,
-            )
-        except IntegrityError:
-            return Response({"detail": "이미 북마크 한 공고입니다."}, status=status.HTTP_409_CONFLICT)
+        bookmark, created = RecruitmentBookmarks.objects.get_or_create(
+            user_id=user.id,
+            recruitment_id=recruitment.id,
+        )
         if not created:
             return Response({"detail": "이미 북마크 한 공고입니다."}, status=status.HTTP_409_CONFLICT)
+
         return Response({"detail": "북마크가 추가되었습니다."}, status=status.HTTP_200_OK)
 
 
