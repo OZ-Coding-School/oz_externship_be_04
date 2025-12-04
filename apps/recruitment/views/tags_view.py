@@ -32,7 +32,7 @@ class TagListAPIView(APIView):
         ],
         responses={
             200: TagSerializer(many=True),
-            400: {"error_detail": "요청한 페이지를 찾을 수 없습니다."},
+            404: {"error_detail": "요청한 페이지를 찾을 수 없습니다."},
         },
     )
     def get(self, request: Request) -> Response:
@@ -45,7 +45,7 @@ class TagListAPIView(APIView):
         if page is None:
             return Response(
                 {"error_detail": "요청한 페이지를 찾을 수 없습니다."},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         serializer = TagSerializer(page, many=True)
@@ -68,11 +68,13 @@ class TagListAPIView(APIView):
                 {"error_detail": "자격 인증 데이터가 제공되지 않았습니다."}, status=status.HTTP_401_UNAUTHORIZED
             )
         name = (request.data.get("name") or "").strip()
+        if not name:
+            return Response({"error_detail": "name은 필수입니다."}, status=status.HTTP_400_BAD_REQUEST)
 
         tag, created = TagService.create_tag(name)
 
         if tag is None:
-            return Response({"error_detail": "name은 필수입니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error_detail": "태그 생성에 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
         if not created:
             return Response({"error_detail": "이미 존재하는 태그입니다."}, status=status.HTTP_409_CONFLICT)

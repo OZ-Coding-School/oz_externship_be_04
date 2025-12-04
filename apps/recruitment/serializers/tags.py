@@ -1,3 +1,4 @@
+import re
 from typing import Any, List
 
 from rest_framework import serializers
@@ -20,13 +21,8 @@ class TagSerializer(serializers.ModelSerializer[Tag]):
         if not 1 <= len(name) <= 20:
             raise ValidationError("태그 이름은 1자 이상 20자 이하로 입력해주세요")
 
-        import re
-
         if not re.match(r"^[\w\s\-\u3131-\u318E\uAC00-\uD7A3]+$", name):
             raise ValidationError("태그 이름에 허용되지 않는 문자가 포함되어 있습니다.")
-
-        if Tag.objects.filter(name__iexact=name).exists():
-            raise ValidationError("이미 존재하는 태그 이름입니다.")  # serializer 레벨에서 중복 검사 추가
 
         return name
 
