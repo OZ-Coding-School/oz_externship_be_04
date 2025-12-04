@@ -47,7 +47,7 @@ class ScheduleAPITest(TestCase):
             "session_date": str(timezone.localdate() + timedelta(days=1)),
             "start_time": "10:00:00",
             "end_time": "12:00:00",
-            "participants": [self.user.id],
+            "participants": [self.member.id],
         }
 
         raw_response = self.client.post(
@@ -55,6 +55,7 @@ class ScheduleAPITest(TestCase):
             payload,
             format="json",
         )
+
         response = cast(Response, raw_response)
 
         self.assertEqual(response.status_code, 201)
@@ -62,4 +63,4 @@ class ScheduleAPITest(TestCase):
         self.assertEqual(response.data["data"]["title"], "첫 스케줄")
 
         created = GroupSchedule.objects.get(title="첫 스케줄")
-        self.assertEqual(created.study_group_id, self.group.id)
+        self.assertEqual(created.study_group, self.group)
