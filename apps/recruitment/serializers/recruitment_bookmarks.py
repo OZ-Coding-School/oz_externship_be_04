@@ -31,8 +31,8 @@ class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[RecruitmentB
     thumbnail_img_url = serializers.SerializerMethodField()
 
     #  예상 모집 인원
-    expected_member_count = serializers.IntegerField(
-        source="recruitment.expected_member_count",
+    expected_headcount = serializers.IntegerField(
+        source="recruitment.expected_headcount",
         read_only=True,
     )
 
@@ -52,7 +52,7 @@ class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[RecruitmentB
 
     #  마감 기한
     close_at = serializers.DateTimeField(
-        source="recruitment.deadline",
+        source="recruitment.close_at",
         read_only=True,
     )
 
@@ -64,7 +64,6 @@ class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[RecruitmentB
 
     #  북마크 수
     bookmark_count = serializers.IntegerField(
-        source="recruitment.bookmark_count",
         read_only=True,
     )
 
@@ -74,7 +73,7 @@ class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[RecruitmentB
             "id",
             "study_group_recruitment_title",
             "thumbnail_img_url",
-            "expected_member_count",
+            "expected_headcount",
             "lectures",
             "tags",
             "close_at",
@@ -83,7 +82,7 @@ class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[RecruitmentB
         )
 
     def get_thumbnail_img_url(self, obj: "RecruitmentBookmarks") -> Optional[str]:
-        recruitment = getattr(obj, "recruitment_id", None)
+        recruitment = getattr(obj, "recruitment", None)
         if recruitment is None:
             return getattr(settings, "DEFAULT_THUMBNAIL_IMG_URL", None)
 
