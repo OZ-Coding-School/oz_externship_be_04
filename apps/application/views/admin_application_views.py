@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -20,20 +20,19 @@ SORT_MAP = {
 }
 
 
+def get_admin_application_queryset() -> QuerySet[Application]:
+    return Application.objects.select_related("recruitment", "applicant").prefetch_related(
+        "recruitment__study_group__studylecture_set__lecture_id",
+        "recruitment__recruitment_tags__tag",
+    )
+
+
 class AdminApplicationPagination(PageNumberPagination):
     """Admin 전용 페이지네이션"""
 
     page_size = 10
     page_size_query_param = "page_size"
     max_page_size = 100
-
-
-def safe_int(value: str | None, default: int) -> int:
-    """문자열 숫자를 정수로 변환"""
-    try:
-        return int(value) if value is not None else default
-    except (TypeError, ValueError):
-        return default
 
 
 class AdminApplicationListView(APIView):
@@ -56,10 +55,7 @@ class AdminApplicationListView(APIView):
     )
     def get(self, request: Request) -> Response:
 
-        qs = Application.objects.select_related("recruitment", "applicant").prefetch_related(
-            "recruitment__study_group__studylecture_set__lecture_id",
-            "recruitment__recruitment_tags__tag",
-        )
+        qs = get_admin_application_queryset()
 
         # 지원 상태 필터링
         status_param = request.query_params.get("status")
@@ -84,7 +80,7 @@ class AdminApplicationListView(APIView):
         paginator = AdminApplicationPagination()
         paginated_qs = paginator.paginate_queryset(qs, request)
 
-        serializer = AdminApplicationListSerializer(qs, many=True)
+        serializer = AdminApplicationListSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -100,15 +96,8 @@ class AdminApplicationDetailView(APIView):
     )
     def get(self, request: Request, application_uuid: str) -> Response:
 
-        application = (
-            Application.objects.select_related("recruitment", "applicant")
-            .prefetch_related(
-                "recruitment__study_group__studylecture_set__lecture_id",
-                "recruitment__recruitment_tags__tag",
-            )
-            .filter(uuid=application_uuid)
-            .first()
-        )
+        qs = get_admin_application_queryset()  # 🔥 공통 쿼리셋 사용
+        application = qs.filter(uuid=application_uuid).first()
 
         if not application:
             return Response(
