@@ -86,8 +86,8 @@ class AdminRecruitmentTagSerializer(serializers.ModelSerializer[Tag]):
 class AdminRecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
     """(Admin) 지원서 상세 조회에서 보여지는 Recruitment 상세 정보"""
 
-    lectures = AdminRecruitmentLectureSerializer(many=True, read_only=True)
-    tags = AdminRecruitmentTagSerializer(many=True, read_only=True)
+    lectures = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = Recruitment
@@ -100,6 +100,28 @@ class AdminRecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment])
             "tags",
         ]
         read_only_fields = ["id", "title", "expected_headcount", "close_at", "lectures", "tags"]
+
+    def get_lectures(self, obj: Recruitment) -> Any:
+        study_group = obj.study_group
+        study_lectures = study_group.studylecture_set.select_related("lecture_id").all()
+
+        lecture_list = [sl.lecture_id for sl in study_lectures]
+
+        from apps.application.serializers.admin_application_serializers import (
+            AdminRecruitmentLectureSerializer,
+        )
+
+        return AdminRecruitmentLectureSerializer(lecture_list, many=True).data
+
+    def get_tags(self, obj: Recruitment) -> Any:
+        recruitment_tags = obj.recruitment_tags.all()
+        tags = [rt.tag for rt in recruitment_tags]
+
+        from apps.application.serializers.admin_application_serializers import (
+            AdminRecruitmentTagSerializer,
+        )
+
+        return AdminRecruitmentTagSerializer(tags, many=True).data
 
 
 class AdminApplicationListSerializer(AdminApplicationCommonFieldsMixin):

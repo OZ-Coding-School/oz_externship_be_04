@@ -47,14 +47,10 @@ class AdminApplicationListView(APIView):
     )
     def get(self, request: Request) -> Response:
 
-        user = request.user
-        if not user.is_staff:
-            return Response(
-                {"error_detail": "관리자만 접근할 수 있습니다."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        qs = Application.objects.select_related("recruitment", "applicant")
+        qs = Application.objects.select_related("recruitment", "applicant").prefetch_related(
+            "recruitment__study_group__studylecture_set__lecture_id",
+            "recruitment__recruitment_tags__tag",
+        )
 
         # 지원 상태 필터링
         status_param = request.query_params.get("status")
@@ -73,19 +69,15 @@ class AdminApplicationListView(APIView):
 
         # 정렬
         sort = request.query_params.get("sort", "latest")
-        if sort == "latest":
-            qs = qs.order_by("-created_at")
-        elif sort == "oldest":
-            qs = qs.order_by("created_at")
+        qs = qs.order_by(SORT_MAP.get(sort, "-created_at"))
 
         # TODO: 페이지네이션(현재 전체 리스트 반환)
         page = safe_int(request.query_params.get("page"), 1)
         size = safe_int(request.query_params.get("size"), 10)
 
         total_count = qs.count()
-        items = qs
 
-        serializer = AdminApplicationListSerializer(items, many=True)
+        serializer = AdminApplicationListSerializer(qs, many=True)
 
         return Response(
             {
@@ -109,8 +101,15 @@ class AdminApplicationDetailView(APIView):
         tags=["Application - Admin"],
     )
     def get(self, request: Request, application_uuid: str) -> Response:
+
         application = (
-            Application.objects.select_related("recruitment", "applicant").filter(uuid=application_uuid).first()
+            Application.objects.select_related("recruitment", "applicant")
+            .prefetch_related(
+                "recruitment__study_group__studylecture_set__lecture_id",
+                "recruitment__recruitment_tags__tag",
+            )
+            .filter(uuid=application_uuid)
+            .first()
         )
 
         if not application:
