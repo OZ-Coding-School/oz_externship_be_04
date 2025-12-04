@@ -6,7 +6,9 @@ from .views.study_groups_view import (
     StudyGroupListAPIView,
     StudyGroupRetrieveAPIView,
     StudyGroupUpdateAPIView,
+    ScheduleCreateView,
 )
+
 
 urlpatterns = [
     path("/study-groups", StudyGroupListAPIView.as_view(), name="study-group-list"),
@@ -14,4 +16,5 @@ urlpatterns = [
     path("/study-groups/<int:pk>", StudyGroupRetrieveAPIView.as_view(), name="study-group-detail"),
     path("/study-groups/<int:pk>/update", StudyGroupUpdateAPIView.as_view(), name="study-group-update"),
     path("/study-groups/<int:pk>/delete", StudyGroupDestroyAPIView.as_view(), name="study-group-delete"),
+    path("<int:group_id>/schedules/", ScheduleCreateView.as_view()),
 ]

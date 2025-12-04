@@ -12,6 +12,7 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("api/v1", include("apps.study_groups.urls")),
     path("api/v1", include("apps.recruitment.urls")),
     path("api/v1/notifications", include("apps.notification.urls", "notification")),
+    path("api/v1/study-groups/", include("apps.study_groups.urls")),
     path("api/v1/", include("apps.core.urls")),
     path("api/v1/", include("apps.application.urls")),
     path("api/v1", include("apps.users.urls.admin")),
@@ -26,4 +27,5 @@ if settings.DEBUG:
             path("api/schema", SpectacularAPIView.as_view(), name="schema"),
             path("api/schema/swagger-ui", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
             path("api/schema/redoc", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+            path("api/v1/admin/", include("apps.users.urls.admin")),
         ]
