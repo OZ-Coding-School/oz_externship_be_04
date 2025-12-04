@@ -83,7 +83,7 @@ class AdminRecruitmentTagSerializer(serializers.ModelSerializer[Tag]):
         read_only_fields = ["id", "name"]
 
 
-class AdminRecruitmentDetailSerializer(serializers.ModelSerializer[Application]):
+class AdminRecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
     """(Admin) 지원서 상세 조회에서 보여지는 Recruitment 상세 정보"""
 
     lectures = AdminRecruitmentLectureSerializer(many=True, read_only=True)
