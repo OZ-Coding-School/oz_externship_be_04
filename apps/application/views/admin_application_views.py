@@ -1,12 +1,14 @@
+from django.db.models import Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.application.models import Application
+from apps.application.models import Application, ApplicationStatus
 from apps.application.serializers.admin_application_serializers import (
     AdminApplicationDetailSerializer,
     AdminApplicationListSerializer,
@@ -16,6 +18,14 @@ SORT_MAP = {
     "latest": "-created_at",
     "oldest": "created_at",
 }
+
+
+class AdminApplicationPagination(PageNumberPagination):
+    """Admin 전용 페이지네이션"""
+
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 
 def safe_int(value: str | None, default: int) -> int:
@@ -37,11 +47,10 @@ class AdminApplicationListView(APIView):
         tags=["Application - Admin"],
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, required=False, description="지원 상태 필터"),
-            OpenApiParameter("recruitment_title", OpenApiTypes.STR, required=False, description="공고 제목 검색"),
-            OpenApiParameter("applicant_nickname", OpenApiTypes.STR, required=False, description="지원자 닉네임 검색"),
+            OpenApiParameter("search", OpenApiTypes.STR, required=False, description="공고 제목 검색"),
             OpenApiParameter("sort", OpenApiTypes.STR, required=False, description="latest | oldest"),
             OpenApiParameter("page", OpenApiTypes.INT, required=False),
-            OpenApiParameter("size", OpenApiTypes.INT, required=False),
+            OpenApiParameter("page_size", OpenApiTypes.INT, required=False),
         ],
         responses={200: AdminApplicationListSerializer},
     )
@@ -54,40 +63,29 @@ class AdminApplicationListView(APIView):
 
         # 지원 상태 필터링
         status_param = request.query_params.get("status")
-        if status_param:
+        if status_param in ApplicationStatus.values:
             qs = qs.filter(status=status_param)
 
-        # 공고 제목 검색
-        recruitment_title = request.query_params.get("recruitment_title")
-        if recruitment_title:
-            qs = qs.filter(recruitment__title__icontains=recruitment_title)
-
-        # 지원자 닉네임 검색
-        applicant_nickname = request.query_params.get("applicant_nickname")
-        if applicant_nickname:
-            qs = qs.filter(applicant__nickname__icontains=applicant_nickname)
+        # 검색 (공고 제목, 지원자 닉네임, 지원자 이메일)
+        search_keyword = request.GET.get("search")
+        if search_keyword:
+            qs = qs.filter(
+                Q(recruitment__title__icontains=search_keyword)
+                | Q(applicant__nickname__icontains=search_keyword)
+                | Q(applicant__email__icontains=search_keyword)
+            )
 
         # 정렬
-        sort = request.query_params.get("sort", "latest")
-        qs = qs.order_by(SORT_MAP.get(sort, "-created_at"))
+        sort_param = request.query_params.get("sort") or "latest"
+        order_by_field = SORT_MAP.get(sort_param, SORT_MAP["latest"])
+        qs = qs.order_by(order_by_field)
 
-        # TODO: 페이지네이션(현재 전체 리스트 반환)
-        page = safe_int(request.query_params.get("page"), 1)
-        size = safe_int(request.query_params.get("size"), 10)
-
-        total_count = qs.count()
+        # Paginator
+        paginator = AdminApplicationPagination()
+        paginated_qs = paginator.paginate_queryset(qs, request)
 
         serializer = AdminApplicationListSerializer(qs, many=True)
-
-        return Response(
-            {
-                "count": total_count,
-                "page": page,
-                "size": size,
-                "results": serializer.data,
-            },
-            status=status.HTTP_200_OK,
-        )
+        return paginator.get_paginated_response(serializer.data)
 
 
 class AdminApplicationDetailView(APIView):
