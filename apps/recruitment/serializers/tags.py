@@ -57,6 +57,8 @@ class RecruitmentTagUpdateSerializer(serializers.Serializer[Any]):
         existing_ids = set(Tag.objects.filter(id__in=requested_ids).values_list("id", flat=True))
         missing = [str(i) for i in requested_ids if i not in existing_ids]
         if missing:
-            raise ValidationError(f"존재하지 않는 태그 ID가 포함되어 있습니다: {', '.join(missing)}")  # 존재하지 않는 태그 ID 검증 추가
+            raise ValidationError(
+                f"존재하지 않는 태그 ID가 포함되어 있습니다: {', '.join(missing)}"
+            )  # 존재하지 않는 태그 ID 검증 추가
 
         return value

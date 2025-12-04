@@ -1,4 +1,5 @@
 from django.urls import path
+
 from apps.recruitment.views.tags_view import TagListAPIView
 
 urlpatterns = [
