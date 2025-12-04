@@ -116,7 +116,10 @@ class S3Uploader:
             file_name = file.get("file_name")
             content_type = file.get("content_type")
 
-            ext = cast(str, file_name).rsplit(".", 1)[-1].lower()
+            S3FileValidator.validate_file_name(file_name)
+            ext = S3FileValidator.validate_file_extension(file_name)
+            S3FileValidator.validate_content_type(content_type)
+            S3FileValidator.validate_mime_match(ext, content_type)
 
             if file_name and "." in file_name:
                 key = f"{prefix}{uuid.uuid4()}_{file_name}"
