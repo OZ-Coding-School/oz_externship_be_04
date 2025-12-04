@@ -57,8 +57,8 @@ class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[RecruitmentB
     )
 
     #  조회수
-    view_count = serializers.IntegerField(
-        source="recruitment.view_count",
+    views_count = serializers.IntegerField(
+        source="recruitment.views_count",
         read_only=True,
     )
 
@@ -77,7 +77,7 @@ class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[RecruitmentB
             "lectures",
             "tags",
             "close_at",
-            "view_count",
+            "views_count",
             "bookmark_count",
         )
 

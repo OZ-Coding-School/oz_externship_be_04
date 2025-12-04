@@ -1,9 +1,9 @@
 from typing import Any, Type
 
-from django.db.models import Exists, OuterRef, Q, QuerySet
+from django.db.models import Count, Exists, OuterRef, Q, QuerySet
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
-from rest_framework import permissions, request, status
+from rest_framework import permissions, status
 from rest_framework.pagination import CursorPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -37,14 +37,14 @@ class RecruitmentBookmarkListCreateAPIView(APIView):
         responses={200: RecruitmentBookmarkCardSerializer},
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        queryset = self.get_queryset()
+        queryset = self.get_queryset(request)
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(queryset, request)
         serializer = RecruitmentBookmarkCardSerializer(page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
-    def get_queryset(self) -> QuerySet[RecruitmentBookmarks]:
-        user = self.request.user
+    def get_queryset(self, request: Request) -> QuerySet[RecruitmentBookmarks]:
+        user = request.user
 
         if user.is_anonymous or user.id is None:
             return RecruitmentBookmarks.objects.none()
@@ -56,6 +56,7 @@ class RecruitmentBookmarkListCreateAPIView(APIView):
 
         queryset = RecruitmentBookmarks.objects.select_related("recruitment_id").annotate(
             is_bookmarked_by_user=Exists(user_bookmarks.filter(recruitment_id=OuterRef("recruitment_id"))),
+            bookmark_count=Count("recruitment_id__recruitment_bookmarks"),
         )
 
         q = self.request.query_params.get("q")
