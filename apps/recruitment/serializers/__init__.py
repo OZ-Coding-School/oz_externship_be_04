@@ -1,5 +1,11 @@
 from .recruitment_attachment_serializer import RecruitmentAttachmentSerializer
 from .recruitment_image import RecruitmentImageSerializer
+from .recruitment_serializer import (
+    RecruitmentCreateSerializer,
+    RecruitmentDetailSerializer,
+    RecruitmentListSerializer,
+    RecruitmentUpdateSerializer,
+)
 from .tags import RecruitmentTagUpdateSerializer, TagSerializer
 
 __all__ = [
@@ -7,4 +13,8 @@ __all__ = [
     "RecruitmentAttachmentSerializer",
     "TagSerializer",
     "RecruitmentTagUpdateSerializer",
+    "RecruitmentListSerializer",
+    "RecruitmentDetailSerializer",
+    "RecruitmentCreateSerializer",
+    "RecruitmentUpdateSerializer",
 ]
