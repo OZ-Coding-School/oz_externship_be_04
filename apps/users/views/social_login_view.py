@@ -1,35 +1,30 @@
-from rest_framework.views import APIView
+from typing import Any, Dict
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework import status
-
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.serializers.oauth_serializers import SocialLoginSerializer
 from apps.users.services.oauth_services import SocialLoginService
 
 
 class SocialLoginView(APIView):
-    def post(self, request):
+
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         serializer = SocialLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         provider = serializer.validated_data["provider"]
-        user_info = {
-            "provider_id": serializer.validated_data["provider_id"],
-        }
+        provider_id = serializer.validated_data["provider_id"]
 
-        user, created = SocialLoginService().login_or_signup(provider, user_info)
-
-        refresh = RefreshToken.for_user(user)
-        access = refresh.access_token
+        service = SocialLoginService()
+        user, created = service.login_or_signup(provider, {"provider_id": provider_id})
 
         return Response(
             {
-                "is_new_user": created,
-                "access": str(access),
-                "refresh": str(refresh),
+                "message": "회원가입 성공" if created else "로그인 성공",
                 "user_id": user.id,
-                "nickname": user.nickname,
+                "is_new_user": created,
             },
             status=status.HTTP_200_OK,
         )
