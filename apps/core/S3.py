@@ -116,6 +116,9 @@ class S3Uploader:
             file_name = file.get("file_name")
             content_type = file.get("content_type")
 
+            if not file_name or not content_type:
+                raise ValidationError("file_name과 content_type은 필수입니다.")
+
             S3FileValidator.validate_file_name(file_name)
             ext = S3FileValidator.validate_file_extension(file_name)
             S3FileValidator.validate_content_type(content_type)
