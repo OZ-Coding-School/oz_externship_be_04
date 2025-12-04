@@ -43,7 +43,9 @@ class ScheduleCreateView(APIView):
 
         serializer = GroupScheduleSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        print("validated_data:", serializer.validated_data)
 
-        schedule = ScheduleService.create_schedule(serializer.validated_data)
+        schedule = ScheduleService.create_schedule(
+            validated_data=serializer.validated_data,
+            group_id=group_id,
+        )
         return Response({"success": True, "data": GroupScheduleSerializer(schedule).data}, status=201)
