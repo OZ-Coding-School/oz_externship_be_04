@@ -148,10 +148,9 @@ class AdminApplicationAPITestCase(APITestCase):
         """
         (Admin) recruitment_title 로 공고 제목 검색
         """
-        response = self.client.get(self.list_url, {"recruitment_title": "파이썬"})
+        response = self.client.get(self.list_url, {"search": "파이썬"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.assertEqual(len(response.data["results"]), 2)
         for item in response.data["results"]:
             self.assertIn("recruitment", item)
@@ -162,10 +161,9 @@ class AdminApplicationAPITestCase(APITestCase):
         """
         (Admin) applicant_nickname 으로 지원자 닉네임 검색
         """
-        response = self.client.get(self.list_url, {"applicant_nickname": "user"})
+        response = self.client.get(self.list_url, {"search": "user"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.assertEqual(len(response.data["results"]), 2)
         for item in response.data["results"]:
             self.assertIn("applicant", item)
