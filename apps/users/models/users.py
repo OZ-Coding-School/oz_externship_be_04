@@ -46,8 +46,6 @@ class User(TimeStampedModel, AbstractBaseUser):
     def status(self) -> str:
         if self.is_active:
             return "active"
-        if self.pk is None:
-            return "inactive"
         if self.withdrawals.exists():
             return "withdrew"
         return "inactive"
