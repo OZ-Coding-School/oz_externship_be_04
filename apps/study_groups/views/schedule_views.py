@@ -1,4 +1,5 @@
 from drf_spectacular.utils import OpenApiExample, extend_schema
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -25,7 +26,7 @@ class ScheduleCreateView(APIView):
                 value={
                     "title": "스케줄 제목",
                     "objective": "설명",
-                    "session_date": "2025-12-01",
+                    "session_date": "2025-12-01T10:00:00",
                     "start_time": "10:00:00",
                     "end_time": "12:00:00",
                     "participants": [1, 2, 3],
@@ -34,16 +35,26 @@ class ScheduleCreateView(APIView):
         ],
     )
     def post(self, request: Request, group_id: int) -> Response:
-        try:
-            study_group = StudyGroup.objects.get(id=group_id)
-        except StudyGroup.DoesNotExist:
-            return Response({"success": False, "error": "스터디 그룹을 찾을 수 없습니다."}, status=404)
-
-        data = {**request.data, "study_group": study_group.id}
-
-        serializer = GroupScheduleSerializer(data=data)
+        study_group = StudyGroup.objects.get(id=group_id)
+        serializer = GroupScheduleSerializer(
+            data={
+                "title": request.data["title"],
+                "objective": request.data.get("objective"),
+                "session_date": request.data["session_date"],
+                "start_time": request.data["start_time"],
+                "end_time": request.data["end_time"],
+                "participants": request.data["participants"],
+            },
+            context={"study_group": study_group},
+        )
         serializer.is_valid(raise_exception=True)
-        print("validated_data:", serializer.validated_data)
 
-        schedule = ScheduleService.create_schedule(serializer.validated_data)
-        return Response({"success": True, "data": GroupScheduleSerializer(schedule).data}, status=201)
+        schedule = ScheduleService.create_schedule(
+            validated_data=serializer.validated_data,
+            group_id=group_id,
+        )
+
+        return Response(
+            {"data": GroupScheduleSerializer(schedule).data},
+            status=status.HTTP_201_CREATED,
+        )
