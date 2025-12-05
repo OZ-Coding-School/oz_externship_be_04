@@ -9,7 +9,6 @@ User = get_user_model()
 
 
 class AdminAccountBaseTestCase(APITestCase):
-
     def setUp(self) -> None:
         self.normal_user = User.objects.create(
             email="user@example.com",
@@ -43,7 +42,7 @@ class AdminAccountListSpecTests(AdminAccountBaseTestCase):
         super().setUp()
         self.url = reverse("admin_account_list")
 
-    def test_admin_account_list_forbidden_for_normal_user(self):
+    def test_admin_account_list_forbidden_for_normal_user(self) -> None:
 
         self.client.force_authenticate(user=self.normal_user)
 
@@ -51,7 +50,7 @@ class AdminAccountListSpecTests(AdminAccountBaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_admin_account_list_success_for_admin(self):
+    def test_admin_account_list_success_for_admin(self) -> None:
 
         self.client.force_authenticate(user=self.admin_user)
 
@@ -85,7 +84,7 @@ class AdminAccountListSpecTests(AdminAccountBaseTestCase):
 
 class AdminAccountDetailSpecTests(AdminAccountBaseTestCase):
 
-    def test_detail_forbidden_for_normal_user(self):
+    def test_detail_forbidden_for_normal_user(self) -> None:
 
         self.client.force_authenticate(user=self.normal_user)
 
@@ -94,7 +93,7 @@ class AdminAccountDetailSpecTests(AdminAccountBaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_detail_success_for_admin(self):
+    def test_detail_success_for_admin(self) -> None:
 
         self.client.force_authenticate(user=self.admin_user)
 
@@ -120,7 +119,7 @@ class AdminAccountDetailSpecTests(AdminAccountBaseTestCase):
         ]:
             self.assertIn(field, data)
 
-    def test_detail_not_found_for_admin(self):
+    def test_detail_not_found_for_admin(self) -> None:
 
         self.client.force_authenticate(user=self.admin_user)
 
