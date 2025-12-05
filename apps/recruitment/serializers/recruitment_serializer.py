@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -14,10 +13,7 @@ from apps.recruitment.serializers.recruitment_attachment_serializer import (
     RecruitmentAttachmentItemSerializer,
     RecruitmentAttachmentUpdateSerializer,
 )
-from apps.recruitment.serializers.tags import (
-    RecruitmentTagUpdateSerializer,
-    TagSerializer,
-)
+from apps.recruitment.serializers.tags import TagSerializer
 from apps.study_groups.models import StudyGroup, StudyLecture
 
 
@@ -178,7 +174,7 @@ class RecruitmentCreateSerializer(serializers.ModelSerializer[Recruitment]):
     def validate_tags(self, value: list[Tag]) -> list[Tag]:
         tag_ids = [tag.id for tag in value]
         if len(tag_ids) != len(set(tag_ids)):
-            raise ValidationError("태그 ID는 중복될 수 없습니다..")
+            raise serializers.ValidationError("태그 ID는 중복될 수 없습니다.")
         return value
 
     def validate_files(self, value: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -219,7 +215,7 @@ class RecruitmentUpdateSerializer(serializers.ModelSerializer[Recruitment]):
     def validate_tags(self, value: list[Tag]) -> list[Tag]:
         tag_ids = [tag.id for tag in value]
         if len(tag_ids) != len(set(tag_ids)):
-            raise ValidationError("태그 ID는 중복 될수 없습니다.")
+            raise serializers.ValidationError("태그 ID는 중복 될수 없습니다.")
         return value
 
     def validate_image_urls(self, value: list[str]) -> list[str]:
