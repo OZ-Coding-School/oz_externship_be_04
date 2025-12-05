@@ -7,7 +7,7 @@ from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
     extend_schema,
-    inline_serializer
+    inline_serializer,
 )
 from rest_framework import serializers
 from rest_framework.pagination import PageNumberPagination
@@ -19,7 +19,7 @@ from apps.users.models import User
 from apps.users.serializers.admin_account import (
     AdminAccountDetailSerializer,
     AdminAccountSerializer,
-    AdminAccountUpdateSerializer
+    AdminAccountUpdateSerializer,
 )
 from apps.users.utils.permissions import StaffOrSuperUser
 
@@ -335,8 +335,8 @@ class AdminAccountDetailSpec(APIView):
             OpenApiExample(
                 name="Bad Request Example",
                 value={
-                    "error_detail" : {
-                        "phone_number" : [
+                    "error_detail": {
+                        "phone_number": [
                             "11자리 숫자로 구성해야 합니다.",
                         ]
                     }
