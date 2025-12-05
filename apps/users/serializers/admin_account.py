@@ -42,6 +42,7 @@ class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
     role = serializers.CharField(read_only=True)
     status = serializers.CharField(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = User
@@ -56,5 +57,45 @@ class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
             "role",
             "status",
             "created_at",
+            "updated_at",
             "profile_img_url",
         ]
+
+class AdminAccountUpdateSerializer(serializers.Serializer):
+    """
+    어드민 페이지 회원 정보 수정 요청용 Serializer
+    """
+    nickname = serializers.CharField(
+        required=False,
+        max_length=10,
+        help_text="닉네임",
+    )
+    name = serializers.CharField(
+        required=False,
+        max_length=30,
+        help_text="이름",
+    )
+    phone_number = serializers.RegexField(
+        regex=r"^\d{11}$",
+        required=False,
+        error_messages={"invalid" : "11자리 숫자로 구성해야 합니다."},
+        help_text="휴대폰 번호(예: 01012349876)",
+    )
+    birthday = serializers.DateTimeField(
+        required=False,
+        help_text="생년월일 (예: 2001-09-07)"
+    )
+    gender = serializers.ChoiceField(
+        required=False,
+        choices=[("M", "M"), ("F", "F")],
+        help_text="성별 (M/F 선택)"
+    )
+    status = serializers.ChoiceField(
+        required=False,
+        choices=[("active", "active"), ("inactive", "inactive"), ("withdrew", "withdrew")],
+        help_text="회원 상태 (active/inactive/withdrew)"
+    )
+    profile_img_url = serializers.URLField(
+        required=False,
+        help_text="프로필 이미지 URL"
+    )
