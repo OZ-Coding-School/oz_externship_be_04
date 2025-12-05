@@ -47,8 +47,6 @@ class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
         first_img = obj.images.first()
         if first_img is not None:
             return getattr(first_img, "img_url", None)
-        from rest_framework import settings
-
         return getattr(settings, "DEFAULT_THUMBNAIL_URL", None)
 
     def get_lectures(self, obj: Recruitment) -> List[Dict[str, Any]]:
@@ -201,15 +199,7 @@ class RecruitmentUpdateSerializer(serializers.ModelSerializer[Recruitment]):
 
     class Meta:
         model = Recruitment
-        fields = [
-            "title",
-            "content",
-            "estimated_fee",
-            "expected_headcount",
-            "tags",
-            "files",
-            "image_urls",
-        ]
+        fields = ["title", "content", "estimated_fee", "expected_headcount", "tags", "files", "image_urls", "close_at"]
 
     def validate_title(self, value: str) -> str:
         if value:
