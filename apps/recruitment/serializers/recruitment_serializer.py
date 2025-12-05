@@ -49,12 +49,12 @@ class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
     def get_lectures(self, obj: Recruitment) -> List[Dict[str, Any]]:
         """목록용: 최소 정보만 반환"""
         study_group = obj.study_group
-        lectures: List[StudyLecture] = list(study_group.studylecture_set.select_related("lecture_id").all())
+        lectures: List[StudyLecture] = list(study_group.studylecture_set.select_related("lecture").all())
         return [
             {
-                "id": sl.lecture_id.id,
-                "title": sl.lecture_id.title,
-                "instructor": sl.lecture_id.instructor or "",
+                "id": sl.lecture.id,
+                "title": sl.lecture.title,
+                "instructor": sl.lecture.instructor or "",
             }
             for sl in lectures
         ]
@@ -100,8 +100,8 @@ class RecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
 
     def get_lectures(self, obj: Recruitment) -> List[Dict[str, Any]]:
         study_group = obj.study_group
-        lectures: List[StudyLecture] = list(study_group.studylecture_set.select_related("lecture_id").all())
-        crawled_lectures: List[CrawledLecture] = [sl.lecture_id for sl in lectures]
+        lectures: List[StudyLecture] = list(study_group.studylecture_set.select_related("lecture").all())
+        crawled_lectures: List[CrawledLecture] = [sl.lecture for sl in lectures]
         return list(CrawledLectureSerializer(crawled_lectures, many=True).data)
 
     def get_tags(self, obj: Recruitment) -> list[dict[str, Any]]:

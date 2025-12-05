@@ -43,7 +43,7 @@ class StudyGroup(TimeStampedModel):
 
 # 그룹 멤버
 class GroupMember(TimeStampedModel):
-    study_group_id = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE)
+    study_group_id = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE, db_column="study_group_id")
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     is_leader = models.BooleanField(default=False)
 
@@ -55,8 +55,8 @@ class GroupMember(TimeStampedModel):
 
 
 class StudyLecture(TimeStampedModel):
-    lecture_id = models.ForeignKey("lectures.CrawledLecture", on_delete=models.CASCADE)
-    study_group_id = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE)
+    lecture = models.ForeignKey("lectures.CrawledLecture", on_delete=models.CASCADE, db_column="lecture_id")
+    study_group = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE, db_column="study_group_id")
 
     class Meta:
         db_table = "study_lectures"
