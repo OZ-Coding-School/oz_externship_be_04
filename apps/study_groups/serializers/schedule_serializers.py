@@ -51,7 +51,7 @@ class GroupScheduleSerializer(serializers.Serializer):
             raise serializers.ValidationError("session_date는 오늘보다 이전일 수 없습니다.")
         return value
 
-    def validate(self, attrs: GroupScheduleAttrs) -> GroupScheduleAttrs:
+    def validate(self, attrs: GroupScheduleAttrs) -> GroupScheduleAttrs: # type: ignore
         study_group = self.context.get("study_group")
         start_time = attrs.get("start_time")
         end_time = attrs.get("end_time")
