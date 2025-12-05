@@ -5,6 +5,7 @@ from rest_framework.request import Request
 
 from apps.chat.models import ChatMessage, LastReadMessage
 from apps.users.models import User
+from config.settings.base import value
 
 
 class SenderSerializer(serializers.ModelSerializer[User]):
@@ -63,3 +64,20 @@ class MessageSerializer(serializers.ModelSerializer[ChatMessage]):
             return False
 
         return obj.created_at <= last_read.message.created_at
+
+
+class MessageCreateRequestSerializer(serializers.Serializer[Any]):
+    content = serializers.CharField(
+        max_length=1000,  # 필요시 조정 가능함
+        allow_blank=False,
+        trim_whitespace=True,
+    )
+
+    def validate_content(self, value: Any) -> str:
+        # 공백만 있는 문자 방지
+        text = cast(str, value)
+
+        if not text.strip():
+            raise serializers.ValidationError("메시지 내용은 비어 있을 수 없습니다.")
+
+        return text
