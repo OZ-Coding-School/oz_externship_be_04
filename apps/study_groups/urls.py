@@ -1,14 +1,13 @@
 from django.urls import path
 
 from .views.study_groups_view import (
+    ScheduleCreateView,
     StudyGroupCreateAPIView,
     StudyGroupDestroyAPIView,
     StudyGroupListAPIView,
     StudyGroupRetrieveAPIView,
     StudyGroupUpdateAPIView,
-    ScheduleCreateView,
 )
-
 
 urlpatterns = [
     path("/study-groups", StudyGroupListAPIView.as_view(), name="study-group-list"),
