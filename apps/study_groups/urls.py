@@ -1,7 +1,9 @@
 from django.urls import path
 
-from .views.study_groups_view import (
+from .views.schedule_views import (
     ScheduleCreateView,
+)
+from .views.study_groups_view import (
     StudyGroupCreateAPIView,
     StudyGroupDestroyAPIView,
     StudyGroupListAPIView,

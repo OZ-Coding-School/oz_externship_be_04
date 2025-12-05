@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Any, Dict
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
@@ -14,7 +15,7 @@ from apps.study_groups.models import (
 
 class ScheduleService:
     @staticmethod
-    def create_schedule(*, validated_data: dict, group_id: int) -> GroupSchedule:
+    def create_schedule(*, validated_data: Dict[str, Any], group_id: int) -> GroupSchedule:
         participants = validated_data.pop("participants", [])
 
         try:
