@@ -1,6 +1,6 @@
 from typing import Any, Type
 
-from django.db.models import Count, Exists, OuterRef, Q, QuerySet
+from django.db.models import Count, QuerySet
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import permissions, status
@@ -27,7 +27,12 @@ class RecruitmentBookmarkListCreateAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get_serializer_class(self) -> Type[Serializer[Any]]:
-        if self.request.method == "POST":
+        return self.get_serializer_class_for_request(getattr(self, "request", None))
+
+    def get_serializer_class_for_request(self, request: Request | None) -> Type[Serializer[Any]]:
+        if request is None:
+            return RecruitmentBookmarkCardSerializer
+        if request.method == "POST":
             return RecruitmentBookmarkCreateSerializer
         return RecruitmentBookmarkCardSerializer
 
@@ -46,17 +51,13 @@ class RecruitmentBookmarkListCreateAPIView(APIView):
     def get_queryset(self, request: Request) -> QuerySet[RecruitmentBookmarks]:
         user = request.user
 
-        if user.is_anonymous or user.id is None:
-            return RecruitmentBookmarks.objects.none()
-
-        user_bookmarks = RecruitmentBookmarks.objects.filter(user_id=user.id)
-
         if user.is_anonymous:
             return RecruitmentBookmarks.objects.none()
 
-        queryset = RecruitmentBookmarks.objects.select_related("recruitment_id").annotate(
-            is_bookmarked_by_user=Exists(user_bookmarks.filter(recruitment_id=OuterRef("recruitment_id"))),
-            bookmark_count=Count("recruitment_id__recruitment_bookmarks"),
+        queryset = (
+            RecruitmentBookmarks.objects.filter(user_id=user.id)
+            .select_related("recruitment_id")
+            .annotate(bookmark_count=Count("recruitment_id__recruitment_bookmarks"))
         )
 
         q = self.request.query_params.get("q")
@@ -81,10 +82,8 @@ class RecruitmentBookmarkListCreateAPIView(APIView):
         ],
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        # if request.user.is_anonymous:
-        #     return Response({"detail": "자격 인증 데이터가 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
-        serializer_class = self.get_serializer_class()
+        serializer_class = self.get_serializer_class_for_request(request)
         serializer = serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
