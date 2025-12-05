@@ -31,6 +31,7 @@ class StudyGroupCreateAPIView(APIView):
         study_group = serializer.save()
         return Response(StudyGroupSerializer(study_group).data, status=status.HTTP_201_CREATED)
 
+
 # 스터디 그룹 목록 보기
 class StudyGroupListAPIView(APIView):
     @extend_schema(
@@ -57,6 +58,7 @@ class StudyGroupListAPIView(APIView):
         serializer = StudyGroupListSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data)
 
+
 # 스터디 그룹 상세정보 조회
 class StudyGroupRetrieveAPIView(APIView):
     @extend_schema(
@@ -69,6 +71,7 @@ class StudyGroupRetrieveAPIView(APIView):
         study_group = get_object_or_404(StudyGroup, pk=pk)
         serializer = StudyGroupDetailSerializer(study_group, context={"request": request})
         return Response(serializer.data)
+
 
 # 스터디 그룹 수정(업데이트)하기
 class StudyGroupUpdateAPIView(APIView):
@@ -86,7 +89,8 @@ class StudyGroupUpdateAPIView(APIView):
         study_group = serializer.save()
         return Response(StudyGroupSerializer(study_group).data)
 
-#스터디그룹 삭제하기
+
+# 스터디그룹 삭제하기
 class StudyGroupDestroyAPIView(APIView):
     @extend_schema(
         summary="스터디 그룹 삭제 REQ-STDY-0005(DELETE)",

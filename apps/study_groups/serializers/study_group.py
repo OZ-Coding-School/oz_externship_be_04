@@ -98,10 +98,7 @@ class StudyGroupListSerializer(serializers.ModelSerializer[StudyGroup]):
         ]
 
     def get_lectures(self, obj: StudyGroup) -> list[dict[str, Any]]:
-        return [
-            {"title": sl.lecture.title, "instructor": sl.lecture.instructor}
-            for sl in obj.studylecture_set.all()
-        ]
+        return [{"title": sl.lecture.title, "instructor": sl.lecture.instructor} for sl in obj.studylecture_set.all()]
 
     def get_member_count(self, obj: StudyGroup) -> str:
         return f"{obj.groupmember_set.count()} / {obj.max_headcount}"
@@ -142,7 +139,4 @@ class StudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
 
     def get_members(self, obj: StudyGroup) -> list[dict[str, Any]]:
         members = obj.groupmember_set.all().order_by("-is_leader")
-        return [
-            {"nickname": m.user_id.nickname, "is_leader": m.is_leader}
-            for m in members
-        ]
+        return [{"nickname": m.user_id.nickname, "is_leader": m.is_leader} for m in members]
