@@ -3,7 +3,6 @@ from typing import Any, TypedDict
 
 from django.utils import timezone
 from rest_framework import serializers
-from rest_framework.serializers import Serializer
 
 from apps.study_groups.models import GroupMember, StudyGroup
 
