@@ -22,7 +22,7 @@ SORT_MAP = {
 
 def get_admin_application_queryset() -> QuerySet[Application]:
     return Application.objects.select_related("recruitment", "applicant").prefetch_related(
-        "recruitment__study_group__studylecture_set__lecture_id",
+        "recruitment__study_group__studylecture_set__lecture",
         "recruitment__recruitment_tags__tag",
     )
 
