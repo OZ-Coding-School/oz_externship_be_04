@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -57,7 +58,7 @@ class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
             {
                 "id": sl.lecture_id.id,
                 "title": sl.lecture_id.title,
-                "instructor": getattr(sl.lecture_id.instructor, "name", ""),
+                "instructor": sl.lecture_id.instructor or "",
             }
             for sl in lectures
         ]
@@ -112,9 +113,6 @@ class RecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
         return list(TagSerializer(tags, many=True).data)
 
     def get_files(self, obj: Recruitment) -> list[dict[str, Any]]:
-        attachments = getattr(obj, "attachments", None)
-        if not attachments:
-            return []
         return [
             {
                 "id": a.id,
@@ -177,8 +175,11 @@ class RecruitmentCreateSerializer(serializers.ModelSerializer[Recruitment]):
             raise serializers.ValidationError("마감일시는 현재 시각 이후여야 합니다.")
         return value
 
-    def validate_tags(self, value: list[int]) -> list[int]:
-        return list(set(value))
+    def validate_tags(self, value: list[Tag]) -> list[Tag]:
+        tag_ids = [tag.id for tag in value]
+        if len(tag_ids) != len(set(tag_ids)):
+            raise ValidationError("태그 ID는 중복될 수 없습니다..")
+        return value
 
     def validate_files(self, value: list[dict[str, str]]) -> list[dict[str, str]]:
         filenames = [f.get("file_name") for f in value]
@@ -215,8 +216,11 @@ class RecruitmentUpdateSerializer(serializers.ModelSerializer[Recruitment]):
                 raise serializers.ValidationError("내용은 최소 10자 이상이어야 합니다.")
         return value
 
-    def validate_tags(self, value: list[int]) -> list[int]:
-        return list(set(value))
+    def validate_tags(self, value: list[Tag]) -> list[Tag]:
+        tag_ids = [tag.id for tag in value]
+        if len(tag_ids) != len(set(tag_ids)):
+            raise ValidationError("태그 ID는 중복 될수 없습니다.")
+        return value
 
     def validate_image_urls(self, value: list[str]) -> list[str]:
         return list(set(value))
