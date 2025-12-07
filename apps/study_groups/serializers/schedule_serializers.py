@@ -1,10 +1,15 @@
 from datetime import date, datetime, time, timedelta
-from typing import Any, TypedDict
+from typing import TypedDict
 
 from django.utils import timezone
 from rest_framework import serializers
 
-from apps.study_groups.models import GroupMember, StudyGroup
+from apps.study_groups.models import (
+    GroupMember,
+    GroupSchedule,
+    ScheduleParticipants,
+    StudyGroup,
+)
 
 
 class GroupScheduleAttrs(TypedDict):
@@ -21,12 +26,14 @@ class GroupScheduleSerializer(serializers.Serializer):
     participants = serializers.PrimaryKeyRelatedField(
         queryset=GroupMember.objects.all(),
         many=True,
+        required=False,
         write_only=True,
     )
-    session_date = serializers.DateField()
+
+    session_date = serializers.DateTimeField()
     start_time = serializers.TimeField()
     end_time = serializers.TimeField()
-
+    # 제목 설명 검증
     title = serializers.CharField(
         min_length=1,
         max_length=100,
@@ -46,12 +53,13 @@ class GroupScheduleSerializer(serializers.Serializer):
         },
     )
 
-    def validate_session_date(self, value: date) -> date:
-        if value < timezone.localdate():
+    # session_date 검증
+    def validate_session_date(self, value: datetime) -> datetime:
+        if value.date() < timezone.localdate():
             raise serializers.ValidationError("session_date는 오늘보다 이전일 수 없습니다.")
         return value
 
-    def validate(self, attrs: GroupScheduleAttrs) -> GroupScheduleAttrs: # type: ignore
+    def validate(self, attrs: GroupScheduleAttrs) -> GroupScheduleAttrs:  # type: ignore
         study_group = self.context.get("study_group")
         start_time = attrs.get("start_time")
         end_time = attrs.get("end_time")
@@ -78,3 +86,15 @@ class GroupScheduleSerializer(serializers.Serializer):
                 raise serializers.ValidationError({"participants": f"유효하지 않은 스터디 그룹 멤버 id: {ids_str}"})
 
         return attrs
+
+    def to_representation(self, instance: GroupSchedule) -> dict:
+        return {
+            "id": instance.id,
+            "study_group": instance.study_group.id,
+            "title": instance.title,
+            "objective": instance.objective,
+            "session_date": instance.session_date.isoformat(),
+            "start_time": instance.start_time.isoformat(),
+            "end_time": instance.end_time.isoformat(),
+            "participants": [sp.member.id for sp in ScheduleParticipants.objects.filter(schedule=instance)],
+        }
