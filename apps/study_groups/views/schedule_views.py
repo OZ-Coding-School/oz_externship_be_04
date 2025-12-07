@@ -56,7 +56,7 @@ class ScheduleView(APIView):
         user_id = cast(int, request.user.id)
         try:
             GroupMember.objects.get(
-                user_id=request.user.id,
+                user_id=request.user.pk,
                 study_group_id=study_group,
             )
         except GroupMember.DoesNotExist:
