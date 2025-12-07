@@ -55,6 +55,7 @@ class ScheduleView(APIView):
 
         user_id = cast(int, request.user.id)
         try:
+            assert request.user.pk is not None
             GroupMember.objects.get(
                 user_id=request.user.pk,
                 study_group_id=study_group,
