@@ -71,8 +71,10 @@ class ScheduleService:
                     unique_by_id: Dict[int, GroupMember] = {m.id: m for m in participants}
                     bulk = [ScheduleParticipants(schedule=schedule, member=member) for member in unique_by_id.values()]
                     ScheduleParticipants.objects.bulk_create(bulk)
+        return schedule
 
-    # 스케줄 삭제
+        # 스케줄 삭제
+
     @staticmethod
     def delete_schedule(*, schedule: GroupSchedule) -> None:
         schedule.delete()

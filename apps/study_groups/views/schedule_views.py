@@ -53,17 +53,16 @@ class ScheduleView(APIView):
 
         try:
             GroupMember.objects.get(
-                user_id=request.user,
+                user_id=request.user.id,
                 study_group_id=study_group,
             )
         except GroupMember.DoesNotExist:
             from rest_framework.exceptions import (
-                ValidationError,  # 수정: DRF ValidationError 사용
+                ValidationError,
             )
 
             raise ValidationError({"detail": "요청 유저는 이 스터디의 멤버가 아닙니다."})
 
-        # 수정: participants는 이미 객체 리스트이므로 재조회 불필요
         participants = serializer.validated_data.get("participants", [])
 
         validated_data = serializer.validated_data.copy()

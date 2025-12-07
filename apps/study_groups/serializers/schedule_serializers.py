@@ -1,5 +1,5 @@
 from datetime import date, datetime, time, timedelta
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from django.utils import timezone
 from rest_framework import serializers
@@ -22,7 +22,7 @@ class GroupScheduleAttrs(TypedDict):
     participants: list[GroupMember]
 
 
-class GroupScheduleSerializer(serializers.Serializer):
+class GroupScheduleSerializer(serializers.Serializer[GroupScheduleAttrs]):
     participants = serializers.PrimaryKeyRelatedField(
         queryset=GroupMember.objects.all(),
         many=True,
@@ -33,7 +33,7 @@ class GroupScheduleSerializer(serializers.Serializer):
     session_date = serializers.DateTimeField()
     start_time = serializers.TimeField()
     end_time = serializers.TimeField()
-    # 제목 설명 검증
+    # 제목&설명 검증
     title = serializers.CharField(
         min_length=1,
         max_length=100,
@@ -59,7 +59,7 @@ class GroupScheduleSerializer(serializers.Serializer):
             raise serializers.ValidationError("session_date는 오늘보다 이전일 수 없습니다.")
         return value
 
-    def validate(self, attrs: GroupScheduleAttrs) -> GroupScheduleAttrs:  # type: ignore
+    def validate(self, attrs: GroupScheduleAttrs) -> GroupScheduleAttrs:
         study_group = self.context.get("study_group")
         start_time = attrs.get("start_time")
         end_time = attrs.get("end_time")
@@ -87,7 +87,7 @@ class GroupScheduleSerializer(serializers.Serializer):
 
         return attrs
 
-    def to_representation(self, instance: GroupSchedule) -> dict:
+    def to_representation(self, instance: GroupSchedule) -> dict[str, Any]:
         return {
             "id": instance.id,
             "study_group": instance.study_group.id,

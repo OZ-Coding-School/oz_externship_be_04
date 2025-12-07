@@ -63,7 +63,7 @@ class ScheduleAPITest(APITestCase):
         self.base_payload = {
             "title": "파이썬 자료형 학습",
             "objective": "파이썬 자료형 마스터하기",
-            "session_date": "2026-11-20T10:00:00",
+            "session_date": (timezone.now() + timedelta(days=365)),
             "start_time": "10:00:00",
             "end_time": "11:00:00",
             "participants": [self.member1.id],
@@ -71,7 +71,7 @@ class ScheduleAPITest(APITestCase):
 
         # 스케줄 생성 테스트
 
-    def test_create_schedule(self):
+    def test_create_schedule(self) -> None:
         response = self.client.post(
             self.schedule_create_url,
             self.base_payload,
@@ -80,11 +80,11 @@ class ScheduleAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(GroupSchedule.objects.count(), 1)
-        self.assertGreaterEqual(ScheduleParticipants.objects.count(), 1)
+        self.assertEqual(ScheduleParticipants.objects.count(), 1)
 
         # 스케줄 목록 조회
 
-    def test_list_schedule(self):
+    def test_list_schedule(self) -> None:
         schedule = GroupSchedule.objects.create(
             study_group=self.group,
             title="조회 테스트",
@@ -102,7 +102,7 @@ class ScheduleAPITest(APITestCase):
 
         # 스케줄 상세 조회
 
-    def test_detail_list_schedule(self):
+    def test_detail_schedule(self) -> None:
         schedule = GroupSchedule.objects.create(
             study_group=self.group,
             title="상세 테스트",
@@ -120,7 +120,7 @@ class ScheduleAPITest(APITestCase):
 
         # 스케줄 수정
 
-    def test_update_schedule(self):
+    def test_update_schedule(self) -> None:
         schedule = GroupSchedule.objects.create(
             study_group=self.group,
             title="수정 전",
@@ -135,7 +135,7 @@ class ScheduleAPITest(APITestCase):
         payload = {
             "title": "수정 후",
             "objective": "수정됨",
-            "session_date": timezone.now() + timedelta(days=2),  # 수정됨
+            "session_date": timezone.now() + timedelta(days=2),
             "start_time": time(13, 0),
             "end_time": time(15, 0),
             "participants": [self.member1.id],
@@ -150,7 +150,7 @@ class ScheduleAPITest(APITestCase):
 
         # 스케줄 삭제
 
-    def test_delete_schedule(self):
+    def test_delete_schedule(self) -> None:
         schedule = GroupSchedule.objects.create(
             study_group=self.group,
             title="삭제 테스트",
