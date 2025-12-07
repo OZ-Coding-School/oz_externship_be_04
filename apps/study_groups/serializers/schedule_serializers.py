@@ -22,7 +22,7 @@ class GroupScheduleAttrs(TypedDict):
     participants: list[GroupMember]
 
 
-class GroupScheduleSerializer(serializers.Serializer[GroupScheduleAttrs]):
+class GroupScheduleSerializer(serializers.Serializer[Any]):
     participants = serializers.PrimaryKeyRelatedField(
         queryset=GroupMember.objects.all(),
         many=True,
@@ -87,7 +87,7 @@ class GroupScheduleSerializer(serializers.Serializer[GroupScheduleAttrs]):
 
         return attrs
 
-    def to_representation(self, instance: GroupSchedule) -> dict[str, Any]:
+    def to_representation(self, instance: Any) -> dict[str, Any]:
         return {
             "id": instance.id,
             "study_group": instance.study_group.id,

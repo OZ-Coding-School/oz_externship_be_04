@@ -1,3 +1,5 @@
+from typing import cast
+
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -51,6 +53,7 @@ class ScheduleView(APIView):
         )
         serializer.is_valid(raise_exception=True)
 
+        user_id = cast(int, request.user.id)
         try:
             GroupMember.objects.get(
                 user_id=request.user.id,
