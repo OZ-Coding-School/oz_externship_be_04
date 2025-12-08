@@ -27,13 +27,9 @@ class test_user_register(APITestCase):
 
     def test_success_register(self) -> None:
         before = User.objects.count()
-        print("before", before)
 
         response = self.client.post(self.signup_url, self.valid_user_data)
         after = User.objects.count()
-        print("after", after)
-        print("status_code", response.status_code)
-        print("response.data", response.data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(before + 1, after)
@@ -47,19 +43,15 @@ class test_user_register(APITestCase):
             with self.subTest(field=field):
                 invalid_data = self.valid_user_data.copy()
                 removed_value = invalid_data.pop(field)
-                print("removed_value", removed_value)
+
                 response = self.client.post(self.signup_url, invalid_data)
-                print("status_code", response.status_code)
-                print("response.data", response.data)
 
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
                 self.assertIn(field, response.data)
 
     def test_email(self) -> None:
         response = self.client.post(self.signup_url, self.valid_user_data)
-        print("response status", response.status_code)
         second_response = self.client.post(self.signup_url, self.valid_user_data)
-        print("second_response status", second_response.status_code)
 
         self.assertEqual(second_response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("email", second_response.data)
@@ -74,9 +66,7 @@ class test_user_register(APITestCase):
             gender="M",
             birthday="1990-01-01",
         )
-        print("test nickname", self.valid_user_data["nickname"])
         response = self.client.post(self.signup_url, self.valid_user_data)
-        print("status_code", response.status_code)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("nickname", response.data)
@@ -91,9 +81,7 @@ class test_user_register(APITestCase):
             gender="M",
             birthday="1990-01-01",
         )
-        print("test_phone_number", self.valid_user_data["phone_number"])
         response = self.client.post(self.signup_url, self.valid_user_data)
-        print("status_code", response.status_code)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("phone_number", response.data)
