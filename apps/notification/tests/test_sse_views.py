@@ -10,6 +10,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken
 from apps.notification.views.sse_views import notification_stream
 from apps.users.models import User
 
+
 # 헬퍼 함수
 def collect_streaming_content(content: Union[Iterable[Any], AsyncIterable[Any]]) -> list[Any]:
     if hasattr(content, "__aiter__"):
