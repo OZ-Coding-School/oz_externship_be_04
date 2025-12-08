@@ -47,7 +47,6 @@ class UserSerializer(serializers.ModelSerializer[Any]):
             password=password,
             **validated_data
         )
-        user.is_active = False
         user.save()
         return user
 
