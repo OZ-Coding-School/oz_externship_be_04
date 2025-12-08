@@ -10,11 +10,7 @@ from apps.users.models import User
 
 
 class RecruiterApplicationAPITestCase(APITestCase):
-    """작성자용 지원자 관리 API 통합 테스트"""
-
     def setUp(self) -> None:
-        """테스트 기본 데이터 생성"""
-
         self.author = User.objects.create(
             email="author@test.com",
             nickname="author",
@@ -101,8 +97,74 @@ class RecruiterApplicationAPITestCase(APITestCase):
 
         self.client.force_authenticate(user=self.author)
 
+    def _create_user(
+        self,
+        email: str,
+        nickname: str,
+        name: str = "테스트",
+        phone_number: str = "01000000000",
+        birthday: str = "1990-01-01",
+        gender: str = "M",
+    ) -> User:
+        user = User.objects.create(
+            email=email,
+            nickname=nickname,
+            name=name,
+            phone_number=phone_number,
+            birthday=birthday,
+            gender=gender,
+        )
+        user.set_password("testpassword1")
+        user.save()
+        return user
+
+    def _create_application(
+        self,
+        recruitment: Recruitment,
+        applicant: User,
+        self_introduction: str = "자기소개",
+        motivation: str = "동기",
+        objective: str = "목표",
+        available_time: str = "10:00 ~ 11:00",
+        has_study_experience: bool = True,
+        study_experience: str = "",
+        status: ApplicationStatus = ApplicationStatus.PENDING,
+    ) -> Application:
+        return Application.objects.create(
+            recruitment=recruitment,
+            applicant=applicant,
+            self_introduction=self_introduction,
+            motivation=motivation,
+            objective=objective,
+            available_time=available_time,
+            has_study_experience=has_study_experience,
+            study_experience=study_experience,
+            status=status,
+        )
+
+    def _create_multiple_accepted_applications(self, recruitment: Recruitment, count: int) -> None:
+        for i in range(count):
+            applicant = self._create_user(
+                email=f"applicant{i}@test.com",
+                nickname=f"applicant{i}",
+                name=f"지원자{i}",
+                phone_number=f"0105555{i:04d}",
+                birthday="1990-01-01",
+                gender="M",
+            )
+            self._create_application(
+                recruitment=recruitment,
+                applicant=applicant,
+                self_introduction=f"자기소개{i}",
+                motivation=f"동기{i}",
+                objective=f"목표{i}",
+                available_time="10:00 ~ 11:00",
+                has_study_experience=True,
+                study_experience=f"경험{i}",
+                status=ApplicationStatus.ACCEPTED,
+            )
+
     def test_application_list_success(self) -> None:
-        """[REQ-APLY-002] 작성자용 지원자 목록 조회 성공 (200 OK)"""
         url = reverse("recruiter-application-list", kwargs={"recruitment_uuid": self.recruitment.uuid})
         response = self.client.get(url)
 
@@ -112,7 +174,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertEqual(response.data["results"][0]["id"], self.application.id)
 
     def test_application_list_unauthorized(self) -> None:
-        """목록 조회 - 인증 없음 (401 UNAUTHORIZED)"""
         self.client.force_authenticate(user=None)
         url = reverse("recruiter-application-list", kwargs={"recruitment_uuid": self.recruitment.uuid})
         response = self.client.get(url)
@@ -120,7 +181,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_application_list_permission_denied(self) -> None:
-        """목록 조회 - 권한 없음 (403 FORBIDDEN)"""
         self.client.force_authenticate(user=self.other_author)
         url = reverse("recruiter-application-list", kwargs={"recruitment_uuid": self.recruitment.uuid})
         response = self.client.get(url)
@@ -129,7 +189,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertIn("error_detail", response.data)
 
     def test_application_list_recruitment_not_found(self) -> None:
-        """목록 조회 - 공고 없음 (404 NOT FOUND)"""
         url = reverse("recruiter-application-list", kwargs={"recruitment_uuid": "00000000-0000-0000-0000-000000000000"})
         response = self.client.get(url)
 
@@ -137,7 +196,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertIn("error_detail", response.data)
 
     def test_application_review_success(self) -> None:
-        """[REQ-APLY-003] 작성자용 지원자 상세 조회 성공 (200 OK)"""
         url = reverse("recruiter-application-review", kwargs={"application_id": self.application.id})
         response = self.client.get(url)
 
@@ -147,7 +205,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertEqual(response.data["motivation"], "지원 동기")
 
     def test_application_review_unauthorized(self) -> None:
-        """상세 조회 - 인증 없음 (401 UNAUTHORIZED)"""
         self.client.force_authenticate(user=None)
         url = reverse("recruiter-application-review", kwargs={"application_id": self.application.id})
         response = self.client.get(url)
@@ -155,7 +212,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_application_review_permission_denied(self) -> None:
-        """상세 조회 - 권한 없음 (403 FORBIDDEN)"""
         self.client.force_authenticate(user=self.other_author)
         url = reverse("recruiter-application-review", kwargs={"application_id": self.application.id})
         response = self.client.get(url)
@@ -164,7 +220,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertIn("error_detail", response.data)
 
     def test_application_review_not_found(self) -> None:
-        """상세 조회 - 지원 내역 없음 (404 NOT FOUND)"""
         url = reverse("recruiter-application-review", kwargs={"application_id": 99999})
         response = self.client.get(url)
 
@@ -172,7 +227,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertIn("error_detail", response.data)
 
     def test_application_accept_success(self) -> None:
-        """[REQ-APLY-004] 지원 승인 성공 (200 OK)"""
         url = reverse("recruiter-application-accept", kwargs={"application_id": self.application.id})
         response = self.client.post(url)
 
@@ -183,7 +237,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertEqual(self.application.status, ApplicationStatus.ACCEPTED)
 
     def test_application_accept_unauthorized(self) -> None:
-        """지원 승인 - 인증 없음 (401 UNAUTHORIZED)"""
         self.client.force_authenticate(user=None)
         url = reverse("recruiter-application-accept", kwargs={"application_id": self.application.id})
         response = self.client.post(url)
@@ -191,7 +244,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_application_accept_permission_denied(self) -> None:
-        """지원 승인 - 권한 없음 (403 FORBIDDEN)"""
         self.client.force_authenticate(user=self.other_author)
         url = reverse("recruiter-application-accept", kwargs={"application_id": self.application.id})
         response = self.client.post(url)
@@ -200,7 +252,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertIn("error_detail", response.data)
 
     def test_application_accept_not_found(self) -> None:
-        """지원 승인 - 지원 내역 없음 (404 NOT FOUND)"""
         url = reverse("recruiter-application-accept", kwargs={"application_id": 99999})
         response = self.client.post(url)
 
@@ -208,7 +259,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertIn("error_detail", response.data)
 
     def test_application_reject_success(self) -> None:
-        """[REQ-APLY-005] 지원 거절 성공 (200 OK)"""
         url = reverse("recruiter-application-reject", kwargs={"application_id": self.application.id})
         response = self.client.post(url)
 
@@ -219,7 +269,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertEqual(self.application.status, ApplicationStatus.REJECTED)
 
     def test_application_reject_unauthorized(self) -> None:
-        """지원 거절 - 인증 없음 (401 UNAUTHORIZED)"""
         self.client.force_authenticate(user=None)
         url = reverse("recruiter-application-reject", kwargs={"application_id": self.application.id})
         response = self.client.post(url)
@@ -227,7 +276,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_application_reject_permission_denied(self) -> None:
-        """지원 거절 - 권한 없음 (403 FORBIDDEN)"""
         self.client.force_authenticate(user=self.other_author)
         url = reverse("recruiter-application-reject", kwargs={"application_id": self.application.id})
         response = self.client.post(url)
@@ -236,7 +284,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertIn("error_detail", response.data)
 
     def test_application_reject_not_found(self) -> None:
-        """지원 거절 - 지원 내역 없음 (404 NOT FOUND)"""
         url = reverse("recruiter-application-reject", kwargs={"application_id": 99999})
         response = self.client.post(url)
 
@@ -244,8 +291,7 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertIn("error_detail", response.data)
 
     def test_application_list_with_cursor_pagination(self) -> None:
-        """목록 조회 - 커서 페이지네이션 동작 확인"""
-        another_applicant = User.objects.create(
+        another_applicant = self._create_user(
             email="applicant2@test.com",
             nickname="applicant2",
             name="지원자2",
@@ -253,10 +299,8 @@ class RecruiterApplicationAPITestCase(APITestCase):
             birthday="1990-01-01",
             gender="M",
         )
-        another_applicant.set_password("testpassword1")
-        another_applicant.save()
 
-        Application.objects.create(
+        self._create_application(
             recruitment=self.recruitment,
             applicant=another_applicant,
             self_introduction="지원자2",
@@ -278,7 +322,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertIn("previous", response.data)
 
     def test_application_accept_already_processed(self) -> None:
-        """지원 승인 - 이미 처리된 지원 (400 BAD REQUEST)"""
         self.application.status = ApplicationStatus.ACCEPTED
         self.application.save()
 
@@ -290,27 +333,7 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertEqual(response.data["error_detail"], "이미 처리된 지원입니다.")
 
     def test_application_accept_headcount_exceeded(self) -> None:
-        """지원 승인 - 모집 인원 초과 (400 BAD REQUEST)"""
-        for i in range(5):
-            applicant = User.objects.create(
-                email=f"applicant{i}@test.com",
-                nickname=f"applicant{i}",
-                name=f"지원자{i}",
-                phone_number=f"0105555{i:04d}",
-                birthday="1990-01-01",
-                gender="M",
-            )
-            Application.objects.create(
-                recruitment=self.recruitment,
-                applicant=applicant,
-                self_introduction=f"자기소개{i}",
-                motivation=f"동기{i}",
-                objective=f"목표{i}",
-                available_time="10:00 ~ 11:00",
-                has_study_experience=True,
-                study_experience=f"경험{i}",
-                status=ApplicationStatus.ACCEPTED,
-            )
+        self._create_multiple_accepted_applications(self.recruitment, 5)
 
         url = reverse("recruiter-application-accept", kwargs={"application_id": self.application.id})
         response = self.client.post(url)
@@ -320,7 +343,6 @@ class RecruiterApplicationAPITestCase(APITestCase):
         self.assertEqual(response.data["error_detail"], "모집 인원이 초과되었습니다.")
 
     def test_application_reject_already_processed(self) -> None:
-        """지원 거절 - 이미 처리된 지원 (400 BAD REQUEST)"""
         self.application.status = ApplicationStatus.REJECTED
         self.application.save()
 
