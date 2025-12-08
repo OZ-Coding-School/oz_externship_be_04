@@ -63,7 +63,7 @@ class AdminApplicationListView(APIView):
             qs = qs.filter(status=status_param)
 
         # 통합 검색 (공고 제목, 지원자 닉네임, 지원자 이메일)
-        search_keyword = request.GET.get("search")
+        search_keyword = request.query_params.get("search")
         if search_keyword:
             qs = qs.filter(
                 Q(recruitment__title__icontains=search_keyword)
@@ -93,13 +93,23 @@ class AdminApplicationDetailView(APIView):
 
     @extend_schema(
         summary="Admin 지원서 상세 조회",
-        responses={200: AdminApplicationDetailSerializer},
+        responses={
+            200: AdminApplicationDetailSerializer,
+            403: {
+                "type": "object",
+                "properties": {"error_detail": {"type": "string", "example": "권한이 없습니다."}},
+            },
+            404: {
+                "type": "object",
+                "properties": {"error_detail": {"type": "string", "example": "해당 지원서를 찾을 수 없습니다."}},
+            },
+        },
         tags=["Application - Admin"],
     )
-    def get(self, request: Request, application_uuid: str) -> Response:
+    def get(self, request: Request, application_id: str) -> Response:
 
-        qs = get_admin_application_queryset()  # 🔥 공통 쿼리셋 사용
-        application = qs.filter(uuid=application_uuid).first()
+        qs = get_admin_application_queryset()
+        application = qs.filter(id=application_id).first()
 
         if not application:
             return Response(
