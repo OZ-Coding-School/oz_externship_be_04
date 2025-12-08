@@ -100,20 +100,6 @@ def study_review_request_created(sender: Any, instance: StudyGroup, created: boo
             send_to_pubsub.delay(notification.id)
 
 
-@receiver(post_save, sender=GroupSchedule)
-def schedule_notification_created(sender: Any, instance: GroupSchedule, created: bool, **kwargs: Any) -> None:
-    """예정 스케줄 알림"""
-
-    pass
-
-
-@receiver(post_save, sender=GroupSchedule)
-def daily_schedule_notification_created(sender: Any, instance: GroupSchedule, created: bool, **kwargs: Any) -> None:
-    """금일 스케줄 알림"""
-
-    pass
-
-
 @receiver(post_save, sender=StudyNote)
 def study_record_request_created(sender: Any, instance: StudyNote, created: bool, **kwargs: Any) -> None:
     """스터디 기록 작성 알림"""
