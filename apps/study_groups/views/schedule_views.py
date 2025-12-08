@@ -1,7 +1,3 @@
-# schedule_views
-
-from typing import cast
-
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -24,7 +20,7 @@ class ScheduleView(APIView):
         summary="스케줄 생성",
         description="스터디 그룹에 새로운 스케줄을 생성합니다.",
         request=GroupScheduleSerializer,
-        responses={201: GroupScheduleSerializer},
+        responses=GroupScheduleSerializer,
         examples=[
             OpenApiExample(
                 name="스케줄 생성 예시",
@@ -55,25 +51,22 @@ class ScheduleView(APIView):
         )
         serializer.is_valid(raise_exception=True)
 
-        user_id = cast(int, request.user.id)
+        if not request.user.is_authenticated:
+            from rest_framework.exceptions import ValidationError
+
+            raise ValidationError({"detail": "로그인이 필요합니다."})
+
         try:
-            assert request.user.pk is not None
             GroupMember.objects.get(
                 user_id=request.user.pk,
                 study_group_id=study_group,
             )
         except GroupMember.DoesNotExist:
-            from rest_framework.exceptions import (
-                ValidationError,
-            )
+            from rest_framework.exceptions import ValidationError
 
             raise ValidationError({"detail": "요청 유저는 이 스터디의 멤버가 아닙니다."})
 
-        participants = serializer.validated_data.get("participants", [])
-
         validated_data = serializer.validated_data.copy()
-        validated_data["participants"] = participants
-
         schedule = ScheduleService.create_schedule(
             validated_data=validated_data,
             group_id=group_id,
@@ -89,9 +82,12 @@ class ScheduleView(APIView):
         tags=["Schedules"],
         summary="스케줄 목록 조회",
         description="스터디 그룹의 전체 스케줄 목록을 조회합니다.",
-        responses={200: GroupScheduleSerializer},
+        responses=GroupScheduleSerializer,
     )
     def get(self, request: Request, group_id: int) -> Response:
+        if not request.user.is_authenticated:
+            return Response({"detail": "로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
+
         schedules = ScheduleService.list_schedules(group_id=group_id)
         serializer = GroupScheduleSerializer(schedules, many=True)
         return Response({"data": serializer.data}, status=status.HTTP_200_OK)
@@ -105,11 +101,13 @@ class ScheduleDetailView(APIView):
         tags=["Schedules"],
         summary="스케줄 상세 조회",
         description="특정 스케줄의 상세 정보를 조회합니다.",
-        responses={200: GroupScheduleSerializer},
+        responses=GroupScheduleSerializer,
     )
     def get(self, request: Request, group_id: int, schedule_id: int) -> Response:
-        schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
+        if not request.user.is_authenticated:
+            return Response({"detail": "로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
+        schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
         if schedule.study_group_id != group_id:
             return Response({"detail": "접근 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -122,10 +120,10 @@ class ScheduleDetailView(APIView):
         summary="스케줄 수정",
         description="기존 스케줄의 정보를 수정합니다.",
         request=GroupScheduleSerializer,
-        responses={200: GroupScheduleSerializer},
+        responses=GroupScheduleSerializer,
         examples=[
             OpenApiExample(
-                name="스케줄 수성 예시",
+                name="스케줄 수정 예시",
                 value={
                     "title": "스케줄 제목 수정123",
                     "objective": "설명수정123",
@@ -138,8 +136,10 @@ class ScheduleDetailView(APIView):
         ],
     )
     def put(self, request: Request, group_id: int, schedule_id: int) -> Response:
-        schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
+        if not request.user.is_authenticated:
+            return Response({"detail": "로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
+        schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
         if schedule.study_group_id != group_id:
             return Response({"detail": "접근 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -177,8 +177,10 @@ class ScheduleDetailView(APIView):
         responses={204: None},
     )
     def delete(self, request: Request, group_id: int, schedule_id: int) -> Response:
-        schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
+        if not request.user.is_authenticated:
+            return Response({"detail": "로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
+        schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
         if schedule.study_group_id != group_id:
             return Response({"detail": "접근 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
