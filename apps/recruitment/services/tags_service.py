@@ -20,9 +20,9 @@ class TagService:
         name = (name or "").strip()
         if not name:
             return None, False
-        existing = Tag.objects.filter(name__iexact=name).first()
-        if existing:
-            return existing, False
 
-        tag = Tag.objects.create(name=name)
+        if Tag.objects.filter(name__iexact=name).exists():  # 존재 여부만 빠르게 확인
+            return None, False
+
+        tag = Tag.objects.create(name=name)  # 존재 하지 않으면 새로 생성
         return tag, True

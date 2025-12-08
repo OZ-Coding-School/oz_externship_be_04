@@ -5,10 +5,13 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from apps.recruitment.models import Tag
+from apps.recruitment.services.tags_service import TagService
 
 
 class TagSerializer(serializers.ModelSerializer[Tag]):
     """태그 조회 및 등록"""
+
+    name = serializers.CharField(required=True, allow_blank=True)
 
     class Meta:
         model = Tag
@@ -18,6 +21,10 @@ class TagSerializer(serializers.ModelSerializer[Tag]):
 
     def validate_name(self, value: str) -> str:
         name = (value or "").strip()
+
+        if not name:
+            raise ValidationError("name은 필수 입니다.")
+
         if not 1 <= len(name) <= 20:
             raise ValidationError("태그 이름은 1자 이상 20자 이하로 입력해주세요")
 
@@ -25,6 +32,19 @@ class TagSerializer(serializers.ModelSerializer[Tag]):
             raise ValidationError("태그 이름에 허용되지 않는 문자가 포함되어 있습니다.")
 
         return name
+
+    def create(self, validated_data: Any) -> Tag:
+        name = validated_data["name"]
+
+        tag, created = TagService.create_tag(name)
+
+        if tag is None:
+            raise ValidationError({"error_detail": "태그 생성에 실패했습니다."})
+
+        if not created:
+            raise ValidationError({"error_detail": "이미 존재하는 태그입니다."})
+
+        return tag
 
 
 class RecruitmentTagUpdateSerializer(serializers.Serializer[Any]):
@@ -48,13 +68,5 @@ class RecruitmentTagUpdateSerializer(serializers.Serializer[Any]):
 
         if len(value) != len(set(value)):
             raise ValidationError("태그 ID는 중복될 수 없습니다.")
-
-        requested_ids = list(map(int, set(value)))
-        existing_ids = set(Tag.objects.filter(id__in=requested_ids).values_list("id", flat=True))
-        missing = [str(i) for i in requested_ids if i not in existing_ids]
-        if missing:
-            raise ValidationError(
-                f"존재하지 않는 태그 ID가 포함되어 있습니다: {', '.join(missing)}"
-            )  # 존재하지 않는 태그 ID 검증 추가
 
         return value

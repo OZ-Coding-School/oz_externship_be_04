@@ -61,16 +61,16 @@ class TestTags(APITestCase):
 
     def test_tag_creation_empty_name(self) -> None:
         response = self.client.post(self.tag_list_url, {"name": ""})
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.data["error_detail"], "name은 필수입니다.")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["name"][0], "name은 필수 입니다.")
 
     def test_tag_creation_unauthenticated(self) -> None:
         self.client.force_authenticate(user=None)
-        response = self.client.post(self.tag_list_url, {"name": "NewTag"})
-        self.assertEqual(response.status_code, 401)
+        response = self.client.post(self.tag_list_url, {"name": "Framework"})
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_tag_pagination(self) -> None:
         response = self.client.get(self.tag_list_url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 5)
         self.assertEqual(response.data["count"], 6)

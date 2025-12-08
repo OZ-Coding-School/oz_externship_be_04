@@ -1,5 +1,6 @@
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -67,19 +68,24 @@ class TagListAPIView(APIView):
             return Response(
                 {"error_detail": "자격 인증 데이터가 제공되지 않았습니다."}, status=status.HTTP_401_UNAUTHORIZED
             )
-        name = (request.data.get("name") or "").strip()
-        if not name:
-            return Response({"error_detail": "name은 필수입니다."}, status=status.HTTP_400_BAD_REQUEST)
 
-        tag, created = TagService.create_tag(name)
+        serializer = TagSerializer(data=request.data)
 
-        if tag is None:
-            return Response({"error_detail": "태그 생성에 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        if not created:
-            return Response({"error_detail": "이미 존재하는 태그입니다."}, status=status.HTTP_409_CONFLICT)
+        try:
+            tag = serializer.save()
+        except ValidationError:
+            return Response(
+                {"error_detail": "이미 존재하는 태그입니다."},
+                status=status.HTTP_409_CONFLICT,
+            )
 
         return Response(
-            {"detail": f"태그 '{tag.name}'가 정상적으로 등록되었습니다.", "tag": TagSerializer(tag).data},
+            {
+                "detail": f"태그 '{tag.name}'가 정상적으로 등록되었습니다.",
+                "tag": TagSerializer(tag).data,
+            },
             status=status.HTTP_201_CREATED,
         )
