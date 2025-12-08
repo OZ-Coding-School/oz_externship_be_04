@@ -37,7 +37,6 @@ class ScheduleView(APIView):
             )
         ],
     )
-
     def post(self, request: Request, group_id: int) -> Response:
         study_group = StudyGroup.objects.get(id=group_id)
 
@@ -90,7 +89,6 @@ class ScheduleView(APIView):
         description="스터디 그룹의 전체 스케줄 목록을 조회합니다.",
         responses={200: GroupScheduleSerializer},
     )
-
     def get(self, request: Request, group_id: int) -> Response:
         schedules = ScheduleService.list_schedules(group_id=group_id)
         serializer = GroupScheduleSerializer(schedules, many=True)
