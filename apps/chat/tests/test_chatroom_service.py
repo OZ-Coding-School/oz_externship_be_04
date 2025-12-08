@@ -1,7 +1,7 @@
 import time
 
-from django.core.exceptions import PermissionDenied
 from django.test import TestCase
+from rest_framework.exceptions import PermissionDenied
 
 from apps.chat.models.chat_message import ChatMessage
 from apps.chat.models.last_read_message import LastReadMessage
@@ -80,6 +80,7 @@ class TestChatRoomService(TestCase):
     def test_get_room_info(self) -> None:
         info = ChatRoomService.get_room_info(self.group, self.user)
         self.assertEqual(info["group_id"], self.group.id)
+
         self.assertEqual(len(info["members"]), 1)
         self.assertEqual(info["members"][0]["nickname"], self.user.nickname)
 
