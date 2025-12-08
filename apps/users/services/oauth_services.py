@@ -1,5 +1,5 @@
-from typing import Any, Dict, Tuple
 import uuid
+from typing import Any, Dict, Tuple
 
 from django.db import transaction
 
@@ -17,10 +17,9 @@ class SocialLoginService:
             raise ValueError("유효하지 않은 소셜 로그인 제공자입니다.")
 
         social_user: SocialUser | None = (
-            SocialUser.objects.filter(
-                provider=provider,
-                provider_id=provider_id
-            ).select_related("user").first()
+            SocialUser.objects.filter(provider=provider, provider_id=provider_id)
+            .select_related("user")
+            .first()
         )
 
         if social_user:
@@ -36,11 +35,10 @@ class SocialLoginService:
                 )
                 return existing_user, False
 
-        # 3️⃣ 신규 유저 → 가입 + 소셜 계정 저장
         if not email:
             email = f"{provider}_{provider_id}@auto.com"
 
-        nickname: str = self._generate_unique_nickname()
+        nickname = self._generate_unique_nickname()
 
         user: User = User.objects.create(
             email=email,
@@ -57,5 +55,5 @@ class SocialLoginService:
 
         return user, True
 
-    def _generate_unique_nickname(self, provider: str) -> str:
-        return f"{provider}_{uuid.uuid4().hex[:8]}"
+    def _generate_unique_nickname(self) -> str:
+        return f"user_{uuid.uuid4().hex[:8]}"
