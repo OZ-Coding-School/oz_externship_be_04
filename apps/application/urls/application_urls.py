@@ -7,6 +7,7 @@ from apps.application.views.admin_application_views import (
 from apps.application.views.applicant_application_views import (
     ApplicationCancelView,
     ApplicationCreateView,
+    ApplicationDeleteView,
     MyApplicationDetailView,
     MyApplicationListView,
 )
@@ -23,8 +24,9 @@ urlpatterns = [
         "recruitments/<str:recruitment_uuid>/applications", ApplicationCreateView.as_view(), name="application-create"
     ),
     path("applications/mine", MyApplicationListView.as_view(), name="application-list-mine"),
-    path("applications/<str:application_uuid>", MyApplicationDetailView.as_view(), name="application-detail"),
-    path("applications/<str:application_uuid>/cancel", ApplicationCancelView.as_view(), name="application-cancel"),
+    path("applications/<int:application_id>", MyApplicationDetailView.as_view(), name="application-detail"),
+    path("applications/<int:application_id>/cancel", ApplicationCancelView.as_view(), name="application-cancel"),
+    path("applications/<int:application_id>", ApplicationDeleteView.as_view(), name="application-delete"),
     # Recruiter
     path(
         "recruitments/<str:recruitment_uuid>/applicants",
@@ -49,7 +51,7 @@ urlpatterns = [
     # Admin
     path("admin/applications", AdminApplicationListView.as_view(), name="admin-application-list"),
     path(
-        "admin/applications/<str:application_uuid>",
+        "admin/applications/<int:application_id>",
         AdminApplicationDetailView.as_view(),
         name="admin-application-detail",
     ),
