@@ -86,11 +86,7 @@ class AdminAccountUpdateSerializer(serializers.Serializer[Any]):
         error_messages={"invalid": "11자리 숫자로 구성해야 합니다."},
         help_text="휴대폰 번호(예: 01012349876)",
     )
-    birthday = serializers.DateTimeField(required=False, help_text="생년월일 (예: 2001-09-07)")
+    birthday = serializers.DateField(required=False, help_text="생년월일 (예: 2001-09-07)")
     gender = serializers.ChoiceField(required=False, choices=[("M", "M"), ("F", "F")], help_text="성별 (M/F 선택)")
-    status = serializers.ChoiceField(
-        required=False,
-        choices=[("active", "active"), ("inactive", "inactive"), ("withdrew", "withdrew")],
-        help_text="회원 상태 (active/inactive/withdrew)",
-    )
+    is_active = serializers.BooleanField(required=False, help_text="계정 활성화 여부")
     profile_img_url = serializers.URLField(required=False, help_text="프로필 이미지 URL")

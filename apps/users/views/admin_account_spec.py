@@ -325,7 +325,7 @@ class AdminAccountDetailSpec(APIView):
                     "phone_number": "01000000001",
                     "email": "user1@example.com",
                     "role": "user",
-                    "status": "active",
+                    "is_active": True,
                     "created_at": "2005-01-01T13:00:47.50525+09:00",
                     "updated_at": "2025-10-30T14:01:57.505250+09:00",
                     "profile_img_url": "https://example.com/profile/user1.png",
