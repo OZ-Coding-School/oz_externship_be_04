@@ -4,8 +4,8 @@ from django.contrib.auth.models import AnonymousUser
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
-from rest_framework.pagination import CursorPagination
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.pagination import CursorPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -29,6 +29,7 @@ def get_authenticated_user(request: Request) -> User:
     assert isinstance(user, User)
 
     return user
+
 
 class ApplicationCursorPagination(CursorPagination):
     page_size = 10
@@ -91,12 +92,7 @@ class MyApplicationListView(APIView):
 
         user = get_authenticated_user(request)
 
-        queryset = (
-            Application.objects
-            .filter(applicant=user)
-            .select_related("recruitment")
-            .order_by("-created_at")
-        )
+        queryset = Application.objects.filter(applicant=user).select_related("recruitment").order_by("-created_at")
 
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(queryset, request, view=self)
