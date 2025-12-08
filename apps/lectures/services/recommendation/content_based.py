@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 from scipy.sparse import spmatrix, vstack
@@ -147,10 +147,10 @@ def build_user_vector(
     return stacked.mean(axis=0)
 
 
-def recommend_lectures(user: User, top_n: int = 3) -> List[CrawledLecture]:
+def recommend_lectures(user: User, top_n: int = 3) -> Tuple[List[CrawledLecture], str]:
     lectures = CrawledLecture.objects.prefetch_related("categories").all()
     if not lectures:
-        return []
+        return [], "lecture not crawled"
 
     corpus = [remove_stopwords(normalize_tech(clean_text(build_lecture_corpus(lec)))) for lec in lectures]
     lecture_ids = [lec.id for lec in lectures]
@@ -159,10 +159,14 @@ def recommend_lectures(user: User, top_n: int = 3) -> List[CrawledLecture]:
     lecture_vectors = vectorizer.fit_transform(corpus)
 
     user_vec = build_user_vector(user, lecture_vectors, lecture_ids)
-    if user_vec is None:
-        return []
 
-    sims = cosine_similarity(user_vec, lecture_vectors).flatten()
-    top_idx = sims.argsort()[::-1][:top_n]
+    if user_vec is not None:
+        sims = cosine_similarity(user_vec, lecture_vectors).flatten()
+        top_idx = sims.argsort()[::-1][:top_n]
+        recommended = [lectures[i] for i in top_idx]
+        return recommended, "personalized"
+    else:
+        import random
 
-    return [lectures[i] for i in top_idx]
+        recommended = random.sample(list(lectures), min(top_n, len(lectures)))
+        return recommended, "random"
