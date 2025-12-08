@@ -11,6 +11,7 @@ from apps.core.logger.logging import get_logger
 
 Params = Mapping[str, str | int | float | bool | None | Sequence[str | int | float | bool | None]]
 logger = get_logger(__name__)
+logger.info("인프런 전체강의 크롤링 시작")
 
 
 class InflearnCrawler:
@@ -24,20 +25,12 @@ class InflearnCrawler:
     review_params: Params = {
         "pageNumber": 1,
         "pageSize": 4,
-        "sort": "RECOMMEND",
+        "sort": "RECENT",
         "lang": "ko",
     }
 
-    rating_map = {
-        5: 5,
-        4: 4,
-        3: 3,
-        2: 2,
-        1: 1,
-    }
-
     async def get_all_courses(self) -> List[Dict[str, Any]]:
-        logger.info(f"인프런 전체 강의 크롤링 시작")
+        logger.info("get all courses")
 
         async with httpx.AsyncClient(
             timeout=20.0, http2=True, limits=Limits(max_connections=200, max_keepalive_connections=200)
@@ -159,7 +152,7 @@ class InflearnCrawler:
             rv_list = []
 
             for rv in items:
-                rv_list.append({"rating": self.rating_map.get(rv.get("star"), 0), "content": rv.get("body", "")})
+                rv_list.append({"rating": rv.get("star", 0), "content": rv.get("body", "")})
 
             return {"course_id": course_id, "reviews": rv_list}
         except Exception:
@@ -177,21 +170,14 @@ class InflearnCrawler:
         for cid, raw in course_dict.items():
             info = raw.get("course", {})
 
-            level_map = {
-                "BEGINNER": "EASY",
-                "INTERMEDIATE": "NORMAL",
-                "ADVANCED": "HARD",
-            }
-
-            label_map = {
-                "EASY": "초급",
-                "NORMAL": "중급",
-                "HARD": "어려움",
+            DIFFICULTY_MAP = {
+                "BEGINNER": ("EASY", "초급"),
+                "INTERMEDIATE": ("NORMAL", "중급"),
+                "ADVANCED": ("HARD", "어려움"),
             }
 
             difficulty_raw = info.get("difficulty")
-            difficulty_enum = level_map.get(difficulty_raw, "NORMAL")
-            difficulty_label = label_map.get(difficulty_enum, "중급")
+            difficulty_enum, difficulty_label = DIFFICULTY_MAP.get(difficulty_raw, ("NORMAL", "중급"))
 
             try:
                 merged = {
@@ -208,15 +194,14 @@ class InflearnCrawler:
                     "platform": "INFLEARN",
                     "url_link": f"https://www.inflearn.com/course/{info.get('slug')}",
                     "categories": [
-                        {"id": c.get("id"), "name": c.get("title")}
+                        {"id": int(c.get("id", 0)), "name": str(c.get("title"))}
                         for c in info.get("metadata", {}).get("categories", [])
                     ],
                     "reviews": [
                         {
-                            "id": idx + 1,
+                            "id": f"{cid}_{idx + 1}",
                             "rating": rv.get("rating"),
                             "content": rv.get("content"),
-                            "created_at": rv.get("created_at", None),
                         }
                         for idx, rv in enumerate(review_dict.get(cid, []))
                     ],
