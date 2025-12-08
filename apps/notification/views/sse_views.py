@@ -16,9 +16,13 @@ UserModel = get_user_model()
 
 
 async def notification_stream(request: HttpRequest) -> Union[StreamingHttpResponse, JsonResponse]:
-    token = request.GET.get("token")
-    if not token:
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    # 헤더에서 베어러 접두사 제거
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+    else:
         return JsonResponse({"detail": "토큰이 필요합니다."}, status=401)
+
     try:
         auth = JWTAuthentication()
         valid_token = auth.get_validated_token(token.encode())

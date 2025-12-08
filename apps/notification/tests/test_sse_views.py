@@ -41,10 +41,10 @@ class SSEViewStreamTests(TestCase):
     @patch("apps.notification.views.sse_views.JWTAuthentication")
     def test_invalid_token(self, mock_jwt_auth_cls: MagicMock) -> None:
         mock_auth = MagicMock()
-        mock_auth.get_validated_token.side_effect = InvalidToken("잘못된 토큰")
+        mock_auth.get_validated_token.side_effect = lambda token: (_ for _ in ()).throw(InvalidToken("잘못된 토큰"))
         mock_jwt_auth_cls.return_value = mock_auth
 
-        request = self.factory.get("/stream", {"token": "잘못된 토큰"})
+        request = self.factory.get("/stream", HTTP_AUTHORIZATION="Bearer 잘못된 토큰")
         response = async_to_sync(notification_stream)(request)
 
         assert isinstance(response, JsonResponse)
@@ -88,7 +88,7 @@ class SSEViewStreamTests(TestCase):
 
         mock_notification_service.subscribe_notification.side_effect = fake_subscribe_notification
 
-        request = self.factory.get("/stream", {"token": "ValidToken"})
+        request = self.factory.get("/stream", HTTP_AUTHORIZATION="Bearer ValidToken")
         response = async_to_sync(notification_stream)(request)
 
         assert isinstance(response, StreamingHttpResponse)
