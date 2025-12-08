@@ -1,9 +1,14 @@
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.test import APITestCase
 
 from apps.recruitment.models import Tag
+from apps.recruitment.serializers.tags import (
+    RecruitmentTagUpdateSerializer,
+    TagSerializer,
+)
 
 User = get_user_model()
 
@@ -74,3 +79,47 @@ class TestTags(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 5)
         self.assertEqual(response.data["count"], 6)
+
+    def test_tag_creation_fail_too_long(self) -> None:
+        invalid_data = {"name": "안녕하세요 태그 길이 20자 이상 테스트 검증용 입니다."}
+        serializer = TagSerializer(data=invalid_data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("name", serializer.errors)
+        self.assertIn("20자 이하", str(serializer.errors["name"]))
+
+    def test_tag_name_invalid_characters(self) -> None:
+        """허용되지 않는 문자가 포함된 태그 이름은 실패"""
+        invalid_names = [
+            "Python!",  # 느낌표
+            "Django@",  # @ 기호
+            "테스트#",  # # 기호
+            "😊",  # 이모지
+        ]
+
+        for name in invalid_names:
+            serializer = TagSerializer(data={"name": name})
+            self.assertFalse(serializer.is_valid())
+            self.assertIn("허용되지 않는", str(serializer.errors["name"]))
+
+    def test_validate_tags_too_many(self) -> None:
+        """태그 6개 이상 입력 시 실패"""
+        data = {
+            "tags": [
+                self.tag1.id,
+                self.tag2.id,
+                self.tag3.id,
+                self.tag4.id,
+                self.tag5.id,
+                self.tag6.id,
+            ]
+        }
+        serializer = RecruitmentTagUpdateSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("5개이상", str(serializer.errors["tags"]))
+
+    def test_validate_tags_duplicates(self) -> None:
+        """중복된 태그 ID 입력 시 실패"""
+        data = {"tags": [self.tag1.id, self.tag2.id, self.tag2.id, self.tag3.id]}
+        serializer = RecruitmentTagUpdateSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("중복될 수 없습니다", str(serializer.errors["tags"]))
