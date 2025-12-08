@@ -19,7 +19,6 @@ class SocialLoginService:
         social_user: SocialUser | None = (
             SocialUser.objects.filter(provider=provider, provider_id=provider_id).select_related("user").first()
         )
-
         if social_user:
             return social_user.user, False
 
@@ -33,12 +32,23 @@ class SocialLoginService:
                 )
                 return existing_user, False
 
+        linked_social_user: SocialUser | None = (
+            SocialUser.objects.filter(provider_id=provider_id).select_related("user").first()
+        )
+        if linked_social_user:
+            SocialUser.objects.create(
+                user=linked_social_user.user,
+                provider=provider,
+                provider_id=provider_id,
+            )
+            return linked_social_user.user, False
+
         if not email:
             email = f"{provider}_{provider_id}@auto.com"
 
-        nickname = self._generate_unique_nickname()
+        nickname = self._generate_unique_nickname(provider)
 
-        user: User = User.objects.create(
+        new_user: User = User.objects.create(
             email=email,
             nickname=nickname,
             name=nickname,
@@ -46,12 +56,12 @@ class SocialLoginService:
         )
 
         SocialUser.objects.create(
-            user=user,
+            user=new_user,
             provider=provider,
             provider_id=provider_id,
         )
 
-        return user, True
+        return new_user, True
 
-    def _generate_unique_nickname(self) -> str:
-        return f"user_{uuid.uuid4().hex[:8]}"
+    def _generate_unique_nickname(self, provider: str) -> str:
+        return f"{provider}_{uuid.uuid4().hex[:8]}"
