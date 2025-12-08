@@ -46,15 +46,17 @@ class RedisPubSubService:
 
     # 채널 구독 및 메시지 스트리밍
     async def subscribe_notification(
-        self, user_id: Optional[int] = None, group_id: Optional[int] = None
+        self, user_id: Optional[int] = None, group_ids: Optional[list[int]] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
-        if not user_id and not group_id:
+        if not user_id and not group_ids:
             raise ValueError("유저 또는 그룹 중 최소 하나 이상이 필요합니다.")
         channels = []
         if user_id:
             channels.append(self.get_user_channel(user_id))
-        if group_id:
-            channels.append(self.get_group_channel(group_id))
+        # 복수의 그룹도 처리할 수 있게끔 수정
+        if group_ids:
+            for gid in group_ids:
+                channels.append(self.get_group_channel(gid))
 
         pubsub = self.redis_client.pubsub()
         try:
