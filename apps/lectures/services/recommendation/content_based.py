@@ -123,7 +123,12 @@ def build_user_vector(
         StudyLecture.objects.filter(study_group_id__in=group_ids).values_list("lecture_id", flat=True)
     )
 
-    user_lecture_ids = bookmark_ids | group_lecture_ids
+    preferred_cats = user.preferred_categories.values_list("category_id", flat=True)
+    category_lecture_ids = set(
+        CrawledLecture.objects.filter(categories__id__in=preferred_cats).values_list("id", flat=True)
+    )
+
+    user_lecture_ids = bookmark_ids | group_lecture_ids | category_lecture_ids
     if not user_lecture_ids:
         return None
 
