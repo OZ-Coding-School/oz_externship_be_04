@@ -16,10 +16,7 @@ class ScheduleService:
 
     @staticmethod
     def create_schedule(*, validated_data: Dict[str, Any], group_id: int) -> GroupSchedule:
-        """
-        validated_data['participants']는 GroupMember 객체 리스트(또는 빈 리스트)라고 가정.
-        리더 자동 추가 로직 제거: 전달된 participants만 참가자로 등록.
-        """
+
         participants: List[GroupMember] = validated_data.pop("participants", [])
 
         try:
