@@ -4,6 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
+from rest_framework.pagination import CursorPagination
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -28,6 +29,11 @@ def get_authenticated_user(request: Request) -> User:
     assert isinstance(user, User)
 
     return user
+
+class ApplicationCursorPagination(CursorPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    ordering = "-created_at"
 
 
 class ApplicationCreateView(APIView):
@@ -70,6 +76,7 @@ class MyApplicationListView(APIView):
     """[REQ-APLY-006] 내가 지원한 공고 목록 조회"""
 
     permission_classes = [IsAuthenticated]
+    pagination_class = ApplicationCursorPagination
 
     @extend_schema(
         summary="내 지원 목록 조회 (cursor)",
@@ -77,16 +84,29 @@ class MyApplicationListView(APIView):
             OpenApiParameter("cursor", OpenApiTypes.STR, required=False),
             OpenApiParameter("page_size", OpenApiTypes.INT, required=False),
         ],
-        responses={200: ApplicantApplicationListSerializer},
+        responses={200: ApplicantApplicationListSerializer(many=True)},
         tags=["Application - Applicant"],
     )
     def get(self, request: Request) -> Response:
-        # TODO: CursorPagination 적용 필요(현재는 전체 목록 반환)
-        user = get_authenticated_user(request)
-        applications = Application.objects.filter(applicant=user).order_by("-created_at")
-        serializer = ApplicantApplicationListSerializer(applications, many=True)
 
-        return Response({"next": None, "previous": None, "results": serializer.data})
+        user = get_authenticated_user(request)
+
+        queryset = (
+            Application.objects
+            .filter(applicant=user)
+            .select_related("recruitment")
+            .order_by("-created_at")
+        )
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request, view=self)
+
+        if page is not None:
+            serializer = ApplicantApplicationListSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = ApplicantApplicationListSerializer(queryset, many=True)
+        return Response({"results": serializer.data}, status=status.HTTP_200_OK)
 
 
 class MyApplicationDetailView(APIView):
