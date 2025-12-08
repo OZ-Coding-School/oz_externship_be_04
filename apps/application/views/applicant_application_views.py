@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from django.contrib.auth.models import AnonymousUser
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import CursorPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -21,16 +19,6 @@ from apps.recruitment.models import Recruitment
 from apps.users.models import User
 
 
-def get_authenticated_user(request: Request) -> User:
-    user = request.user
-
-    if isinstance(request.user, AnonymousUser):
-        raise PermissionDenied("로그인이 필요합니다.")
-    assert isinstance(user, User)
-
-    return user
-
-
 class ApplicationCursorPagination(CursorPagination):
     page_size = 10
     page_size_query_param = "page_size"
@@ -45,15 +33,41 @@ class ApplicationCreateView(APIView):
     @extend_schema(
         summary="지원서 제출",
         request=ApplicationCreateSerializer,
-        responses={200: dict},
         tags=["Application - Applicant"],
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {
+                        "detail": {"type": "string", "example": "스터디 공고에 지원 신청이 완료되었습니다."}
+                    },
+                }
+            ),
+            404: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {"error_detail": {"type": "string", "example": "해당 공고를 찾을 수 없습니다."}},
+                }
+            ),
+            409: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error_detail": {"type": "string", "example": "해당 공고에 이미 지원한 내역이 존재합니다."}
+                    },
+                }
+            ),
+        },
     )
     def post(self, request: Request, recruitment_uuid: str) -> Response:
+
+        user = request.user
+        assert isinstance(user, User)
+
         try:
             recruitment = Recruitment.objects.get(uuid=recruitment_uuid)
         except Recruitment.DoesNotExist:
             return Response({"error_detail": "해당 공고를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
-        user = get_authenticated_user(request)
 
         if Application.objects.filter(recruitment=recruitment, applicant=user).exists():
             return Response(
@@ -70,7 +84,10 @@ class ApplicationCreateView(APIView):
             **serializer.validated_data,
         )
 
-        return Response({"detail": "지원이 완료되었습니다."}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"detail": "스터디 공고에 지원 신청이 완료되었습니다."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class MyApplicationListView(APIView):
@@ -90,7 +107,8 @@ class MyApplicationListView(APIView):
     )
     def get(self, request: Request) -> Response:
 
-        user = get_authenticated_user(request)
+        user = request.user
+        assert isinstance(user, User)
 
         queryset = Application.objects.filter(applicant=user).select_related("recruitment").order_by("-created_at")
 
@@ -112,23 +130,34 @@ class MyApplicationDetailView(APIView):
 
     @extend_schema(
         summary="내 지원 상세 조회",
-        responses={200: ApplicantApplicationDetailSerializer},
+        responses={
+            200: ApplicantApplicationDetailSerializer,
+            404: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {"error_detail": {"type": "string", "example": "해당 지원 내역을 찾을 수 없습니다."}},
+                }
+            ),
+        },
         tags=["Application - Applicant"],
     )
-    def get(self, request: Request, application_uuid: str) -> Response:
-        user = get_authenticated_user(request)
+    def get(self, request: Request, application_id: int) -> Response:
+
+        user = request.user
+        assert isinstance(user, User)
+
         application = (
-            Application.objects.filter(uuid=application_uuid, applicant=user).select_related("recruitment").first()
+            Application.objects.filter(id=application_id, applicant=user).select_related("recruitment").first()
         )
 
-        if application is None:
+        if not application:
             return Response(
-                {"error_detail": "해당 지원서를 찾을 수 없습니다."},
+                {"error_detail": "해당 지원 내역을 찾을 수 없습니다."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         serializer = ApplicantApplicationDetailSerializer(application)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=200)
 
 
 class ApplicationCancelView(APIView):
@@ -138,16 +167,38 @@ class ApplicationCancelView(APIView):
 
     @extend_schema(
         summary="지원 취소",
-        responses={200: OpenApiTypes.OBJECT},
         tags=["Application - Applicant"],
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {"detail": {"type": "string", "example": "지원 내역이 취소되었습니다."}},
+                }
+            ),
+            404: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {"error_detail": {"type": "string", "example": "해당 지원내역을 찾을 수 없습니다."}},
+                }
+            ),
+            403: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {"error_detail": {"type": "string", "example": "권한이 없습니다."}},
+                }
+            ),
+        },
     )
-    def post(self, request: Request, application_uuid: str) -> Response:
-        user = get_authenticated_user(request)
-        application = Application.objects.filter(uuid=application_uuid, applicant=user).first()
+    def post(self, request: Request, application_id: int) -> Response:
 
-        if application is None:
+        user = request.user
+        assert isinstance(user, User)
+
+        application = Application.objects.filter(id=application_id, applicant=user).first()
+
+        if not application:
             return Response(
-                {"error_detail": "해당 지원서를 찾을 수 없습니다."},
+                {"error_detail": "해당 지원내역을 찾을 수 없습니다."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -155,3 +206,57 @@ class ApplicationCancelView(APIView):
         application.save(update_fields=["status"])
 
         return Response({"detail": "지원 내역이 취소되었습니다."}, status=status.HTTP_200_OK)
+
+
+class ApplicationDeleteView(APIView):
+    """[REQ-APLY-008] 지원 내역 삭제"""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="지원 내역 삭제",
+        tags=["Application - Applicant"],
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {"detail": {"type": "string", "example": "지원 내역이 삭제되었습니다."}},
+                }
+            ),
+            403: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {"error_detail": {"type": "string", "example": "권한이 없습니다."}},
+                }
+            ),
+            404: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {"error_detail": {"type": "string", "example": "해당 지원내역을 찾을 수 없습니다."}},
+                }
+            ),
+        },
+    )
+    def delete(self, request: Request, application_id: int) -> Response:
+
+        user = request.user
+        assert isinstance(user, User)
+
+        application = Application.objects.filter(id=application_id).first()
+        if not application:
+            return Response(
+                {"error_detail": "해당 지원내역을 찾을 수 없습니다."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if application.applicant != user:
+            return Response(
+                {"error_detail": "권한이 없습니다."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        application.delete()
+        return Response(
+            {"detail": "지원 내역이 삭제되었습니다."},
+            status=status.HTTP_200_OK,
+        )
