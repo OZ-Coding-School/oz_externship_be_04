@@ -403,7 +403,7 @@ class AdminAccountDetailSpec(APIView):
         examples=[
             OpenApiExample(
                 name="Success Example",
-                value={"detail": "권한이 변경되었습니다."},
+                value={"detail": "유저 데이터가 삭제되었습니다. - pk: 1"},
                 status_codes=["200"],
             ),
             OpenApiExample(
@@ -428,5 +428,5 @@ class AdminAccountDetailSpec(APIView):
             raise Http404
 
         return Response(
-            {"detail": "권한이 변경되었습니다."},
+            {"detail": "유저 데이터가 삭제되었습니다. - pk: {account_id}"},
         )
