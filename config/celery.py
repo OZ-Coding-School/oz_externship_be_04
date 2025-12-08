@@ -15,11 +15,17 @@ app.autodiscover_tasks()
 
 app.conf.timezone = "Asia/Seoul"
 
-app.conf.beat_schedule.update(
-    {
-        "sync_inflearn_every_midnight": {
-            "task": "lectures.sync_inflearn_task",
-            "schedule": crontab(hour=0, minute=0),
-        },
-    }
-)  # beat 충돌 방지
+app.conf.beat_schedule = {
+    "sync_inflearn_every_midnight": {
+        "task": "lectures.sync_inflearn_task",
+        "schedule": crontab(hour=0, minute=0),
+    },
+    "send_tomorrow_schedule_notifications": {
+    "task": "apps.notification.infra.task.send_tomorrow_schedule_notifications",
+    "schedule": crontab(hour=0, minute=1),
+    },
+    "send_today_schedule_notifications": {
+        "task": "apps.notification.infra.task.send_today_schedule_notifications",
+        "schedule": crontab(hour=0, minute=1),
+    },
+}
