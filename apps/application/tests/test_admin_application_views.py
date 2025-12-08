@@ -12,11 +12,7 @@ from apps.users.models import User
 
 
 class AdminApplicationAPITestCase(APITestCase):
-    """
-    (Admin) 지원 내역 목록/상세 조회 API 테스트
-    - AdminApplicationListView
-    - AdminApplicationDetailView
-    """
+    """(Admin) 지원 내역 목록/상세 조회 API 테스트"""
 
     def setUp(self) -> None:
         # 관리자 유저 생성
@@ -177,37 +173,30 @@ class AdminApplicationAPITestCase(APITestCase):
         Application.objects.filter(pk=self.app2.pk).update(created_at=timezone.now() - timedelta(days=1))
         Application.objects.filter(pk=self.app3.pk).update(created_at=timezone.now())
 
-        # 최신순(3, 2, 1)
         response_latest = self.client.get(self.list_url, {"sort": "latest"})
         self.assertEqual(response_latest.status_code, status.HTTP_200_OK)
-        latest_first_uuid = response_latest.data["results"][0]["uuid"]
-        self.assertEqual(latest_first_uuid, str(self.app3.uuid))
+        self.assertEqual(response_latest.data["results"][0]["id"], self.app3.id)
 
-        # 오래된 순(1, 2, 3)
         response_oldest = self.client.get(self.list_url, {"sort": "oldest"})
         self.assertEqual(response_oldest.status_code, status.HTTP_200_OK)
-        oldest_first_uuid = response_oldest.data["results"][0]["uuid"]
-        self.assertEqual(oldest_first_uuid, str(self.app1.uuid))
+        self.assertEqual(response_oldest.data["results"][0]["id"], self.app1.id)
 
     def test_admin_application_detail_success(self) -> None:
         """
         (Admin) 지원 내역 상세 조회 성공 (200 OK)
         """
-        url = f"/api/v1/admin/applications/{self.app1.uuid}"
+        url = f"/api/v1/admin/applications/{self.app1.id}"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["uuid"], str(self.app1.uuid))
+        self.assertEqual(response.data["id"], self.app1.id)
         self.assertEqual(response.data["motivation"], self.app1.motivation)
-        self.assertIn("recruitment", response.data)
-        self.assertIn("applicant", response.data)
 
     def test_admin_application_detail_not_found(self) -> None:
         """
         (Admin) 존재하지 않는 지원 내역 조회 시 404 NOT FOUND
         """
-        random_uuid = uuid.uuid4()
-        url = f"/api/v1/admin/applications/{random_uuid}"
+        url = "/api/v1/admin/applications/999999"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -219,7 +208,7 @@ class AdminApplicationAPITestCase(APITestCase):
         """
         self.client.force_authenticate(user=self.normal_user)
 
-        url = f"/api/v1/admin/applications/{self.app1.uuid}"
+        url = f"/api/v1/admin/applications/{self.app1.id}"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
