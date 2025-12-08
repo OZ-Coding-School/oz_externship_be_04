@@ -1,9 +1,11 @@
+from typing import Any
+
 from rest_framework import serializers
 
 
-class MarkAllReadResponseSerializer(serializers.Serializer):  # type: ignore[type-arg]
+class ErrorResponseSerializer(serializers.Serializer[Any]):
     detail = serializers.CharField()
 
 
-class ErrorResponseSerializer(serializers.Serializer):  # type: ignore[type-arg]
-    error_detail = serializers.CharField()
+class MarkAllReadResponseSerializer(serializers.Serializer[Any]):
+    detail = serializers.CharField()
