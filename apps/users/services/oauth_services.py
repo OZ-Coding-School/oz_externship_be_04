@@ -17,9 +17,7 @@ class SocialLoginService:
             raise ValueError("유효하지 않은 소셜 로그인 제공자입니다.")
 
         social_user: SocialUser | None = (
-            SocialUser.objects.filter(provider=provider, provider_id=provider_id)
-            .select_related("user")
-            .first()
+            SocialUser.objects.filter(provider=provider, provider_id=provider_id).select_related("user").first()
         )
 
         if social_user:
