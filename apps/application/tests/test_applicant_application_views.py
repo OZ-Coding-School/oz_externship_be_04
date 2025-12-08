@@ -115,16 +115,48 @@ class ApplicantApplicationAPITestCase(APITestCase):
         self.assertIn("이미 지원한 내역이 존재합니다.", response.data["error_detail"])
 
     # 내가 지원한 목록 조회 테스트 (REQ-APLY-006)
-    def test_my_application_list_success(self) -> None:
-        """내 지원 내역 목록 조회 성공 (200 OK)"""
+    def test_my_application_list_with_pagination(self) -> None:
+        """내 지원 목록 조회 - 커서 페이지네이션 동작 테스트"""
 
-        url = reverse("application-list-mine")
+        for i in range(5):
+            new_recruit = Recruitment.objects.create(
+                author=self.author,
+                study_group=self.study_group,
+                title=f"페이지네이션 공고{i}",
+                content="내용",
+                estimated_fee=10000,
+                expected_headcount=5,
+                close_at=timezone.now(),
+            )
+
+            Application.objects.create(
+                recruitment=new_recruit,
+                applicant=self.applicant,
+                self_introduction=f"소개 {i}",
+                motivation=f"동기 {i}",
+                objective="목표",
+                available_time="시간",
+                has_study_experience=False,
+                study_experience="",
+            )
+
+        url = reverse("application-list-mine") + "?page_size=2"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("next", response.data)
+        self.assertIn("results", response.data)
+        self.assertEqual(len(response.data["results"]), 2)
 
-        self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(response.data["results"][0]["uuid"], str(self.existing_application.uuid))
+        next_cursor = response.data["next"]
+        self.assertIsNotNone(next_cursor)
+
+        resp2 = self.client.get(next_cursor)
+        self.assertEqual(len(resp2.data["results"]), 2)
+
+        next_cursor2 = resp2.data["next"]
+        resp3 = self.client.get(next_cursor2)
+        self.assertEqual(len(resp3.data["results"]), 2)
 
     # 내가 지원한 상세 조회 테스트 (REQ-APLY-007)
     def test_my_application_detail_success(self) -> None:
