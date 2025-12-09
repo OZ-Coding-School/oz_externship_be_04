@@ -1,4 +1,6 @@
-from typing import Any, Dict, List, Optional
+from __future__ import annotations
+
+from typing import Any, Optional
 from uuid import UUID
 
 from django.db import transaction
@@ -26,7 +28,31 @@ from apps.recruitment.serializers import (
     RecruitmentListSerializer,
     RecruitmentUpdateSerializer,
 )
-from apps.study_groups.models import StudyGroup
+from apps.users.models import User
+
+ERROR_MESSAGES = {
+    "RECRUITMENT_NOT_FOUND": "해당 공고를 찾을 수 없습니다.",
+    "STUDY_GROUP_NOT_FOUND": "스터디 그룹을 찾을 수 없습니다.",
+    "PERMISSION_DENIED": "권한이 없습니다.",
+    "RECRUITMENT_CLOSED": "마감된 공고는 수정할 수 없습니다.",
+    "ALREADY_CLOSED": "이미 마감된 공고입니다.",
+    "UNAUTHENTICATED": "자격 인증 데이터가 제공되지 않았습니다.",
+}
+
+SUCCESS_MESSAGES = {
+    "RECRUITMENT_CREATED": "공고가 작성되었습니다.",
+    "RECRUITMENT_DELETED": "공고가 삭제되었습니다.",
+}
+
+
+def error_response(message: str, status_code: int) -> Response:
+    """에러 응답 생성"""
+    return Response({"error_detail": message}, status=status_code)
+
+
+def success_response(message: str, status_code: int = status.HTTP_200_OK) -> Response:
+    """성공 응답 생성"""
+    return Response({"detail": message}, status=status_code)
 
 
 def get_base_recruitment_queryset(extra_filters: Optional[Q] = None) -> QuerySet[Recruitment]:
@@ -49,7 +75,7 @@ def get_base_recruitment_queryset(extra_filters: Optional[Q] = None) -> QuerySet
 
 def get_recruitment_detail_queryset(recruitment_uuid: UUID) -> Recruitment:
     """
-    공고 상세 조회용 queryset (중복 제거)
+    공고 상세 조회용 queryset
     attachments prefetch 포함
     """
     return get_object_or_404(
@@ -85,18 +111,20 @@ def apply_sorting(queryset: QuerySet[Recruitment], sort: str, allow_oldest: bool
         return queryset.order_by("-views_count")
     elif sort == "most_bookmarks":
         return queryset.order_by("-bookmark_count")
-    return queryset.order_by("-created_at")  # 기본값
+    return queryset.order_by("-created_at")
 
 
 def save_recruitment_relations(
-    recruitment: Recruitment, tags: List[Tag], files: List[Dict[str, str]], image_urls: List[str]
+    recruitment: Recruitment, tags: list[Tag], files: list[dict[str, str]], image_urls: list[str]
 ) -> None:
     """
     공고 관련 데이터 저장 (태그, 파일, 이미지)
     CreateView와 UpdateView에서 공통 사용
     """
     if tags:
-        RecruitmentTag.objects.bulk_create([RecruitmentTag(recruitment=recruitment, tag=tag) for tag in tags])
+        RecruitmentTag.objects.bulk_create(
+            [RecruitmentTag(recruitment=recruitment, tag=tag) for tag in tags], ignore_conflicts=True
+        )
 
     if files:
         RecruitmentAttachment.objects.bulk_create(
@@ -116,9 +144,9 @@ def save_recruitment_relations(
 
 def update_recruitment_relations(
     recruitment: Recruitment,
-    tags: Optional[List[Tag]],
-    files: Optional[List[Dict[str, str]]],
-    image_urls: Optional[List[str]],
+    tags: Optional[list[Tag]],
+    files: Optional[list[dict[str, str]]],
+    image_urls: Optional[list[str]],
 ) -> None:
     """
     공고 관련 데이터 업데이트 (태그, 파일, 이미지)
@@ -126,28 +154,49 @@ def update_recruitment_relations(
     """
     if tags is not None:
         RecruitmentTag.objects.filter(recruitment=recruitment).delete()
-        save_recruitment_relations(recruitment, tags, [], [])
+        if tags:
+            save_recruitment_relations(recruitment, tags, [], [])
 
     if files is not None:
         RecruitmentAttachment.objects.filter(recruitment=recruitment).delete()
-        save_recruitment_relations(recruitment, [], files, [])
+        if files:
+            save_recruitment_relations(recruitment, [], files, [])
 
     if image_urls is not None:
         RecruitmentImage.objects.filter(recruitment=recruitment).delete()
-        save_recruitment_relations(recruitment, [], [], image_urls)
+        if image_urls:
+            save_recruitment_relations(recruitment, [], [], image_urls)
 
 
-def check_author_permission(recruitment: Recruitment, user: Any) -> Optional[Response]:
+def validate_author_permission(
+    recruitment: Recruitment, user: User
+) -> tuple[Optional[Recruitment], Optional[Response]]:
     """
-    작성자 권한 확인
-    권한 없으면 403 Response 반환, 있으면 None
+    작성자 권한 검증
+
+    Returns:
+        (recruitment, None) if valid
+        (None, error_response) if invalid
     """
     if recruitment.author != user:
-        return Response({"error_detail": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
-    return None
+        return None, error_response(ERROR_MESSAGES["PERMISSION_DENIED"], status.HTTP_403_FORBIDDEN)
+    return recruitment, None
 
 
-def build_paginated_response(page: OffsetPage[Recruitment], serializer_class: type, request: Request) -> Dict[str, Any]:
+def validate_recruitment_not_closed(recruitment: Recruitment) -> tuple[Optional[Recruitment], Optional[Response]]:
+    """
+    공고 마감 상태 검증
+
+    Returns:
+        (recruitment, None) if not closed
+        (None, error_response) if closed
+    """
+    if recruitment.is_closed:
+        return None, error_response(ERROR_MESSAGES["RECRUITMENT_CLOSED"], status.HTTP_400_BAD_REQUEST)
+    return recruitment, None
+
+
+def build_paginated_response(page: OffsetPage[Recruitment], serializer_class: type, request: Request) -> dict[str, Any]:
     """
     OffsetPage를 DRF 페이지네이션 응답 형식으로 변환
     명세서 형식: count, next, previous, results
@@ -185,7 +234,7 @@ class RecruitmentCreateView(APIView):
         description="스터디 모집 공고를 작성합니다. S3에 업로드된 파일/이미지 URL을 전달합니다.",
         request=RecruitmentCreateSerializer,
         responses={
-            201: {"type": "object", "properties": {"detail": {"type": "string"}}},
+            201: RecruitmentDetailSerializer,
             400: OpenApiTypes.OBJECT,
             401: OpenApiTypes.OBJECT,
             403: OpenApiTypes.OBJECT,
@@ -198,8 +247,6 @@ class RecruitmentCreateView(APIView):
         serializer = RecruitmentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        study_group = serializer.validated_data.get("study_group")
-
         tags = serializer.validated_data.pop("tags", [])
         files = serializer.validated_data.pop("files", [])
         image_urls = serializer.validated_data.pop("image_urls", [])
@@ -208,7 +255,10 @@ class RecruitmentCreateView(APIView):
 
         save_recruitment_relations(recruitment, tags, files, image_urls)
 
-        return Response({"detail": "공고가 작성되었습니다."}, status=status.HTTP_201_CREATED)
+        # 생성된 공고를 상세 정보와 함께 반환 (study_group 포함)
+        recruitment = get_recruitment_detail_queryset(recruitment.uuid)
+        serializer = RecruitmentDetailSerializer(recruitment)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class RecruitmentListView(APIView):
@@ -343,12 +393,10 @@ class RecruitmentDetailView(APIView):
         responses={200: RecruitmentDetailSerializer, 404: OpenApiTypes.OBJECT},
         tags=["Recruitments"],
     )
-    @transaction.atomic
-    def get(self, request: Request, recruitment_uuid: UUID) -> Response:
-        recruitment = get_recruitment_detail_queryset(recruitment_uuid)
-
-        Recruitment.objects.filter(uuid=recruitment_uuid).update(views_count=F("views_count") + 1)
-        recruitment.refresh_from_db()
+    def get(self, request: Request, recruitments_uuid: UUID) -> Response:
+        recruitment = get_recruitment_detail_queryset(recruitments_uuid)
+        Recruitment.objects.filter(uuid=recruitments_uuid).update(views_count=F("views_count") + 1)
+        recruitment.views_count = F("views_count") + 1
 
         serializer = RecruitmentDetailSerializer(recruitment)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -373,15 +421,16 @@ class RecruitmentUpdateView(APIView):
         tags=["Recruitments"],
     )
     @transaction.atomic
-    def patch(self, request: Request, recruitment_uuid: UUID) -> Response:
-        recruitment = get_object_or_404(Recruitment, uuid=recruitment_uuid)
+    def patch(self, request: Request, recruitments_uuid: UUID) -> Response:
+        recruitment = get_object_or_404(Recruitment, uuid=recruitments_uuid)
 
-        permission_error = check_author_permission(recruitment, request.user)
-        if permission_error:
-            return permission_error
+        _, error = validate_author_permission(recruitment, request.user)
+        if error:
+            return error
 
-        if recruitment.is_closed:
-            return Response({"error_detail": "마감된 공고는 수정할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        _, error = validate_recruitment_not_closed(recruitment)
+        if error:
+            return error
 
         serializer = RecruitmentUpdateSerializer(recruitment, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -394,7 +443,7 @@ class RecruitmentUpdateView(APIView):
 
         update_recruitment_relations(recruitment, tags, files, image_urls)
 
-        recruitment = get_recruitment_detail_queryset(recruitment_uuid)
+        recruitment = get_recruitment_detail_queryset(recruitments_uuid)
 
         return Response(RecruitmentDetailSerializer(recruitment).data, status=status.HTTP_200_OK)
 
@@ -408,7 +457,10 @@ class RecruitmentDeleteView(APIView):
         summary="공고 삭제 (DELETE)",
         description="공고를 삭제합니다. 작성자만 삭제 가능합니다. Soft Delete 방식으로 is_closed=True로 변경됩니다.",
         responses={
-            200: {"type": "object", "properties": {"detail": {"type": "string"}}},
+            200: {
+                "type": "object",
+                "properties": {"detail": {"type": "string", "example": SUCCESS_MESSAGES["RECRUITMENT_DELETED"]}},
+            },
             401: OpenApiTypes.OBJECT,
             403: OpenApiTypes.OBJECT,
             404: OpenApiTypes.OBJECT,
@@ -416,17 +468,18 @@ class RecruitmentDeleteView(APIView):
         tags=["Recruitments"],
     )
     @transaction.atomic
-    def delete(self, request: Request, recruitment_uuid: UUID) -> Response:
-        recruitment = get_object_or_404(Recruitment, uuid=recruitment_uuid)
+    def delete(self, request: Request, recruitments_uuid: UUID) -> Response:
+        recruitment = get_object_or_404(Recruitment, uuid=recruitments_uuid)
 
-        permission_error = check_author_permission(recruitment, request.user)
-        if permission_error:
-            return permission_error
+        _, error = validate_author_permission(recruitment, request.user)
+        if error:
+            return error
 
-        if recruitment.is_closed:
-            return Response({"error_detail": "이미 마감된 공고입니다."}, status=status.HTTP_400_BAD_REQUEST)
+        _, error = validate_recruitment_not_closed(recruitment)
+        if error:
+            return error_response(ERROR_MESSAGES["ALREADY_CLOSED"], status.HTTP_400_BAD_REQUEST)
 
         recruitment.is_closed = True
         recruitment.save(update_fields=["is_closed"])
 
-        return Response({"detail": "공고가 삭제되었습니다."}, status=status.HTTP_200_OK)
+        return success_response(SUCCESS_MESSAGES["RECRUITMENT_DELETED"])

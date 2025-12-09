@@ -17,13 +17,36 @@ from apps.recruitment.serializers.tags import TagSerializer
 from apps.study_groups.models import StudyGroup, StudyLecture
 
 
+# ============================================================================
+# Summary Serializers (Swagger용 타입 정의)
+# ============================================================================
+
+
+class LectureSummarySerializer(serializers.ModelSerializer[CrawledLecture]):
+    """강의 요약 정보"""
+
+    class Meta:
+        model = CrawledLecture
+        fields = ["id", "title", "instructor"]
+        read_only_fields = ["id", "title", "instructor"]
+
+
+class TagSummarySerializer(serializers.ModelSerializer[Tag]):
+    """태그 요약 정보"""
+
+    class Meta:
+        model = Tag
+        fields = ["id", "name"]
+        read_only_fields = ["id", "name"]
+
+
 class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
     """구인공고 목록 조회"""
 
     thumbnail_img_url = serializers.SerializerMethodField()
     bookmark_count = serializers.IntegerField(read_only=True, default=0)
-    lectures = serializers.SerializerMethodField()
-    tags = serializers.SerializerMethodField()
+    lectures = serializers.SerializerMethodField()  # study_group을 거쳐야 해서 SerializerMethodField 유지
+    tags = TagSummarySerializer(source="recruitment_tags.tag", many=True, read_only=True)  # ✅ nested serializer
 
     class Meta:
         model = Recruitment
@@ -47,7 +70,7 @@ class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
         return getattr(settings, "DEFAULT_THUMBNAIL_URL", None)
 
     def get_lectures(self, obj: Recruitment) -> List[Dict[str, Any]]:
-        """목록용: 최소 정보만 반환"""
+        """목록용: 최소 정보만 반환 (study_group을 거쳐야 해서 SerializerMethodField 사용)"""
         study_group = obj.study_group
         lectures: List[StudyLecture] = list(study_group.studylecture_set.select_related("lecture").all())
         return [
@@ -59,18 +82,15 @@ class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
             for sl in lectures
         ]
 
-    def get_tags(self, obj: Recruitment) -> list[dict[str, Any]]:
-        return [{"id": rt.tag.id, "name": rt.tag.name} for rt in obj.recruitment_tags.all()]
-
 
 class RecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
     """구인공고 상세 조회"""
 
     bookmark_count = serializers.IntegerField(read_only=True, default=0)
-    lectures = serializers.SerializerMethodField()
-    tags = serializers.SerializerMethodField()
-    files = serializers.SerializerMethodField()
-    image_urls = serializers.SerializerMethodField()
+    lectures = serializers.SerializerMethodField()  # study_group을 거쳐야 해서 SerializerMethodField 유지
+    tags = TagSerializer(source="recruitment_tags.tag", many=True, read_only=True)  # ✅ nested serializer
+    files = serializers.SerializerMethodField()  # dict 형태로 가공 필요
+    image_urls = serializers.SerializerMethodField()  # URL 리스트 변환
 
     class Meta:
         model = Recruitment
@@ -99,16 +119,14 @@ class RecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
         ]
 
     def get_lectures(self, obj: Recruitment) -> List[Dict[str, Any]]:
+        """study_group을 거쳐야 해서 SerializerMethodField 사용"""
         study_group = obj.study_group
         lectures: List[StudyLecture] = list(study_group.studylecture_set.select_related("lecture").all())
         crawled_lectures: List[CrawledLecture] = [sl.lecture for sl in lectures]
         return list(CrawledLectureSerializer(crawled_lectures, many=True).data)
 
-    def get_tags(self, obj: Recruitment) -> list[dict[str, Any]]:
-        tags = [rt.tag for rt in obj.recruitment_tags.all()]
-        return list(TagSerializer(tags, many=True).data)
-
     def get_files(self, obj: Recruitment) -> list[dict[str, Any]]:
+        """파일 정보를 dict 형태로 가공"""
         return [
             {
                 "id": a.id,
