@@ -152,6 +152,7 @@ class LectureBookmarkListCreateAPIView(APIView):
     def post(self, request: Request) -> Response:
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.save()
 
         return Response(
             {"detail": "북마크를 추가하였습니다."},
