@@ -59,6 +59,7 @@ class RecruitmentSerializerTestCase(TestCase):
             expected_headcount=3,
             close_at=timezone.now() + timedelta(days=14),
         )
+
     def _get_valid_recruitment_data(self, **kwargs: Any) -> dict[str, Any]:
         """기본 유효 데이터 딕셔너리를 반환하고, kwargs로 받은 값을 오버라이드합니다."""
         data = self.valid_data.copy()
@@ -72,40 +73,40 @@ class RecruitmentSerializerTestCase(TestCase):
 
     def test_create_serializer_title_validation_fail(self) -> None:
         """제목 길이 검증 실패"""
-        invalid_data = self._get_valid_recruitment_data(title = "제목")
+        invalid_data = self._get_valid_recruitment_data(title="제목")
         serializer = RecruitmentCreateSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("title", serializer.errors)
 
     def test_create_serializer_title_validation_success(self) -> None:
         """제목 길이 검증 성공"""
-        valid_data = self._get_valid_recruitment_data(title = "제목 길이 검증 하기")
+        valid_data = self._get_valid_recruitment_data(title="제목 길이 검증 하기")
         serializer = RecruitmentCreateSerializer(data=valid_data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
     def test_create_serializer_content_validation_fail(self) -> None:
         """내용 길이 검증 실패"""
-        invalid_data = self._get_valid_recruitment_data(content = "내용")
+        invalid_data = self._get_valid_recruitment_data(content="내용")
         serializer = RecruitmentCreateSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("content", serializer.errors)
 
     def test_create_serializer_content_validation_success(self) -> None:
         """내용 길이 검증 성공"""
-        valid_data = self._get_valid_recruitment_data(content = "recruitment_serializer 테스트용 내용입니다.")
+        valid_data = self._get_valid_recruitment_data(content="recruitment_serializer 테스트용 내용입니다.")
         serializer = RecruitmentCreateSerializer(data=valid_data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
     def test_create_serializer_tags_validation_fail(self) -> None:
         """태그 중복 검증 실패"""
-        invalid_data = self._get_valid_recruitment_data(tags = [self.tag1.id, self.tag1.id] )  # 중복 태그
+        invalid_data = self._get_valid_recruitment_data(tags=[self.tag1.id, self.tag1.id])  # 중복 태그
         serializer = RecruitmentCreateSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("tags", serializer.errors)
 
     def test_create_serializer_tags_validation_success(self) -> None:
         """태그 중복 검증 성공"""
-        valid_data = self._get_valid_recruitment_data(tags = [self.tag1.id, self.tag2.id] )
+        valid_data = self._get_valid_recruitment_data(tags=[self.tag1.id, self.tag2.id])
         serializer = RecruitmentCreateSerializer(data=valid_data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
 

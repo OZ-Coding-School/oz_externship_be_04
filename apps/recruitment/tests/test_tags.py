@@ -113,11 +113,9 @@ class TestTags(APITestCase):
 
         for name in valid_names:
             serializer = TagSerializer(data={"name": name})
-            self.assertTrue(serializer.is_valid(),
-                f"유효한 이름 '{name}'이 is_valid()에서 실패: {serializer.errors}" )
+            self.assertTrue(serializer.is_valid(), f"유효한 이름 '{name}'이 is_valid()에서 실패: {serializer.errors}")
             tag = serializer.save()
-            self.assertTrue(Tag.objects.filter(name=name).exists(),
-                f"'{name}' 저장 실패 — DB에서 검색되지 않음" )
+            self.assertTrue(Tag.objects.filter(name=name).exists(), f"'{name}' 저장 실패 — DB에서 검색되지 않음")
 
     def test_validate_tags_too_many(self) -> None:
         """태그 6개 이상 입력 시 실패"""
