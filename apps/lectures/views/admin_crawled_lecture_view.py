@@ -34,7 +34,7 @@ class AdminCrawledLectureView(APIView):
 
     @extend_schema(
         operation_id="v1_admin_crawled_lectures_list",
-        tags=["Admin Crawled Lectures"],
+        tags=["lectures"],
         summary="크롤링한 강의 목록 (관리자)",
         parameters=[
             OpenApiParameter(
@@ -97,7 +97,7 @@ class AdminCrawledLectureRetrieveView(APIView):
 
     @extend_schema(
         operation_id="v1_admin_crawled_lecture_detail",
-        tags=["Admin Crawled Lectures"],
+        tags=["lectures"],
         summary="크롤링한 강의 상세 조회 (관리자)",
         responses={
             200: AdminCrawledLectureRetrieveSerializer(),
