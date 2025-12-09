@@ -23,7 +23,7 @@ from apps.users.serializers.admin_account import (
     AdminAccountSerializer,
     AdminAccountUpdateSerializer,
 )
-from apps.users.utils.permissions import StaffOrSuperUser
+from apps.users.utils.permissions import StaffOrSuperUser, SuperUserOnly
 
 AdminAccountUpdate400ErrorSerializer = inline_serializer(
     name="AdminAccountUpdate400Error",
@@ -241,12 +241,21 @@ class AdminAccountDetailSpec(APIView):
 
     permission_classes = [StaffOrSuperUser]
 
+    def get_permissions(self) -> list[Any]:
+        """
+        유저 정보 상세 조회 및 유저 정보 수정 -> StaffOrSuperUser.
+        유저 정보 삭제 -> SuperUserOnly
+        """
+        if self.request.method == "DELETE":
+            return [SuperUserOnly()]
+        return [perm() for perm in self.permission_classes]
+
     @extend_schema(
         tags=["Admin"],
         summary="어드민 페이지 회원 정보 상세 조회 Spec",
         description="어드민 페이지 회원 정보 상세 조회용 Spec API입니다.",
         responses={
-            200: AdminAccountDetailReadSerializer,
+            200: AdminAccountDeleteSuccessSerializer,
             401: AdminAccountUpdateSimpleErrorSerializer,
             403: AdminAccountUpdateSimpleErrorSerializer,
             404: AdminAccountUpdateSimpleErrorSerializer,
@@ -441,7 +450,7 @@ class AdminAccountDetailSpec(APIView):
 
 class AdminAccountRoleUpdateSpec(APIView):
 
-    permission_classes = [StaffOrSuperUser]
+    permission_classes = [SuperUserOnly]
 
     @extend_schema(
         tags=["Admin"],
