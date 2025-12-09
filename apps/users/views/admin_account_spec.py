@@ -18,9 +18,9 @@ from rest_framework.views import APIView
 from apps.users.models import User
 from apps.users.serializers.admin_account import (
     AdminAccountDetailSerializer,
+    AdminAccountRoleUpdateSerializer,
     AdminAccountSerializer,
     AdminAccountUpdateSerializer,
-    AdminAccountRoleUpdateSerializer
 )
 from apps.users.utils.permissions import StaffOrSuperUser
 
@@ -55,6 +55,7 @@ AdminAccountRoleUpdateSuccessSerializer = inline_serializer(
         "detail": serializers.CharField(help_text="권한 변경 성공 메시지"),
     },
 )
+
 
 class AdminAccountListSpec(APIView):
     """
@@ -438,6 +439,7 @@ class AdminAccountDetailSpec(APIView):
             {"detail": "유저 데이터가 삭제되었습니다. - pk: {account_id}"},
         )
 
+
 class AdminAccountRoleUpdateSpec(APIView):
 
     permission_classes = [StaffOrSuperUser]
@@ -484,6 +486,4 @@ class AdminAccountRoleUpdateSpec(APIView):
         if account_id != 1:
             raise Http404
 
-        return Response(
-            {"detail": "권한이 변경되었습니다."}
-        )
+        return Response({"detail": "권한이 변경되었습니다."})
