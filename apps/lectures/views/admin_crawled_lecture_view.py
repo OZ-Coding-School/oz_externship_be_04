@@ -12,6 +12,7 @@ from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 
 from apps.lectures import models
 from apps.lectures.models import CrawledLecture
@@ -93,23 +94,7 @@ class AdminCrawledLectureRetrieveView(APIView):
         },
     )
     def get(self, request: Request, lecture_id: int) -> Response:
-        mock_data = CrawledLecture(
-            id=lecture_id,
-            title=f"제목 {lecture_id}",
-            instructor=f"강사 {lecture_id}",
-            description=f"목데이터용 강의 설명입니다.",
-            total_class_time=random.randint(1, 60),
-            original_price=random.randint(30000, 200000),
-            discount_price=random.randint(10000, 100000),
-            difficulty=random.choice([difficulty[0] for difficulty in CrawledLecture.DifficultyEnum.choices]),
-            thumbnail_img_url=f"https://example_thumbnail_{lecture_id}.com",
-            average_rating=Decimal(random.randint(100, 500) / 100),
-            platform=random.choice([platform[0] for platform in CrawledLecture.PlatformEnum.choices]),
-            url_link=f"https://example_url_{lecture_id}.com",
-            created_at=timezone.now(),
-            updated_at=timezone.now(),
-        )
-
-        serializer = self.serializer_class(mock_data)
+        lecture = get_object_or_404(CrawledLecture, id=lecture_id)
+        serializer = self.serializer_class(lecture)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
