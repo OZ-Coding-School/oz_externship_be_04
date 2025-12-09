@@ -90,3 +90,16 @@ class AdminAccountUpdateSerializer(serializers.Serializer[Any]):
     gender = serializers.ChoiceField(required=False, choices=[("M", "M"), ("F", "F")], help_text="성별 (M/F 선택)")
     is_active = serializers.BooleanField(required=False, help_text="계정 활성화 여부")
     profile_img_url = serializers.URLField(required=False, help_text="프로필 이미지 URL")
+
+class AdminAccountRoleUpdateSerializer(serializers.Serializer[Any]):
+    """
+    어드민 페이지에서 유저의 권한을 변경할 때 사용하는 요청 바디용 Serializer
+    """
+    role = serializers.ChoiceField(
+        choices=[
+            ("user", "user"),
+            ("staff", "staff"),
+            ("admin", "admin"),
+        ],
+        help_text="변경할 권 (user, staff, admin)"
+    )
