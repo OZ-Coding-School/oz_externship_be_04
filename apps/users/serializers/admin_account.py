@@ -36,6 +36,30 @@ class AdminAccountSerializer(serializers.ModelSerializer[User]):
             return None
         return withdrawal.created_at
 
+class AdminAccountDetailReadSerializer(serializers.ModelSerializer[User]):
+    """
+    어드민 회원 정보 상세 조회용 serializer (Get 전용)
+    """
+
+    role = serializers.CharField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "name",
+            "gender",
+            "nickname",
+            "birthday",
+            "phone_number",
+            "email",
+            "role",
+            "status",
+            "created_at",
+            "profile_img_url",
+        ]
 
 class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
     """
