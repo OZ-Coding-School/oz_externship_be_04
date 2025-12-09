@@ -39,6 +39,7 @@ class AdminApplicationListView(APIView):
     """[REQ-APLY-009] 관리자용 지원서 목록 조회"""
 
     permission_classes = [IsAdminUser]
+    pagination_class = AdminApplicationPagination
 
     @extend_schema(
         operation_id="admin_application_list",
@@ -46,24 +47,23 @@ class AdminApplicationListView(APIView):
         tags=["Application - Admin"],
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, required=False, description="지원 상태 필터"),
-            OpenApiParameter("search", OpenApiTypes.STR, required=False, description="공고 제목 검색"),
+            OpenApiParameter("search", OpenApiTypes.STR, required=False, description="통합 검색"),
             OpenApiParameter("sort", OpenApiTypes.STR, required=False, description="latest | oldest"),
             OpenApiParameter("page", OpenApiTypes.INT, required=False),
             OpenApiParameter("page_size", OpenApiTypes.INT, required=False),
         ],
-        responses={200: AdminApplicationListSerializer},
+        responses={200: AdminApplicationListSerializer(many=True)},
     )
     def get(self, request: Request) -> Response:
 
         qs = get_admin_application_queryset()
 
-        # 지원 상태 필터링
         status_param = request.query_params.get("status")
         if status_param in ApplicationStatus.values:
             qs = qs.filter(status=status_param)
 
-        # 검색 (공고 제목, 지원자 닉네임, 지원자 이메일)
-        search_keyword = request.GET.get("search")
+        # 통합 검색 (공고 제목, 지원자 닉네임, 지원자 이메일)
+        search_keyword = request.query_params.get("search")
         if search_keyword:
             qs = qs.filter(
                 Q(recruitment__title__icontains=search_keyword)
@@ -71,14 +71,16 @@ class AdminApplicationListView(APIView):
                 | Q(applicant__email__icontains=search_keyword)
             )
 
-        # 정렬
         sort_param = request.query_params.get("sort") or "latest"
         order_by_field = SORT_MAP.get(sort_param, SORT_MAP["latest"])
         qs = qs.order_by(order_by_field)
 
-        # Paginator
-        paginator = AdminApplicationPagination()
-        paginated_qs = paginator.paginate_queryset(qs, request)
+        paginator = self.pagination_class()
+        paginated_qs = paginator.paginate_queryset(qs, request, view=self)
+
+        if paginated_qs is None:
+            serializer = AdminApplicationListSerializer(qs, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         serializer = AdminApplicationListSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
@@ -91,13 +93,23 @@ class AdminApplicationDetailView(APIView):
 
     @extend_schema(
         summary="Admin 지원서 상세 조회",
-        responses={200: AdminApplicationDetailSerializer},
+        responses={
+            200: AdminApplicationDetailSerializer,
+            403: {
+                "type": "object",
+                "properties": {"error_detail": {"type": "string", "example": "권한이 없습니다."}},
+            },
+            404: {
+                "type": "object",
+                "properties": {"error_detail": {"type": "string", "example": "해당 지원서를 찾을 수 없습니다."}},
+            },
+        },
         tags=["Application - Admin"],
     )
-    def get(self, request: Request, application_uuid: str) -> Response:
+    def get(self, request: Request, application_id: str) -> Response:
 
-        qs = get_admin_application_queryset()  # 🔥 공통 쿼리셋 사용
-        application = qs.filter(uuid=application_uuid).first()
+        qs = get_admin_application_queryset()
+        application = qs.filter(id=application_id).first()
 
         if not application:
             return Response(
