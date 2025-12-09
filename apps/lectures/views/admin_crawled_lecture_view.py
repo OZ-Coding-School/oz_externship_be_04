@@ -29,7 +29,7 @@ class AdminLecturePagination(PageNumberPagination):
 
 class AdminCrawledLectureView(APIView):
     serializer_class = AdminCrawledLectureSerializer
-    permission_classes = [AllowAny]  # 추후에 [IsAdminUser]로 수정예정
+    permission_classes = [IsAdminUser]
     pagination_class = AdminLecturePagination
 
     @extend_schema(
@@ -93,7 +93,7 @@ class AdminCrawledLectureView(APIView):
 
 class AdminCrawledLectureRetrieveView(APIView):
     serializer_class = AdminCrawledLectureRetrieveSerializer
-    permission_classes = [AllowAny]  # 추후에 [IsAdminUser]로 수정예정
+    permission_classes = [IsAdminUser]
 
     @extend_schema(
         operation_id="v1_admin_crawled_lecture_detail",
