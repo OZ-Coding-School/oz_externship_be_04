@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 from scipy.sparse import spmatrix, vstack
+from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -10,97 +11,35 @@ from apps.lectures.models import CrawledLecture
 from apps.study_groups.models import GroupMember, StudyLecture
 from apps.users.models import User
 
-TECH_MAP = {
-    r"(?i)\bpython\b": "python",
-    r"(?i)\bpy\b": "python",
-    r"파이썬": "python",
-    r"pyhton": "python",
-    r"(?i)\bjavascript\b": "javascript",
-    r"(?i)\bjs\b": "javascript",
-    r"자바스크립트": "javascript",
-    r"(?i)\btypescript\b": "typescript",
-    r"타입스크립트": "typescript",
-    r"ts\b": "typescript",
-    r"(?i)\breact\b": "react",
-    r"리액트": "react",
-    r"(?i)\breact[\s\.-]*js\b": "react",
-    r"(?i)\bvue\b": "vue",
-    r"뷰": "vue",
-    r"(?i)\bangular\b": "angular",
-    r"앵귤러": "angular",
-    r"(?i)\bdjango\b": "django",
-    r"장고": "django",
-    r"(?i)\bflask\b": "flask",
-    r"플라스크": "flask",
-    r"(?i)\bfastapi\b": "fastapi",
-    r"패스트api": "fastapi",
-    r"(?i)\bnode\.?js\b": "nodejs",
-    r"노드": "nodejs",
-    r"(?i)\bmysql\b": "mysql",
-    r"마이에스큐엘": "mysql",
-    r"(?i)\bpostgresql\b": "postgresql",
-    r"포스트그레스": "postgresql",
-    r"(?i)\bmongodb\b": "mongodb",
-    r"몽고db": "mongodb",
-    r"(?i)\bmachine\s+learning\b": "machine learning",
-    r"(?i)\bml\b": "machine learning",
-    r"머신러닝": "machine learning",
-    r"(?i)\bdeep\s+learning\b": "deep learning",
-    r"딥러닝": "deep learning",
-    r"(?i)\btensorflow\b": "tensorflow",
-    r"텐서플로": "tensorflow",
-    r"(?i)\btorch\b": "pytorch",
-    r"파이토치": "pytorch",
-    r"(?i)\bscikit[-\s]?learn\b": "scikit-learn",
-    r"사이킷런": "scikit-learn",
-    r"(?i)\baws\b": "aws",
-    r"아마존\s*웹\s*서비스": "aws",
-    r"(?i)\bazure\b": "azure",
-    r"애저": "azure",
-    r"(?i)\bgcp\b": "gcp",
-    r"구글\s*클라우드": "gcp",
-    r"(?i)\bdocker\b": "docker",
-    r"도커": "docker",
-    r"(?i)\bkubernetes\b": "kubernetes",
-    r"쿠버네티스": "kubernetes",
-    r"(?i)\bpandas\b": "pandas",
-    r"판다스": "pandas",
-    r"(?i)\bnumpy\b": "numpy",
-    r"넘파이": "numpy",
-    r"(?i)\bmatplotlib\b": "matplotlib",
-    r"맷플롯립": "matplotlib",
-    r"(?i)\bseaborn\b": "seaborn",
-    r"시본": "seaborn",
-    r"git\b": "git",
-    r"깃": "git",
-    r"linux\b": "linux",
-    r"리눅스": "linux",
-}
+embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 STOPWORDS = {"강의", "수업", "소개", "배우기", "공부", "사용법"}
 
 
 def remove_stopwords(text: str) -> str:
-    for word in STOPWORDS:
-        text = text.replace(word, "")
-    return text
-
-
-def normalize_tech(text: str) -> str:
-    if not text:
-        return ""
-    for pattern, replacement in TECH_MAP.items():
-        text = re.sub(pattern, replacement, text)
-    return text
+    tokens = text.split()
+    tokens = [tok for tok in tokens if tok not in STOPWORDS]
+    return " ".join(tokens)
 
 
 def clean_text(text: str) -> str:
     if not text:
         return ""
     text = text.lower()
-    text = re.sub(r"[^가-힣a-zA-Z0-9\s]", " ", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"http\S+|www\S+", " ", text)
+    text = re.sub(r"\S+@\S+", " ", text)
+    text = re.sub(r"[^가-힣a-z0-9\s]", " ", text)
+    text = re.sub(r"\b\d{3,}\b", " ", text)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
+
+
+def embed_normalize(text: str) -> str:
+    if not text:
+        return ""
+    vec = embedding_model.encode([text])[0]
+    return " ".join([f"{v:.4f}" for v in vec])
 
 
 def build_lecture_corpus(lecture: CrawledLecture) -> str:
@@ -108,7 +47,11 @@ def build_lecture_corpus(lecture: CrawledLecture) -> str:
     description = lecture.description or ""
     instructor = lecture.instructor or ""
     category_names = " ".join(cat.name for cat in lecture.categories.all())
-    return f"{title} {description} {instructor} {category_names}"
+    text = f"{title} {description} {instructor} {category_names}"
+    text = clean_text(text)
+    text = remove_stopwords(text)
+    text = embed_normalize(text)
+    return text
 
 
 def build_user_vector(
@@ -153,7 +96,7 @@ def recommend_lectures(user: User, top_n: int = 3) -> Tuple[List[CrawledLecture]
     if not lectures:
         return [], "lecture not crawled"
 
-    corpus = [remove_stopwords(normalize_tech(clean_text(build_lecture_corpus(lec)))) for lec in lectures]
+    corpus = [build_lecture_corpus(lec) for lec in lectures]
     lecture_ids = [lec.id for lec in lectures]
 
     vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1, 2))
