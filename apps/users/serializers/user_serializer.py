@@ -51,10 +51,6 @@ class UserSerializer(serializers.ModelSerializer[Any]):
         if self.instance is None:
             if User.objects.filter(phone_number=replace_number).exists():
                 raise serializers.ValidationError("이미 사용 중인 전화번호입니다.")
-        # if len(value) != 11:
-        #    raise serializers.ValidationError("전화번호 길이가 맞지않습니다")
-        # if not value.isdigit():
-        #     raise serializers.ValidationError("전화번호에 숫자만 들어가야합니다.")
         return replace_number
 
     def create(self, validated_data: dict[str, Any]) -> Any:
