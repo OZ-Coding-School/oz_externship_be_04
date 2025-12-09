@@ -1,19 +1,15 @@
-from typing import List
+from typing import Any, List, Sequence, cast
 
 from django.conf import settings
 from django.db.models import Q, QuerySet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework.permissions import AllowAny
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.pagination import (
-    Pageable,
-    offset_paginate_list,
-    offset_paginate_queryset,
-)
 from apps.lectures.models import CrawledLecture, LectureBookmark
 from apps.lectures.serializers.lecture_bookmark_serializer import (
     LectureBookmarkListSerializer,
@@ -21,39 +17,46 @@ from apps.lectures.serializers.lecture_bookmark_serializer import (
 )
 
 
+class LectureBookmarkPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 50
+    page_query_param = "cursor"
+
+    def get_paginated_response(self, data: Any) -> Response:
+        return Response(
+            {
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "results": data,
+            }
+        )
+
+
 class LectureBookmarkListCreateAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     serializer_class = LectureBookmarkSerializer
     list_serializer_class = LectureBookmarkListSerializer
     search_fields = ["lecture__title", "lecture__instructor"]
+    pagination_class: type[LectureBookmarkPagination] = LectureBookmarkPagination
+
+    def _get_user_id(self) -> int:
+        user_id = self.request.user.id
+        assert isinstance(user_id, int)
+        return user_id
 
     def get_queryset(self) -> QuerySet[LectureBookmark]:
-        qs = LectureBookmark.objects.select_related("lecture").all()
+        qs = LectureBookmark.objects.select_related("lecture").filter(
+            user_id=self._get_user_id(),
+        )
 
-        if search := self.request.GET.get("search"):
+        if search := self.request.query_params.get("search"):
             q = Q()
             for field in self.search_fields:
                 q |= Q(**{f"{field}__icontains": search})
             qs = qs.filter(q)
 
         return qs
-
-    @staticmethod
-    def _parse_pageable(request: Request) -> Pageable:
-        cursor_param = request.query_params.get("cursor")
-        page_size_param = request.query_params.get("page_size")
-
-        try:
-            page = int(cursor_param) if cursor_param is not None else 1
-        except (TypeError, ValueError):
-            page = 1
-
-        try:
-            size = int(page_size_param) if page_size_param is not None else 10
-        except (TypeError, ValueError):
-            size = 10
-
-        return Pageable(page=page, size=size)
 
     def _get_mock_bookmarks(self) -> List[LectureBookmark]:
         mock_lectures: List[CrawledLecture] = []
@@ -72,11 +75,12 @@ class LectureBookmarkListCreateAPIView(APIView):
             )
             mock_lectures.append(lecture)
 
+        user_id = self._get_user_id()
         mock_bookmarks: List[LectureBookmark] = [
-            LectureBookmark(user_id=1, lecture=lecture) for lecture in mock_lectures
+            LectureBookmark(user_id=user_id, lecture=lecture) for lecture in mock_lectures
         ]
 
-        if search := self.request.GET.get("search"):
+        if search := self.request.query_params.get("search"):
             lowered = search.lower()
             mock_bookmarks = [
                 bm
@@ -118,35 +122,22 @@ class LectureBookmarkListCreateAPIView(APIView):
         },
     )
     def get(self, request: Request) -> Response:
-        pageable = self._parse_pageable(request)
+        paginator: LectureBookmarkPagination = self.pagination_class()
 
         if settings.DEBUG:
             bookmarks = self._get_mock_bookmarks()
-            page = offset_paginate_list(bookmarks, pageable)
+            page = cast(
+                Sequence[LectureBookmark], paginator.paginate_queryset(bookmarks, request)  # type: ignore[arg-type]
+            )
         else:
             queryset = self.get_queryset()
-            page = offset_paginate_queryset(queryset, pageable)
+            page = cast(
+                Sequence[LectureBookmark],
+                paginator.paginate_queryset(queryset, request),
+            )
 
-        serializer = self.list_serializer_class(page.items, many=True)
-
-        base_url = request.build_absolute_uri(request.path)
-
-        def build_page_url(page_number: int) -> str:
-            query_params = request.query_params.copy()
-            query_params["cursor"] = str(page_number)
-            query_params["page_size"] = str(pageable.size)
-            return f"{base_url}?{query_params.urlencode()}"
-
-        next_url = build_page_url(page.current_page + 1) if page.has_next else None
-        prev_url = build_page_url(page.current_page - 1) if page.has_prev else None
-
-        return Response(
-            {
-                "next": next_url,
-                "previous": prev_url,
-                "results": serializer.data,
-            }
-        )
+        serializer = self.list_serializer_class(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
         tags=["lecture-bookmark"],
@@ -169,17 +160,35 @@ class LectureBookmarkListCreateAPIView(APIView):
 
 
 class LectureBookmarkDestroyAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         tags=["lecture-bookmark"],
         summary="강의 북마크를 삭제하는 API입니다.",
         responses={
             200: {"example": {"detail": "북마크를 취소하였습니다."}},
+            401: {"example": {"error_detail": "자격 인증 데이터가 제공되지 않았습니다."}},
             404: {"example": {"error_detail": "북마크 정보를 찾을 수 없습니다."}},
+            500: {"example": {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."}},
         },
     )
-    def delete(self, request: Request, lecture_id: int) -> Response:
+    def delete(self, request: Request, bookmark_id: int) -> Response:
+        user_id = request.user.id
+        assert isinstance(user_id, int)
+
+        bookmark = LectureBookmark.objects.filter(
+            pk=bookmark_id,
+            user_id=user_id,
+        ).first()
+
+        if bookmark is None:
+            return Response(
+                {"error_detail": "북마크 정보를 찾을 수 없습니다."},
+                status=404,
+            )
+
+        bookmark.delete()
+
         return Response(
             {"detail": "북마크를 취소하였습니다."},
             status=200,

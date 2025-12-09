@@ -10,17 +10,17 @@ app_name = "lecture_bookmarks"
 
 urlpatterns = [
     path(
-        "/lecture-bookmarks/",
+        "/lecture-bookmarks",
         LectureBookmarkListCreateAPIView.as_view(),
         name="lecture-bookmark-list-create",
     ),
     path(
-        "/lecture-bookmarks/<int:lecture_id>/",
+        "/lecture-bookmarks/<int:bookmark_id>",
         LectureBookmarkDestroyAPIView.as_view(),
         name="lecture-bookmark-destroy",
     ),
     path(
-        "/lecture-bookmarks/ids/",
+        "/lecture-bookmarks",
         LectureBookmarkIdListAPIView.as_view(),
         name="lecture-bookmark-id-list",
     ),
