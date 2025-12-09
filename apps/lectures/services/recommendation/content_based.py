@@ -144,7 +144,8 @@ def build_user_vector(
         return None
 
     stacked = vstack(vectors)
-    return stacked.mean(axis=0)
+    mean_vec = stacked.mean(axis=0)
+    return np.asarray(mean_vec).ravel()
 
 
 def recommend_lectures(user: User, top_n: int = 3) -> Tuple[List[CrawledLecture], str]:
