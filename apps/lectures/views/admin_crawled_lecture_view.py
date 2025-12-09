@@ -68,24 +68,10 @@ class AdminCrawledLectureView(APIView):
         },
     )
     def get(self, request: Request) -> Response:
-        mock_data = [
-            models.CrawledLecture(
-                id=i,
-                title=f"제목 {i}",
-                instructor=f"강사 {i}",
-                thumbnail_img_url=f"https://example_thumbnail_{i}.com",
-                platform=random.choice([platform[0] for platform in CrawledLecture.PlatformEnum.choices]),
-                url_link=f"https://example_url_{i}.com",
-                created_at=timezone.now(),
-                updated_at=timezone.now(),
-            )
-            for i in range(1, 16)
-        ]
+        queryset = CrawledLecture.objects.all().order_by("-created_at")
 
         paginator = self.pagination_class()
-
-        queryset_like = cast(QuerySet[CrawledLecture], mock_data)
-        paginated_qs = paginator.paginate_queryset(queryset_like, request)
+        paginated_qs = paginator.paginate_queryset(queryset, request)
 
         serializer = self.serializer_class(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
