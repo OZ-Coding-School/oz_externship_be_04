@@ -103,5 +103,5 @@ class AdminAccountRoleUpdateSerializer(serializers.Serializer[Any]):
             ("staff", "staff"),
             ("admin", "admin"),
         ],
-        help_text="변경할 권 (user, staff, admin)",
+        help_text="변경할 권한 (user, staff, admin)",
     )
