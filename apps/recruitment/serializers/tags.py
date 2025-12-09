@@ -5,7 +5,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from apps.recruitment.models import Tag
-from apps.recruitment.services.tags_service import TagService
 
 
 class TagSerializer(serializers.ModelSerializer[Tag]):
