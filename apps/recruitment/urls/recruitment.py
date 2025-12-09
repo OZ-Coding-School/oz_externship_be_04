@@ -1,25 +1,18 @@
 from django.urls import path
 
 from apps.recruitment.views.recruitment_view import (
-    RecruitmentCreateView,
-    RecruitmentDeleteView,
-    RecruitmentDetailView,
-    RecruitmentListView,
+    RecruitmentDetailUpdateDeleteView,
+    RecruitmentListCreateView,
     RecruitmentMineView,
-    RecruitmentRecommandView,
-    RecruitmentUpdateView,
 )
 
 urlpatterns = [
-    # 공고 목록 및 작성
-    path("/recruitments", RecruitmentListView.as_view(), name="recruitment-list"),
-    path("/recruitments", RecruitmentCreateView.as_view(), name="recruitment-create"),
-    # 추천 공고
-    path("/recruitments/recommands", RecruitmentRecommandView.as_view(), name="recruitment-recommands"),
-    # 내가 작성한 공고
-    path("/recruitments/mine", RecruitmentMineView.as_view(), name="recruitment-mine"),
-    # 공고 상세/수정/삭제 (명세서 대로 recruitments_uuid 사용)
-    path("/recruitments/<uuid:recruitments_uuid>", RecruitmentDetailView.as_view(), name="recruitment-detail"),
-    path("/recruitments/<uuid:recruitments_uuid>", RecruitmentUpdateView.as_view(), name="recruitment-update"),
-    path("/recruitments/<uuid:recruitments_uuid>", RecruitmentDeleteView.as_view(), name="recruitment-delete"),
+    # 공고 목록 및 작성 (GET: 목록, POST: 작성)
+    path("recruitments/", RecruitmentListCreateView.as_view(), name="recruitment-list-create"),
+    # 내가 작성한 공고 (GET)
+    path("recruitments/mine/", RecruitmentMineView.as_view(), name="recruitment-mine"),
+    # 공고 상세/수정/삭제 (GET: 상세, PATCH: 수정, DELETE: 삭제)
+    path(
+        "recruitments/<uuid:recruitments_uuid>/", RecruitmentDetailUpdateDeleteView.as_view(), name="recruitment-detail"
+    ),
 ]

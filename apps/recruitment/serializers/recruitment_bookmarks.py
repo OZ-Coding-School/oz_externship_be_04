@@ -26,7 +26,7 @@ class RecruitmentTagMinimalSerializer(serializers.ModelSerializer[Tag]):
         fields = ("id", "name")
 
 
-class RecruitmentInBookmarkSerializer(serializers.Serializer):
+class RecruitmentInBookmarkSerializer(serializers.Serializer[Any]):
     """북마크 목록에서 사용되는 공고 정보 (명세서 형식)"""
 
     uuid = serializers.UUIDField(read_only=True)

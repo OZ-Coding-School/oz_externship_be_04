@@ -17,11 +17,6 @@ from apps.recruitment.serializers.tags import TagSerializer
 from apps.study_groups.models import StudyGroup, StudyLecture
 
 
-# ============================================================================
-# Summary Serializers (Swagger용 타입 정의)
-# ============================================================================
-
-
 class LectureSummarySerializer(serializers.ModelSerializer[CrawledLecture]):
     """강의 요약 정보"""
 
@@ -45,8 +40,8 @@ class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
 
     thumbnail_img_url = serializers.SerializerMethodField()
     bookmark_count = serializers.IntegerField(read_only=True, default=0)
-    lectures = serializers.SerializerMethodField()  # study_group을 거쳐야 해서 SerializerMethodField 유지
-    tags = TagSummarySerializer(source="recruitment_tags.tag", many=True, read_only=True)  # ✅ nested serializer
+    lectures = serializers.SerializerMethodField()
+    tags = TagSummarySerializer(source="recruitment_tags.tag", many=True, read_only=True)
 
     class Meta:
         model = Recruitment
@@ -87,10 +82,10 @@ class RecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
     """구인공고 상세 조회"""
 
     bookmark_count = serializers.IntegerField(read_only=True, default=0)
-    lectures = serializers.SerializerMethodField()  # study_group을 거쳐야 해서 SerializerMethodField 유지
-    tags = TagSerializer(source="recruitment_tags.tag", many=True, read_only=True)  # ✅ nested serializer
-    files = serializers.SerializerMethodField()  # dict 형태로 가공 필요
-    image_urls = serializers.SerializerMethodField()  # URL 리스트 변환
+    lectures = serializers.SerializerMethodField()
+    tags = TagSerializer(source="recruitment_tags.tag", many=True, read_only=True)
+    files = serializers.SerializerMethodField()
+    image_urls = serializers.SerializerMethodField()
 
     class Meta:
         model = Recruitment
