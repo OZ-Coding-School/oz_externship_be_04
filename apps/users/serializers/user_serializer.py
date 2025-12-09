@@ -21,7 +21,6 @@ class UserSerializer(serializers.ModelSerializer[Any]):
             "phone_number",
             "gender",
             "birthday",
-            "profile_img_url",
             "is_active",
         )
         read_only_fields = ("id", "is_active")
