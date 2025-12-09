@@ -1,17 +1,17 @@
 from datetime import timedelta
 from typing import Any
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
 from apps.core.models import TimeStampedModel
-from apps.users.models.users import User
 from apps.users.utils.reason_choices import WithdrawalReason
 
 
 class Withdrawal(TimeStampedModel):
     user = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, related_name="withdrawals", db_column="user_id"
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="withdrawals", db_column="user_id"
     )
     reason = models.CharField(
         max_length=100,
