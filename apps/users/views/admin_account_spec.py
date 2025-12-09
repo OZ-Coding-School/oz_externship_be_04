@@ -20,6 +20,7 @@ from apps.users.serializers.admin_account import (
     AdminAccountDetailSerializer,
     AdminAccountSerializer,
     AdminAccountUpdateSerializer,
+    AdminAccountRoleUpdateSerializer
 )
 from apps.users.utils.permissions import StaffOrSuperUser
 
@@ -48,6 +49,12 @@ AdminAccountDeleteSuccessSerializer = inline_serializer(
     },
 )
 
+AdminAccountRoleUpdateSuccessSerializer = inline_serializer(
+    name="AdminAccountRoleUpdateSuccess",
+    fields={
+        "detail": serializers.CharField(help_text="권한 변경 성공 메시지"),
+    },
+)
 
 class AdminAccountListSpec(APIView):
     """
@@ -393,7 +400,7 @@ class AdminAccountDetailSpec(APIView):
     @extend_schema(
         tags=["Admin"],
         summary="어드민 페이지 회원 정보 삭제 Spec",
-        description=("관리자 권한을 가진 유저는 어드민 페이지에서 특정 회원 정보를 삭제할 수 있습니다."),
+        description="관리자 권한을 가진 유저는 어드민 페이지에서 특정 회원 정보를 삭제할 수 있습니다.",
         responses={
             200: AdminAccountDetailSerializer,
             401: AdminAccountUpdateSimpleErrorSerializer,
@@ -429,4 +436,54 @@ class AdminAccountDetailSpec(APIView):
 
         return Response(
             {"detail": "유저 데이터가 삭제되었습니다. - pk: {account_id}"},
+        )
+
+class AdminAccountRoleUpdateSpec(APIView):
+
+    permission_classes = [StaffOrSuperUser]
+
+    @extend_schema(
+        tags=["Admin"],
+        summary="어드민 페이지 회원 권한 변경 Spec",
+        description="관리자 권한을 가진 유저는 어드민 페이지에서 특정 유저의 권한을 변경할 수 있습니다.",
+        request=AdminAccountRoleUpdateSerializer,
+        responses={
+            200: AdminAccountRoleUpdateSuccessSerializer,
+            401: AdminAccountUpdateSimpleErrorSerializer,
+            403: AdminAccountUpdateSimpleErrorSerializer,
+            404: AdminAccountUpdateSimpleErrorSerializer,
+        },
+        examples=[
+            OpenApiExample(
+                name="Success Example",
+                value={"detail": "권한이 변경되었습니다."},
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                name="Unauthorized Example",
+                value={"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                status_codes=["401"],
+            ),
+            OpenApiExample(
+                name="Forbidden Example",
+                value={"error_detail": "권한이 없습니다."},
+                status_codes=["403"],
+            ),
+            OpenApiExample(
+                name="Not found Example",
+                value={"error_detail": "사용자 정보를 찾을 수 없습니다."},
+                status_codes=["404"],
+            ),
+        ],
+    )
+    def patch(self, request: Request, account_id: int) -> Response:
+
+        serializer_in = AdminAccountRoleUpdateSerializer(data=request.data)
+        serializer_in.is_valid(raise_exception=True)
+
+        if account_id != 1:
+            raise Http404
+
+        return Response(
+            {"detail": "권한이 변경되었습니다."}
         )
