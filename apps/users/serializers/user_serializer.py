@@ -46,7 +46,7 @@ class UserSerializer(serializers.ModelSerializer[Any]):
         is_valid_without_hyphen = re.match(REGEX_PHONE_NUMBER_WITHOUT_HYPEN, value)
 
         if not (is_valid_without_hyphen or is_valid_with_hyphen):
-            raise serializers.ValidationError("전호번호 양식이 맞지않습니다.")
+            raise serializers.ValidationError("전화번호 양식이 맞지않습니다.")
         replace_number = value.replace("-", "")
         if self.instance is None:
             if User.objects.filter(phone_number=replace_number).exists():
@@ -56,8 +56,6 @@ class UserSerializer(serializers.ModelSerializer[Any]):
     def create(self, validated_data: dict[str, Any]) -> Any:
         password = validated_data.pop("password")
         user = User.objects.create_user(password=password, **validated_data)
-        user.is_active = False
-        user.save()
         return user
 
     def update(self, instance: Any, validated_data: dict[str, Any]) -> Any:
