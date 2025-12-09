@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Any
 
 from django.test import TestCase
 from django.utils import timezone
@@ -49,6 +50,20 @@ class RecruitmentSerializerTestCase(TestCase):
             "files": [{"file_name": "file1.pdf", "file_url": "http://file1.com"}],
             "image_urls": ["http://img1.com", "http://img2.com"],
         }
+        self.recruitment = Recruitment.objects.create(
+            study_group=self.study_group,
+            author=self.user,
+            title="테스트 공고",
+            content="상세 내용",
+            estimated_fee=5000,
+            expected_headcount=3,
+            close_at=timezone.now() + timedelta(days=14),
+        )
+    def _get_valid_recruitment_data(self, **kwargs: Any) -> dict[str, Any]:
+        """기본 유효 데이터 딕셔너리를 반환하고, kwargs로 받은 값을 오버라이드합니다."""
+        data = self.valid_data.copy()
+        data.update(kwargs)
+        return data
 
     def test_create_serializer_validation(self) -> None:
         """RecruitmentCreateSerializer 유효성 검증"""
@@ -57,46 +72,40 @@ class RecruitmentSerializerTestCase(TestCase):
 
     def test_create_serializer_title_validation_fail(self) -> None:
         """제목 길이 검증 실패"""
-        invalid_data = self.valid_data.copy()
-        invalid_data["title"] = "제목"
+        invalid_data = self._get_valid_recruitment_data(title = "제목")
         serializer = RecruitmentCreateSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("title", serializer.errors)
 
     def test_create_serializer_title_validation_success(self) -> None:
         """제목 길이 검증 성공"""
-        valid_data = self.valid_data.copy()
-        valid_data["title"] = "제목 길이 검증 하기"
+        valid_data = self._get_valid_recruitment_data(title = "제목 길이 검증 하기")
         serializer = RecruitmentCreateSerializer(data=valid_data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
     def test_create_serializer_content_validation_fail(self) -> None:
         """내용 길이 검증 실패"""
-        invalid_data = self.valid_data.copy()
-        invalid_data["content"] = "내용"
+        invalid_data = self._get_valid_recruitment_data(content = "내용")
         serializer = RecruitmentCreateSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("content", serializer.errors)
 
     def test_create_serializer_content_validation_success(self) -> None:
         """내용 길이 검증 성공"""
-        valid_data = self.valid_data.copy()
-        valid_data["content"] = "recruitment_serializer 테스트용 내용입니다."
+        valid_data = self._get_valid_recruitment_data(content = "recruitment_serializer 테스트용 내용입니다.")
         serializer = RecruitmentCreateSerializer(data=valid_data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
     def test_create_serializer_tags_validation_fail(self) -> None:
         """태그 중복 검증 실패"""
-        invalid_data = self.valid_data.copy()
-        invalid_data["tags"] = [self.tag1.id, self.tag1.id]  # 중복 태그
+        invalid_data = self._get_valid_recruitment_data(tags = [self.tag1.id, self.tag1.id] )  # 중복 태그
         serializer = RecruitmentCreateSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("tags", serializer.errors)
 
     def test_create_serializer_tags_validation_success(self) -> None:
         """태그 중복 검증 성공"""
-        valid_data = self.valid_data.copy()
-        valid_data["tags"] = [self.tag1.id, self.tag2.id]
+        valid_data = self._get_valid_recruitment_data(tags = [self.tag1.id, self.tag2.id] )
         serializer = RecruitmentCreateSerializer(data=valid_data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
@@ -119,16 +128,7 @@ class RecruitmentSerializerTestCase(TestCase):
 
     def test_detail_serializer_output(self) -> None:
         """RecruitmentDetailSerializer 테스트"""
-        recruitment = Recruitment.objects.create(
-            study_group=self.study_group,
-            author=self.user,
-            title="테스트 공고",
-            content="상세 내용",
-            estimated_fee=5000,
-            expected_headcount=3,
-            close_at=timezone.now() + timedelta(days=14),
-        )
-        serializer = RecruitmentDetailSerializer(recruitment)
+        serializer = RecruitmentDetailSerializer(self.recruitment)
         data = serializer.data
         self.assertIn("uuid", data)
         self.assertIn("lectures", data)

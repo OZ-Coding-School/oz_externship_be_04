@@ -11,8 +11,6 @@ from apps.recruitment.services.tags_service import TagService
 class TagSerializer(serializers.ModelSerializer[Tag]):
     """태그 조회 및 등록"""
 
-    name = serializers.CharField(required=True, allow_blank=True)
-
     class Meta:
         model = Tag
         fields = ["id", "name"]
@@ -36,10 +34,7 @@ class TagSerializer(serializers.ModelSerializer[Tag]):
     def create(self, validated_data: Any) -> Tag:
         name = validated_data["name"]
 
-        tag, created = TagService.create_tag(name)
-
-        if tag is None:
-            raise ValidationError({"error_detail": "태그 생성에 실패했습니다."})
+        tag, created = Tag.objects.get_or_create(name=name)
 
         if not created:
             raise ValidationError({"error_detail": "이미 존재하는 태그입니다."})
@@ -60,8 +55,6 @@ class RecruitmentTagUpdateSerializer(serializers.Serializer[Any]):
     )
 
     def validate_tags(self, value: List[int]) -> List[int]:
-        if len(value) < 1:
-            raise ValidationError("태그는 1개이상 작성 부탁드립니다.")
 
         if len(value) > 5:
             raise ValidationError("태그는 5개이상 등록 할수 없습니다.")

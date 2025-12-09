@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
 from rest_framework.test import APITestCase
 
 from apps.recruitment.models import Tag
@@ -67,7 +66,7 @@ class TestTags(APITestCase):
     def test_tag_creation_empty_name(self) -> None:
         response = self.client.post(self.tag_list_url, {"name": ""})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["name"][0], "name은 필수 입니다.")
+        self.assertIn("blank", str(response.data["name"][0]))
 
     def test_tag_creation_unauthenticated(self) -> None:
         self.client.force_authenticate(user=None)
@@ -85,7 +84,7 @@ class TestTags(APITestCase):
         serializer = TagSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("name", serializer.errors)
-        self.assertIn("20자 이하", str(serializer.errors["name"]))
+        self.assertIn("글자 수가 20 이하", str(serializer.errors["name"]))
 
     def test_tag_name_invalid_characters(self) -> None:
         """허용되지 않는 문자가 포함된 태그 이름은 실패"""
@@ -100,6 +99,25 @@ class TestTags(APITestCase):
             serializer = TagSerializer(data={"name": name})
             self.assertFalse(serializer.is_valid())
             self.assertIn("허용되지 않는", str(serializer.errors["name"]))
+
+    def test_tag_name_valid_characters(self) -> None:
+        """하이픈, 공백, 숫자, 자음일경우 허용되는지 테스트"""
+        valid_names = [
+            "ㄱㄱㄱㄱㄱㄷ",  # 자음
+            "12345",  # 숫자
+            "테-스트",  # # 하이픈
+            "dja ngo",  # 공백
+            "Python_3",  # 영문, 숫자, 언더바
+            "태극기",  # 한글 테스트
+        ]
+
+        for name in valid_names:
+            serializer = TagSerializer(data={"name": name})
+            self.assertTrue(serializer.is_valid(),
+                f"유효한 이름 '{name}'이 is_valid()에서 실패: {serializer.errors}" )
+            tag = serializer.save()
+            self.assertTrue(Tag.objects.filter(name=name).exists(),
+                f"'{name}' 저장 실패 — DB에서 검색되지 않음" )
 
     def test_validate_tags_too_many(self) -> None:
         """태그 6개 이상 입력 시 실패"""
