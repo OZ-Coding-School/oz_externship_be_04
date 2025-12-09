@@ -37,9 +37,35 @@ class AdminAccountSerializer(serializers.ModelSerializer[User]):
         return withdrawal.created_at
 
 
+class AdminAccountDetailReadSerializer(serializers.ModelSerializer[User]):
+    """
+    어드민 회원 정보 상세 조회용 serializer (Get 전용)
+    """
+
+    role = serializers.CharField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "name",
+            "gender",
+            "nickname",
+            "birthday",
+            "phone_number",
+            "email",
+            "role",
+            "status",
+            "created_at",
+            "profile_img_url",
+        ]
+
+
 class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
     """
-    어드민 회원 정보 상세 조회용 serializer
+    어드민 회원 정보 상세 serializer
     """
 
     role = serializers.CharField(read_only=True)
@@ -90,3 +116,18 @@ class AdminAccountUpdateSerializer(serializers.Serializer[Any]):
     gender = serializers.ChoiceField(required=False, choices=[("M", "M"), ("F", "F")], help_text="성별 (M/F 선택)")
     is_active = serializers.BooleanField(required=False, help_text="계정 활성화 여부")
     profile_img_url = serializers.URLField(required=False, help_text="프로필 이미지 URL")
+
+
+class AdminAccountRoleUpdateSerializer(serializers.Serializer[Any]):
+    """
+    어드민 페이지에서 유저의 권한을 변경할 때 사용하는 요청 바디용 Serializer
+    """
+
+    role = serializers.ChoiceField(
+        choices=[
+            ("user", "user"),
+            ("staff", "staff"),
+            ("admin", "admin"),
+        ],
+        help_text="변경할 권한 (user, staff, admin)",
+    )
