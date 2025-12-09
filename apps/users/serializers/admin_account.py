@@ -65,7 +65,7 @@ class AdminAccountDetailReadSerializer(serializers.ModelSerializer[User]):
 
 class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
     """
-    어드민 회원 정보 상세 조회용 serializer
+    어드민 회원 정보 상세 serializer
     """
 
     role = serializers.CharField(read_only=True)
