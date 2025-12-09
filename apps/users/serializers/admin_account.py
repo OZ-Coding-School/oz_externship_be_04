@@ -36,6 +36,7 @@ class AdminAccountSerializer(serializers.ModelSerializer[User]):
             return None
         return withdrawal.created_at
 
+
 class AdminAccountDetailReadSerializer(serializers.ModelSerializer[User]):
     """
     어드민 회원 정보 상세 조회용 serializer (Get 전용)
@@ -60,6 +61,7 @@ class AdminAccountDetailReadSerializer(serializers.ModelSerializer[User]):
             "created_at",
             "profile_img_url",
         ]
+
 
 class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
     """

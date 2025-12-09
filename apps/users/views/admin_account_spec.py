@@ -17,8 +17,8 @@ from rest_framework.views import APIView
 
 from apps.users.models import User
 from apps.users.serializers.admin_account import (
-    AdminAccountDetailSerializer,
     AdminAccountDetailReadSerializer,
+    AdminAccountDetailSerializer,
     AdminAccountRoleUpdateSerializer,
     AdminAccountSerializer,
     AdminAccountUpdateSerializer,

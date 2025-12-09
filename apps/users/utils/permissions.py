@@ -17,6 +17,7 @@ class StaffOrSuperUser(permissions.BasePermission):
 
         return user.is_staff or user.is_superuser
 
+
 class SuperUserOnly(permissions.BasePermission):
     """
     superuser만 허용합니다.
