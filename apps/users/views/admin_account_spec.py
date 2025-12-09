@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from apps.users.models import User
 from apps.users.serializers.admin_account import (
     AdminAccountDetailSerializer,
+    AdminAccountDetailReadSerializer,
     AdminAccountRoleUpdateSerializer,
     AdminAccountSerializer,
     AdminAccountUpdateSerializer,
@@ -245,7 +246,7 @@ class AdminAccountDetailSpec(APIView):
         summary="어드민 페이지 회원 정보 상세 조회 Spec",
         description="어드민 페이지 회원 정보 상세 조회용 Spec API입니다.",
         responses={
-            200: AdminAccountDetailSerializer,
+            200: AdminAccountDetailReadSerializer,
             401: AdminAccountUpdateSimpleErrorSerializer,
             403: AdminAccountUpdateSimpleErrorSerializer,
             404: AdminAccountUpdateSimpleErrorSerializer,
@@ -264,7 +265,6 @@ class AdminAccountDetailSpec(APIView):
                     "role": "user",
                     "status": "active",
                     "created_at": "2005-01-01T13:00:47.50525+09:00",
-                    "updated_at": "2025-10-30T14:01:57.505250+09:00",
                     "profile_img_url": "https://example.com/profile/user1.png",
                 },
                 status_codes=["200"],
@@ -305,9 +305,8 @@ class AdminAccountDetailSpec(APIView):
             profile_img_url="https://example.com/profile/user1.png",
         )
         user.created_at = datetime(2005, 1, 1, 13, 00, 47, 50525, tzinfo=timezone.utc)
-        user.updated_at = datetime(2025, 10, 30, 14, 1, 57, 505250, tzinfo=timezone.utc)
 
-        serializer = AdminAccountDetailSerializer(user)
+        serializer = AdminAccountDetailReadSerializer(user)
         return Response(serializer.data)
 
     @extend_schema(
