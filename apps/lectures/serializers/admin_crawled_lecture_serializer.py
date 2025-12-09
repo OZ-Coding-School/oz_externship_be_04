@@ -21,8 +21,7 @@ class AdminCrawledLectureSerializer(serializers.ModelSerializer[CrawledLecture])
 
 
 class AdminCrawledLectureRetrieveSerializer(serializers.ModelSerializer[CrawledLecture]):
-    # categories = CategorySerializer(many=True, read_only=True)  # 실기능용
-    categories = CategorySerializer(source="mock_crawled_lecture_categories", many=True, read_only=True)
+    categories = CategorySerializer(many=True, read_only=True)
     discounted_price = serializers.IntegerField(source="discount_price", read_only=True)
 
     class Meta:
