@@ -41,6 +41,13 @@ AdminAccountUpdateSimpleErrorSerializer = inline_serializer(
     },
 )
 
+AdminAccountDeleteSuccessSerializer = inline_serializer(
+    name="AdminAccountDeleteSuccessSerializer",
+    fields={
+        "detail": serializers.CharField(help_text="삭제 시 성공 메시지"),
+    },
+)
+
 
 class AdminAccountListSpec(APIView):
     """
@@ -382,3 +389,44 @@ class AdminAccountDetailSpec(APIView):
 
         serializer = AdminAccountDetailSerializer(user)
         return Response(serializer.data)
+
+    @extend_schema(
+        tags=["Admin"],
+        summary="어드민 페이지 회원 정보 삭제 Spec",
+        description=("관리자 권한을 가진 유저는 어드민 페이지에서 특정 회원 정보를 삭제할 수 있습니다."),
+        responses={
+            200: AdminAccountDetailSerializer,
+            401: AdminAccountUpdateSimpleErrorSerializer,
+            403: AdminAccountUpdateSimpleErrorSerializer,
+            404: AdminAccountUpdateSimpleErrorSerializer,
+        },
+        examples=[
+            OpenApiExample(
+                name="Success Example",
+                value={"detail": "권한이 변경되었습니다."},
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                name="Unauthorized Example",
+                value={"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                status_codes=["401"],
+            ),
+            OpenApiExample(
+                name="Forbidden Example",
+                value={"error_detail": "권한이 없습니다."},
+                status_codes=["403"],
+            ),
+            OpenApiExample(
+                name="Not found Example",
+                value={"error_detail": "사용자 정보를 찾을 수 없습니다."},
+                status_codes=["404"],
+            ),
+        ],
+    )
+    def delete(self, _request: Request, account_id: int) -> Response:
+        if account_id != 1:
+            raise Http404
+
+        return Response(
+            {"detail": "권한이 변경되었습니다."},
+        )

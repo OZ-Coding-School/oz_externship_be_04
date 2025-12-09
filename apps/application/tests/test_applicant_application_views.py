@@ -85,7 +85,7 @@ class ApplicantApplicationAPITestCase(APITestCase):
 
     # 지원서 제출 테스트 (REQ-APLY-001)
     def test_application_create_success(self) -> None:
-        """본인이 작성하지 않은 공고에 지원 성공 (201 CREATED)"""
+        """본인이 작성하지 않은 공고에 지원 성공 (200 OK)"""
 
         new_recruitment = Recruitment.objects.create(
             author=self.author,
@@ -97,10 +97,9 @@ class ApplicantApplicationAPITestCase(APITestCase):
         )
 
         url = reverse("application-create", kwargs={"recruitment_uuid": new_recruitment.uuid})
-
         response = self.client.post(url, data=self.application_payload, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Application.objects.count(), 2)
 
     def test_application_create_already_applied(self) -> None:
@@ -122,31 +121,31 @@ class ApplicantApplicationAPITestCase(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(response.data["results"][0]["uuid"], str(self.existing_application.uuid))
+        self.assertEqual(response.data["results"][0]["id"], self.existing_application.id)
 
     # 내가 지원한 상세 조회 테스트 (REQ-APLY-007)
     def test_my_application_detail_success(self) -> None:
         """내 지원 상세 조회 성공 (200 OK)"""
 
-        url = reverse("application-detail", kwargs={"application_uuid": self.existing_application.uuid})
+        url = reverse("application-detail", kwargs={"application_id": self.existing_application.id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["uuid"], str(self.existing_application.uuid))
+        self.assertEqual(response.data["id"], self.existing_application.id)
         self.assertEqual(response.data["motivation"], "동기")
 
     def test_my_application_detail_not_owner(self) -> None:
         """다른 사람의 지원서 조회 시도 (404 NOT FOUND)"""
 
-        other_application = Application.objects.create(
+        other_app = Application.objects.create(
             recruitment=self.recruitment,
             applicant=self.author,
-            self_introduction="다른사람의 소개",
-            motivation="다른사람의 동기",
+            self_introduction="다른 소개",
+            motivation="다른 동기",
         )
-        url = reverse("application-detail", kwargs={"application_uuid": other_application.uuid})
+
+        url = reverse("application-detail", kwargs={"application_id": other_app.id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -155,7 +154,7 @@ class ApplicantApplicationAPITestCase(APITestCase):
     def test_application_cancel_success(self) -> None:
         """지원 취소 성공 (200 OK)"""
 
-        url = reverse("application-cancel", kwargs={"application_uuid": self.existing_application.uuid})
+        url = reverse("application-cancel", kwargs={"application_id": self.existing_application.id})
         response = self.client.post(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -167,8 +166,8 @@ class ApplicantApplicationAPITestCase(APITestCase):
     def test_application_cancel_not_found(self) -> None:
         """존재하지 않는 지원 내역 취소 테스트 (404 NOT FOUND)"""
 
-        url = "/api/v1/applications/00000000-0000-0000-0000-000000000000/cancel"
+        url = "/api/v1/applications/0/cancel"
         response = self.client.post(url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data["error_detail"], "해당 지원서를 찾을 수 없습니다.")
+        self.assertEqual(response.data["error_detail"], "해당 지원내역을 찾을 수 없습니다.")

@@ -1,5 +1,6 @@
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError
+from rest_framework.exceptions import NotFound
 
 from apps.chat.models import ChatMessage
 from apps.study_groups.models import GroupMember, StudyGroup
@@ -14,7 +15,7 @@ class MessageService:
         # 해당 사용자가 그룹 구성원이 맞는지 검증
         is_member = GroupMember.objects.filter(
             study_group_id=study_group.id,
-            user_id=user.id,  # mypy 오류로 user 대신 user.id를 넘겼습니다.
+            user_id=user.id,
         ).exists()
 
         if not is_member:
