@@ -255,7 +255,7 @@ class AdminAccountDetailSpec(APIView):
         summary="어드민 페이지 회원 정보 상세 조회 Spec",
         description="어드민 페이지 회원 정보 상세 조회용 Spec API입니다.",
         responses={
-            200: AdminAccountDeleteSuccessSerializer,
+            200: AdminAccountDetailReadSerializer,
             401: AdminAccountUpdateSimpleErrorSerializer,
             403: AdminAccountUpdateSimpleErrorSerializer,
             404: AdminAccountUpdateSimpleErrorSerializer,
@@ -444,7 +444,7 @@ class AdminAccountDetailSpec(APIView):
             raise Http404
 
         return Response(
-            {"detail": "유저 데이터가 삭제되었습니다. - pk: {account_id}"},
+            {"detail": f"유저 데이터가 삭제되었습니다. - pk: {account_id}"},
         )
 
 
