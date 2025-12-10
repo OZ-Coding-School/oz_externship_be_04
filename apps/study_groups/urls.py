@@ -11,6 +11,10 @@ from .views.study_groups_view import (
     StudyGroupListCreateAPIView,
     StudyGroupRetrieveUpdateDestroyAPIView,
 )
+from .views.schedule_views import (
+    ScheduleDetailView,
+    ScheduleView,
+)
 from .views.study_note import (
     StudyNoteDetailView,
     StudyNoteListCreateView,
@@ -34,6 +38,10 @@ urlpatterns = [
         "/study-groups/<int:group_id>/reviews/<int:review_id>",
         StudyGroupReviewUpdateAPIView.as_view(),
         name="study-group-review-update",
+    ),
+    path("/study-groups/<int:group_id>/schedules", ScheduleView.as_view(), name="schedule"),
+    path(
+        "/study-groups/<int:group_id>/schedules/<int:schedule_id>", ScheduleDetailView.as_view(), name="schedule-detail"
     ),
     path("/study-groups/<int:group_id>/notes", StudyNoteListCreateView.as_view(), name="study-note-list-create"),
     path("/study-groups/<int:group_id>/notes/<int:note_id>", StudyNoteDetailView.as_view(), name="study-note-detail"),
