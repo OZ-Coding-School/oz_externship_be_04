@@ -47,6 +47,7 @@ class UserSerializer(serializers.ModelSerializer[Any]):
         if not (is_valid_without_hyphen or is_valid_with_hyphen):
             raise serializers.ValidationError("전화번호 양식이 맞지않습니다.")
         replace_number = value.replace("-", "")
+
         if self.instance is None:
             if User.objects.filter(phone_number=replace_number).exists():
                 raise serializers.ValidationError("이미 사용 중인 전화번호입니다.")
