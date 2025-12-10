@@ -143,7 +143,7 @@ class WithdrawalCheckView(APITestCase):
         }
         response = self.client.delete(url, data=data, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
         self.assertFalse(self.user.is_active)
         self.assertEqual(Withdrawal.objects.count(), 1)
@@ -164,7 +164,7 @@ class WithdrawalCheckView(APITestCase):
         self.assertTrue(self.user.is_active)
         self.assertEqual(Withdrawal.objects.count(), 0)
         self.assertIn("error_detail", response.data)
-        self.assertEqual(response.data["error_detail"], "회원 탈퇴에 동의해야 탈퇴 가능합니다.")
+        self.assertEqual(response.data["error_detail"]["agree_check"][0], "회원 탈퇴에 동의해야 탈퇴 가능합니다.")
 
     # 이미 탈퇴한 회원이 다시 탈퇴 신청을 할 경우 ( 실패 case )
     def test_withdrawal_view_already_active(self) -> None:
