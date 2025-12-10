@@ -67,6 +67,7 @@ class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
     """
     어드민 회원 정보 상세 serializer
     """
+
     status = serializers.CharField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
 

@@ -22,10 +22,10 @@ from apps.users.serializers.admin_serializers import (
     AdminAccountUpdateSerializer,
 )
 from apps.users.services.admin_services import (
+    delete_admin_account,
     get_admin_account_detail,
     get_admin_account_list,
     update_admin_account,
-    delete_admin_account,
     update_admin_account_role,
 )
 from apps.users.utils.permissions import StaffOrSuperUser, SuperUserOnly
@@ -370,6 +370,7 @@ class AdminAccountDetailSpec(APIView):
         delete_admin_account(account_id=account_id)
 
         return Response({"detail": f"유저 데이터가 삭제되었습니다. - pk: {account_id}"})
+
 
 class AdminAccountRoleUpdateSpec(APIView):
 
