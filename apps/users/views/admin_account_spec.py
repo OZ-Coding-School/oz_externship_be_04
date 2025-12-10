@@ -24,7 +24,10 @@ from apps.users.serializers.admin_serializers import (
     AdminAccountSerializer,
     AdminAccountUpdateSerializer,
 )
-from apps.users.services.admin_services import get_admin_account_list
+from apps.users.services.admin_services import (
+    get_admin_account_detail,
+    get_admin_account_list,
+)
 from apps.users.utils.permissions import StaffOrSuperUser, SuperUserOnly
 
 AdminAccountUpdate400ErrorSerializer = inline_serializer(
@@ -190,7 +193,7 @@ class AdminAccountListSpec(APIView):
 
 class AdminAccountDetailSpec(APIView):
     """
-    Spec API 어드민 페이지 회원 정보 상세 조회 -> mock 데이터입니다.
+    어드민 페이지 회원 정보 상세 조회 APIView
     """
 
     permission_classes = [StaffOrSuperUser]
@@ -206,8 +209,8 @@ class AdminAccountDetailSpec(APIView):
 
     @extend_schema(
         tags=["Admin"],
-        summary="어드민 페이지 회원 정보 상세 조회 Spec",
-        description="어드민 페이지 회원 정보 상세 조회용 Spec API입니다.",
+        summary="어드민 페이지 회원 정보 상세 조회",
+        description="어드민 페이지 회원 정보 상세 조회용 API입니다.",
         responses={
             200: AdminAccountDetailReadSerializer,
             401: AdminAccountUpdateSimpleErrorSerializer,
@@ -251,25 +254,9 @@ class AdminAccountDetailSpec(APIView):
     )
     def get(self, request: Request, account_id: int, *args: Any, **kwargs: Any) -> Response:
 
-        if account_id != 1:
-            raise Http404
-
-        user = User(
-            id=account_id,
-            email="user1@example.com",
-            nickname="user1",
-            name="홍승우",
-            birthday=date(2005, 1, 1),
-            is_active=True,
-            is_staff=False,
-            is_superuser=False,
-            phone_number="01012345678",
-            gender="M",
-            profile_img_url="https://example.com/profile/user1.png",
-        )
-        user.created_at = datetime(2005, 1, 1, 13, 00, 47, 50525, tzinfo=timezone.utc)
-
+        user = get_admin_account_detail(account_id=account_id)
         serializer = AdminAccountDetailReadSerializer(user)
+
         return Response(serializer.data)
 
     @extend_schema(
