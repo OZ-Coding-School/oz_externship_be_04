@@ -1,6 +1,5 @@
 from typing import Any
 
-from django.http import Http404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -27,6 +26,7 @@ from apps.users.services.admin_services import (
     get_admin_account_list,
     update_admin_account,
     delete_admin_account,
+    update_admin_account_role,
 )
 from apps.users.utils.permissions import StaffOrSuperUser, SuperUserOnly
 
@@ -377,7 +377,7 @@ class AdminAccountRoleUpdateSpec(APIView):
 
     @extend_schema(
         tags=["Admin"],
-        summary="어드민 페이지 회원 권한 변경 Spec",
+        summary="어드민 페이지 회원 권한 변경",
         description="관리자 권한을 가진 유저는 어드민 페이지에서 특정 유저의 권한을 변경할 수 있습니다.",
         request=AdminAccountRoleUpdateSerializer,
         responses={
@@ -414,7 +414,8 @@ class AdminAccountRoleUpdateSpec(APIView):
         serializer_in = AdminAccountRoleUpdateSerializer(data=request.data)
         serializer_in.is_valid(raise_exception=True)
 
-        if account_id != 1:
-            raise Http404
+        role: str = serializer_in.validated_data.get["role"]
+
+        update_admin_account_role(account_id=account_id, role=role)
 
         return Response({"detail": "권한이 변경되었습니다."})
