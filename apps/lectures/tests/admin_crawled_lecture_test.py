@@ -1,16 +1,19 @@
-from django.test import TestCase
-from django.urls import reverse
-from rest_framework.test import APIClient
-from rest_framework import status
+from typing import cast
 
 from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.response import Response as DRFResponse
+from rest_framework.test import APIClient
+
 from apps.lectures.models import CrawledLecture
 
 User = get_user_model()
 
 
 class AdminCrawledLectureViewTest(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.admin = User.objects.create_superuser(
             email="admin@admin.com",
             password="ozcoding",
@@ -39,45 +42,45 @@ class AdminCrawledLectureViewTest(TestCase):
         self.url = reverse("admin_crawled_lectures")
 
     # 기본적인 조회
-    def test_admin_can_get_lecture_list(self):
-        response = self.client.get(self.url)
+    def test_admin_can_get_lecture_list(self) -> None:
+        response = cast(DRFResponse, self.client.get(self.url))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("results", response.data)
         self.assertEqual(len(response.data["results"]), 10)
 
     # 페이지네이션 잘 가는지
-    def test_pagination_page_2(self):
-        response = self.client.get(self.url, {"page": 2})
+    def test_pagination_page_2(self) -> None:
+        response = cast(DRFResponse, self.client.get(self.url, {"page": 2}))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 5)
 
     # 제목으로 검색
-    def test_search_by_title(self):
-        response = self.client.get(self.url, {"search": "제목 3"})
+    def test_search_by_title(self) -> None:
+        response = cast(DRFResponse, self.client.get(self.url, {"search": "제목 3"}))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["title"], "제목 3")
 
     # 강사명으로 검색
-    def test_search_by_instructor(self):
-        response = self.client.get(self.url, {"search": "강사 5"})
+    def test_search_by_instructor(self) -> None:
+        response = cast(DRFResponse, self.client.get(self.url, {"search": "강사 5"}))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["instructor"], "강사 5")
 
     # 로그인 안했을 때
-    def test_unauthenticated_user_cannot_access(self):
+    def test_unauthenticated_user_cannot_access(self) -> None:
         client = APIClient()
         res = client.get(self.url)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
     # 일반유저로 했을 때
-    def test_non_admin_user_forbidden(self):
+    def test_non_admin_user_forbidden(self) -> None:
         user = User.objects.create_user(email="user@example.com", password="userpass")
         client = APIClient()
         client.force_authenticate(user)

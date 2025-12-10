@@ -2,7 +2,8 @@ import random
 from decimal import Decimal
 from typing import cast
 
-from django.db.models import QuerySet, Q
+from django.db.models import Q, QuerySet
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -12,7 +13,6 @@ from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.shortcuts import get_object_or_404
 
 from apps.lectures import models
 from apps.lectures.models import CrawledLecture
@@ -73,10 +73,7 @@ class AdminCrawledLectureView(APIView):
         queryset = CrawledLecture.objects.all().order_by("-created_at")
 
         if search:
-            queryset = queryset.filter(
-                Q(title__icontains=search) |
-                Q(instructor__icontains=search)
-            )
+            queryset = queryset.filter(Q(title__icontains=search) | Q(instructor__icontains=search))
 
         paginator = self.pagination_class()
         paginated_qs = paginator.paginate_queryset(queryset, request)
