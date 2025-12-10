@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 from apps.core.models import TimeStampedModel
@@ -37,3 +38,28 @@ class StudyGroup(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.name
+
+
+class GroupMember(TimeStampedModel):
+    study_group = models.ForeignKey(
+        "study_groups.StudyGroup",
+        on_delete=models.CASCADE,
+        db_column="study_group_id",
+        related_name="members",
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, db_column="user_id")
+    is_leader = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "study_members"
+
+    def __str__(self) -> str:
+        return f"{self.study_group.name} - {self.user}"
+
+
+class StudyLecture(TimeStampedModel):
+    lecture = models.ForeignKey("lectures.CrawledLecture", on_delete=models.CASCADE, db_column="lecture_id")
+    study_group = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE, db_column="study_group_id")
+
+    class Meta:
+        db_table = "study_lectures"

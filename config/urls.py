@@ -9,6 +9,10 @@ from drf_spectacular.views import (
 
 urlpatterns: list[URLPattern | URLResolver] = []
 
+urlpatterns += [
+    path("api/v1/study-groups/", include("apps.study_groups.urls")),
+]
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     if "debug_toolbar" in settings.INSTALLED_APPS:
