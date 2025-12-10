@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.lectures.models import CrawledLecture
@@ -13,6 +14,7 @@ class CrawledLectureSerializer(serializers.ModelSerializer[CrawledLecture]):
     categories = CategorySerializer(source="mock_crawled_lecture_categories", many=True, read_only=True)  # mock
     discounted_price = serializers.IntegerField(source="discount_price", read_only=True)
     reviews = CrawledLectureReviewSerializer(source="mock_crawled_lecture_reviews", many=True, read_only=True)  # mock
+    average_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = CrawledLecture
@@ -32,3 +34,9 @@ class CrawledLectureSerializer(serializers.ModelSerializer[CrawledLecture]):
             "reviews",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(float)
+    def get_average_rating(self, obj: CrawledLecture) -> float:
+        if obj.average_rating is None:
+            return 0.0
+        return float(f"{obj.average_rating:.1f}")
