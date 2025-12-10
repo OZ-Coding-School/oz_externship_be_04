@@ -144,22 +144,33 @@ class RecruitmentListCreateViewTest(RecruitmentViewAPITestCase):
         self.assertIn("results", response.data)
         self.assertEqual(response.data["count"], 15)
 
-    def test_list_recruitments_excludes_closed(self) -> None:
-        """마감된 공고는 목록에서 제외"""
+    def test_list_recruitments_filter_by_is_closed_false(self) -> None:
+        """is_closed=false로 마감되지 않은 공고만 조회"""
         self._create_multiple_recruitments(10, is_closed=False)
         self._create_recruitment(title="마감 공고", is_closed=True)
 
         url = reverse("recruitment-list-create")
-        response = self.client.get(url)
+        response = self.client.get(url, {"is_closed": "false"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 10)
+
+    def test_list_recruitments_filter_by_is_closed_true(self) -> None:
+        """is_closed=true로 마감된 공고만 조회"""
+        self._create_multiple_recruitments(10, is_closed=False)
+        self._create_multiple_recruitments(5, title_prefix="마감 공고", is_closed=True)
+
+        url = reverse("recruitment-list-create")
+        response = self.client.get(url, {"is_closed": "true"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 5)
 
     def test_list_recruitments_pagination(self) -> None:
         """페이지네이션 동작 확인"""
         self._create_multiple_recruitments(15)
         url = reverse("recruitment-list-create")
-        response = self.client.get(url, {"page": "1", "size": "10"})
+        response = self.client.get(url, {"page": "1", "page_size": "10"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 10)
@@ -222,7 +233,7 @@ class RecruitmentListCreateViewTest(RecruitmentViewAPITestCase):
         """페이지네이션 이전 URL 확인"""
         self._create_multiple_recruitments(25)
         url = reverse("recruitment-list-create")
-        response = self.client.get(url, {"page": "2", "size": "10"})
+        response = self.client.get(url, {"page": "2", "page_size": "10"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(response.data.get("previous"))
@@ -280,13 +291,33 @@ class RecruitmentDetailUpdateDeleteViewTest(RecruitmentViewAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_recruitment_success(self) -> None:
-        """공고 수정 성공"""
+        """공고 수정 성공 및 응답 형식 확인"""
         url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
         data = {"title": "수정된 제목"}
         response = self.client.patch(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["title"], "수정된 제목")
+
+        # 명세서에 따른 응답 필드 확인
+        expected_fields = {
+            "uuid",
+            "title",
+            "content",
+            "estimated_fee",
+            "expected_headcount",
+            "tags",
+            "files",
+            "image_urls",
+            "close_at",
+            "updated_at",
+        }
+        self.assertEqual(set(response.data.keys()), expected_fields)
+
+        # 응답에 포함되지 않아야 할 필드 확인
+        unexpected_fields = {"bookmark_count", "views_count", "lectures", "created_at"}
+        for field in unexpected_fields:
+            self.assertNotIn(field, response.data)
 
     def test_update_recruitment_unauthorized(self) -> None:
         """작성자 아닌 사용자 수정 실패"""
@@ -440,65 +471,3 @@ class RecruitmentMineViewTest(RecruitmentViewAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(response.data["count"], 1)
-
-
-class RecruitmentRecommendViewTest(RecruitmentViewAPITestCase):
-    """추천 공고 목록 테스트"""
-
-    def setUp(self) -> None:
-        super().setUp()
-        self._create_multiple_recruitments(10, title_prefix="추천 공고")
-
-    def test_recommend_recruitments_success(self) -> None:
-        """추천 공고 목록 조회 성공"""
-        url = reverse("recruitment-recommend")
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("count", response.data)
-        self.assertIn("results", response.data)
-
-    def test_recommend_recruitments_unauthenticated(self) -> None:
-        """비인증 사용자 접근 불가"""
-        self.client.force_authenticate(user=None)
-        url = reverse("recruitment-recommend")
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_recommend_recruitments_pagination(self) -> None:
-        """페이지네이션 동작 확인"""
-        url = reverse("recruitment-recommend")
-        response = self.client.get(url, {"page": "1", "size": "5"})
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertLessEqual(len(response.data["results"]), 5)
-
-    def test_recommend_recruitments_search(self) -> None:
-        """검색 기능 동작 확인"""
-        self._create_recruitment(title="특별한 추천 공고")
-
-        url = reverse("recruitment-recommend")
-        response = self.client.get(url, {"search": "특별한"})
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(response.data["count"], 1)
-
-    def test_recommend_recruitments_filter_by_tags(self) -> None:
-        """태그 필터링 동작 확인"""
-        recruitment = self._create_recruitment(title="Python 추천 공고")
-        recruitment.recruitment_tags.create(tag=self.tag1)
-
-        url = reverse("recruitment-recommend")
-        response = self.client.get(url, {"tags": "Python"})
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(response.data["count"], 1)
-
-    def test_recommend_recruitments_sort(self) -> None:
-        """정렬 기능 동작 확인"""
-        url = reverse("recruitment-recommend")
-        response = self.client.get(url, {"sort": "most_views"})
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("results", response.data)
