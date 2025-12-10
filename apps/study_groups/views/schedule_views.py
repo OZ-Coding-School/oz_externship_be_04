@@ -1,3 +1,5 @@
+from typing import cast
+
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import status
@@ -40,9 +42,8 @@ class ScheduleView(APIView):
         study_group = StudyGroup.objects.filter(id=group_id).first()
         if not study_group:
             return Response({"detail": "존재하지 않는 스터디 그룹입니다."}, status.HTTP_404_NOT_FOUND)
-        is_member = GroupMember.objects.filter(user_id=request.user.pk, study_group_id=group_id).exists()
-        if not is_member:
-            return Response({"detail": "요청 유저는 이 스터디의 멤버가 아닙니다."}, status.HTTP_403_FORBIDDEN)
+        if not GroupMember.objects.filter(user_id=cast(int, request.user.pk), study_group_id=group_id).exists():
+            return Response({"detail": "요청 유저는 이 스터디의 멤버가 아닙니다."}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = GroupScheduleSerializer(
             data=request.data,
