@@ -1,5 +1,5 @@
 from django.db.models import Q, QuerySet
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, ValidationError
 
 from apps.core.pagination import OffsetPage, Pageable, offset_paginate_queryset
 from apps.users.models import User
@@ -48,3 +48,11 @@ def get_admin_account_list(
 
     page: OffsetPage[User] = offset_paginate_queryset(qs, pageable)
     return page
+
+
+def get_admin_account_detail(*, account_id: int) -> User:
+    user = User.objects.filter(id=account_id).first()
+    if user is None:
+        raise NotFound("사용자 정보를 찾을 수 없습니다.")
+
+    return user
