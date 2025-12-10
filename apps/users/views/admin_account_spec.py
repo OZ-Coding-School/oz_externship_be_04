@@ -105,8 +105,8 @@ class AdminAccountListSpec(APIView):
                 name="status",
                 type=OpenApiTypes.STR,
                 location="query",
-                description="상세 필터 (active, inactive, withdrew)",
-                enum=["active", "inactive", "withdrew"],
+                description="상세 필터 (active, inactive, withdrawal_pending)",
+                enum=["active", "inactive", "withdrawal_pending"],
             ),
         ],
         responses={
