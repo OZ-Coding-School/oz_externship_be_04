@@ -75,20 +75,40 @@ def build_user_vector(
     id_to_idx = {lec_id: idx for idx, lec_id in enumerate(lecture_ids)}
 
     vectors = []
+    weights = []
+
     for lec_id in user_lecture_ids:
         idx = id_to_idx.get(lec_id)
-        if idx is not None:
-            vectors.append(lecture_vectors[idx])
+        if idx is None:
+            continue
+
+        vec = lecture_vectors[idx]
+
+        if lec_id in bookmark_ids:
+            w = 5.0
+        elif lec_id in group_lecture_ids:
+            w = 3.0
+        else:
+            w = 1.0
+
+        vectors.append(vec)
+        weights.append(w)
 
     if not vectors:
         return None
 
-    mean_vec: NDArray[np.float32] = np.mean(np.vstack(vectors), axis=0)
+    vecs = np.vstack(vectors)
+    w_array = np.array(weights, dtype=np.float32).reshape(-1, 1)
 
-    norm = np.float32(np.linalg.norm(mean_vec))
+    weighted_sum: NDArray[np.float32] = np.sum(vecs * w_array, axis=0)
+    weight_total = np.sum(w_array)
+
+    user_vec = weighted_sum / weight_total
+
+    norm = np.float32(np.linalg.norm(user_vec))
     if norm == 0:
-        return mean_vec
-    return mean_vec / norm
+        return user_vec
+    return user_vec / norm
 
 
 def recommend_lectures(user: User, top_n: int = 3) -> Tuple[List[CrawledLecture], str]:
