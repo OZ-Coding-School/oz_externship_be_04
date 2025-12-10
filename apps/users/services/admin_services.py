@@ -1,9 +1,9 @@
 from django.db.models import Q, QuerySet
-
 from rest_framework.exceptions import ValidationError
 
-from apps.core.pagination import Pageable, OffsetPage, offset_paginate_queryset
+from apps.core.pagination import OffsetPage, Pageable, offset_paginate_queryset
 from apps.users.models import User
+
 
 def get_admin_account_list(
     *,
@@ -32,23 +32,17 @@ def get_admin_account_list(
     if role_param:
         allowed_role = {"admin", "staff", "user"}
         if role_param not in allowed_role:
-            raise ValidationError(
-                {"detail": "role 파라미터는 admin, staff, user 중에서 하나여야 합니다."}
-            )
+            raise ValidationError({"detail": "role 파라미터는 admin, staff, user 중에서 하나여야 합니다."})
 
         if role_param == "admin":
             qs = qs.filter(is_superuser=True)
         elif role_param == "staff":
-            qs = qs.filter(is_superuser=False ,is_staff=True)
+            qs = qs.filter(is_superuser=False, is_staff=True)
         elif role_param == "user":
             qs = qs.filter(is_superuser=False, is_staff=False)
 
     if search:
-        qs = qs.filter(
-            Q(email__icontains=search)
-            | Q(nickname__icontains=search)
-            | Q(name__icontains=search)
-        )
+        qs = qs.filter(Q(email__icontains=search) | Q(nickname__icontains=search) | Q(name__icontains=search))
 
     qs = qs.order_by("id")
 
