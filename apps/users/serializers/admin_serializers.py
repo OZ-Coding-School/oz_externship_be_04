@@ -50,16 +50,16 @@ class AdminAccountDetailReadSerializer(serializers.ModelSerializer[User]):
         model = User
         fields = [
             "id",
-            "name",
-            "gender",
-            "nickname",
-            "birthday",
-            "phone_number",
             "email",
-            "role",
+            "nickname",
+            "name",
+            "phone_number",
+            "birthday",
+            "gender",
             "status",
-            "created_at",
+            "role",
             "profile_img_url",
+            "created_at",
         ]
 
 
@@ -67,27 +67,22 @@ class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
     """
     어드민 회원 정보 상세 serializer
     """
-
-    role = serializers.CharField(read_only=True)
     status = serializers.CharField(read_only=True)
-    created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = User
         fields = [
             "id",
-            "name",
-            "gender",
-            "nickname",
-            "birthday",
-            "phone_number",
             "email",
-            "role",
+            "nickname",
+            "name",
+            "phone_number",
+            "birthday",
+            "gender",
             "status",
-            "created_at",
-            "updated_at",
             "profile_img_url",
+            "updated_at",
         ]
 
 
