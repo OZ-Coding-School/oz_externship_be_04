@@ -23,4 +23,4 @@ class UserAccountView(APIView):
         data.pop("agree_check")
 
         withdraw_service(request.user, data)
-        return Response({"detail": "회원 탈퇴 처리가 완료되었습니다. 14일 후 계정이 영구 삭제되며, 그전에 다시 로그인하시면 계정을 복구하실 수 있습니다."}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"detail": "회원 탈퇴 처리가 완료되었습니다. 14일 후 계정이 영구 삭제되며, 그전에 다시 로그인하시면 계정을 복구하실 수 있습니다."}, status=status.HTTP_200_OK)
