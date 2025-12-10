@@ -123,10 +123,10 @@ def update_admin_account_role(*, account_id: int, role: str) -> None:
     if role == "admin":
         user.is_superuser = True
         user.is_staff = True
-    if role == "staff":
+    elif role == "staff":
         user.is_superuser = False
         user.is_staff = True
-    if role == "user":
+    elif role == "user":
         user.is_superuser = False
         user.is_staff = False
     else:
