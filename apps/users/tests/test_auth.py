@@ -47,15 +47,15 @@ class test_user_register(APITestCase):
 
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
                 self.assertIn("error_detail", response.data)
-                self.assertIn(field, response.data["error_detail"])
+                self.assertIsInstance(response.data["error_detail"], str)
 
     def test_email(self) -> None:
         response = self.client.post(self.account_urls, self.valid_user_data)
         second_response = self.client.post(self.account_urls, self.valid_user_data)
 
-        self.assertEqual(second_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(second_response.status_code, status.HTTP_409_CONFLICT)
         self.assertIn("error_detail", second_response.data)
-        self.assertIn("email", second_response.data["error_detail"])
+        self.assertEqual(second_response.data["error_detail"], "이미 중복된 회원가입 내역이 존재합니다.")
 
     def test_nickname(self) -> None:
         User.objects.create_user(
@@ -63,14 +63,15 @@ class test_user_register(APITestCase):
             password="dfgasfgseirk123",
             name="testnickname",
             nickname=self.valid_user_data["nickname"],
-            phone_number="01012345678",
+            phone_number="01099999999",
             gender="M",
             birthday="1990-01-01",
         )
         response = self.client.post(self.account_urls, self.valid_user_data)
 
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertIn("error_detail", response.data)
-        self.assertIn("nickname", response.data["error_detail"])
+        self.assertEqual(response.data["error_detail"], "이미 중복된 회원가입 내역이 존재합니다.")
 
     def test_phone_number(self) -> None:
         User.objects.create_user(
@@ -84,8 +85,9 @@ class test_user_register(APITestCase):
         )
         response = self.client.post(self.account_urls, self.valid_user_data)
 
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertIn("error_detail", response.data)
-        self.assertIn("phone_number", response.data["error_detail"])
+        self.assertEqual(response.data["error_detail"], "이미 중복된 회원가입 내역이 존재합니다.")
 
     def test_invalid_phone_number(self) -> None:
         invaild_phone_number = [
@@ -104,8 +106,9 @@ class test_user_register(APITestCase):
                 valid_data["phone_number"] = phone_number
                 response = self.client.post(self.account_urls, valid_data)
 
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
                 self.assertIn("error_detail", response.data)
-                self.assertIn("phone_number", response.data["error_detail"])
+                self.assertIsInstance(response.data["error_detail"], str)
 
     def test_valid_phone_number(self) -> None:
         valid_phone_number = [
