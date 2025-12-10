@@ -10,7 +10,10 @@ from rest_framework.exceptions import ValidationError as APIErrorValid
 from rest_framework.test import APITestCase
 
 from apps.users.models import User, Withdrawal
-from apps.users.services.withdrawal_services import withdraw_service
+from apps.users.services.withdrawal_services import (
+    AlreadyLockedAccount,
+    withdraw_service,
+)
 
 
 # model 테스트
@@ -110,7 +113,7 @@ class WithdrawalCheckService(TransactionTestCase):
             "reason": "TOO_DIFFICULT",
             "reason_detail": "이미 탈퇴한 유저 테스트 입니다.",
         }
-        with self.assertRaises(APIErrorValid):
+        with self.assertRaises(AlreadyLockedAccount):
             withdraw_service(self.user, data)
 
         self.assertEqual(Withdrawal.objects.count(), 0)
@@ -180,7 +183,7 @@ class WithdrawalCheckView(APITestCase):
         }
         response = self.client.delete(url, data=data, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_423_LOCKED)
         self.user.refresh_from_db()
         self.assertFalse(self.user.is_active)
         self.assertEqual(Withdrawal.objects.count(), 0)
@@ -189,7 +192,9 @@ class WithdrawalCheckView(APITestCase):
             response.data["error_detail"],
             (
                 {
-                    "non_field_errors": "이미 탈퇴 처리된 유저 입니다. 다시 로그인 하시면 계정 복구를 진행하실 수 있습니다."
+                    "non_field_errors": [
+                        "이미 탈퇴 처리된 유저 입니다. 다시 로그인 하시면 계정 복구를 진행하실 수 있습니다."
+                    ]
                 }
             ),
         )
