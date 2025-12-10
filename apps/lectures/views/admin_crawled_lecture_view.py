@@ -75,7 +75,7 @@ class AdminCrawledLectureView(APIView):
         if search:
             queryset = queryset.filter(
                 Q(title__icontains=search) |
-                Q(instrector__icontains=search)
+                Q(instructor__icontains=search)
             )
 
         paginator = self.pagination_class()
