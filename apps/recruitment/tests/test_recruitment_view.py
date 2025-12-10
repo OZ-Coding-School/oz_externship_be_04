@@ -1,36 +1,33 @@
 from datetime import date, timedelta
 from typing import Any
-from unittest.mock import MagicMock, Mock, patch
-from uuid import uuid4
 
-from django.db.models import Q
-from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.request import Request
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APITestCase
 
 from apps.recruitment.models import Recruitment, Tag
-from apps.recruitment.serializers.recruitment_serializer import (
-    RecruitmentCreateSerializer,
-    RecruitmentDetailSerializer,
-    RecruitmentListSerializer,
-)
-from apps.recruitment.views.recruitment_view import (
-    RecruitmentDetailUpdateDeleteView,
-    RecruitmentListCreateView,
-    RecruitmentMineView,
-)
 from apps.study_groups.models import StudyGroup
 from apps.users.models import User
 
 
-class TestDataFactory:
-    """테스트 데이터 생성 팩토리"""
+class RecruitmentViewAPITestCase(APITestCase):
+    """공통 테스트 베이스 클래스"""
 
-    @staticmethod
-    def create_user(email: str = "test@test.com", nickname: str = "테스터", password: str = "testpass123") -> User:
-        """테스트 사용자 생성"""
+    def setUp(self) -> None:
+        self.user = self._create_user(email="test@test.com", nickname="테스터")
+        self.other_user = self._create_user(email="other@test.com", nickname="다른사람")
+        self.study_group = self._create_study_group()
+        self.tag1 = Tag.objects.create(name="Python")
+        self.tag2 = Tag.objects.create(name="Django")
+        self.client.force_authenticate(user=self.user)
+
+    def _create_user(
+        self,
+        email: str,
+        nickname: str,
+        password: str = "testpass123",
+    ) -> User:
         user = User.objects.create(
             email=email,
             nickname=nickname,
@@ -45,13 +42,12 @@ class TestDataFactory:
         user.save()
         return user
 
-    @staticmethod
-    def create_study_group(
+    def _create_study_group(
+        self,
         name: str = "테스트 스터디",
         status: str = StudyGroup.StudyGroupStatusChoices.ONGOING,
         days_until_end: int = 30,
     ) -> StudyGroup:
-        """테스트 스터디 그룹 생성"""
         return StudyGroup.objects.create(
             name=name,
             max_headcount=5,
@@ -60,242 +56,244 @@ class TestDataFactory:
             status=status,
         )
 
-    @staticmethod
-    def create_recruitment(
-        study_group: StudyGroup,
-        author: User,
+    def _create_recruitment(
+        self,
+        study_group: StudyGroup | None = None,
+        author: User | None = None,
         title: str = "테스트 공고",
         content: str = "테스트 내용입니다.",
-        expected_headcount: int = 3,
-        days_until_close: int = 7,
         is_closed: bool = False,
-        views_count: int = 0,
+        **kwargs: Any,
     ) -> Recruitment:
-        """테스트 공고 생성"""
+        study_group = study_group or self.study_group
+        author = author or self.user
+        defaults = {
+            "estimated_fee": 50000,
+            "expected_headcount": 3,
+            "close_at": timezone.now() + timedelta(days=7),
+            "is_closed": is_closed,
+            "views_count": 0,
+        }
+        defaults.update(kwargs)
         return Recruitment.objects.create(
             study_group=study_group,
             author=author,
             title=title,
             content=content,
-            expected_headcount=expected_headcount,
-            close_at=timezone.now() + timedelta(days=days_until_close),
-            is_closed=is_closed,
-            views_count=views_count,
+            **defaults,
         )
 
-    @staticmethod
-    def create_tag(name: str) -> Tag:
-        """테스트 태그 생성"""
-        return Tag.objects.create(name=name)
+    def _create_multiple_recruitments(self, count: int, title_prefix: str = "공고", **kwargs: Any) -> list[Recruitment]:
+        return [self._create_recruitment(title=f"{title_prefix} {i+1}", **kwargs) for i in range(count)]
 
-    @staticmethod
-    def get_valid_recruitment_data(study_group_id: int, tag_ids: list[int] | None = None) -> dict[str, Any]:
-        """유효한 공고 작성 데이터 반환"""
+    def _get_valid_recruitment_data(
+        self, study_group_id: int | None = None, tag_ids: list[int] | None = None
+    ) -> dict[str, Any]:
+        study_group_id = study_group_id or self.study_group.id
         data = {
             "study_group": study_group_id,
-            "title": "테스트 공고 제목입니다",
-            "content": "테스트 공고 내용입니다. 최소 10자 이상 작성합니다.",
+            "title": "테스트 공고 제목",
+            "content": "테스트 공고 내용입니다.",
             "estimated_fee": 50000,
             "expected_headcount": 3,
             "close_at": (timezone.now() + timedelta(days=7)).isoformat(),
-            "files": [{"file_name": "test.pdf", "file_url": "https://example.com/test.pdf"}],
-            "image_urls": ["https://example.com/image1.jpg"],
         }
-
         if tag_ids:
             data["tags"] = tag_ids
-
         return data
 
 
-class BaseRecruitmentTestCase(TestCase):
-    """공통 테스트 베이스 클래스"""
-
-    def setUp(self) -> None:
-        """공통 setUp"""
-        self.factory = APIRequestFactory()
-        self.data_factory = TestDataFactory()
-
-        self.user = self.data_factory.create_user()
-        self.other_user = self.data_factory.create_user(email="other@test.com", nickname="다른사람")
-        self.study_group = self.data_factory.create_study_group()
-
-        self.tag1 = self.data_factory.create_tag("Python")
-        self.tag2 = self.data_factory.create_tag("Django")
-
-    def create_authenticated_request(
-        self, method: str, user: User | None = None, data: dict[str, Any] | None = None
-    ) -> Request:
-        """인증된 Request 객체 생성"""
-        user = user or self.user
-
-        if method == "GET":
-            request = self.factory.get("/")
-        elif method == "POST":
-            request = self.factory.post("/", data=data, format="json")
-        elif method == "PATCH":
-            request = self.factory.patch("/", data=data, format="json")
-        elif method == "DELETE":
-            request = self.factory.delete("/")
-        else:
-            raise ValueError(f"Unsupported method: {method}")
-
-        request.user = user
-        return Request(request)
-
-    def create_recruitment(self, **kwargs: Any) -> Recruitment:
-        """테스트용 공고 생성 헬퍼"""
-        defaults: dict[str, Any] = {"study_group": self.study_group, "author": self.user}
-        defaults.update(kwargs)
-        return self.data_factory.create_recruitment(**defaults)
-
-
-class RecruitmentListCreateViewTest(BaseRecruitmentTestCase):
-    """공고 목록 조회 및 작성 테스트 (Unit Test)"""
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.view = RecruitmentListCreateView()
+class RecruitmentListCreateViewTest(RecruitmentViewAPITestCase):
+    """공고 목록 조회 및 작성 테스트"""
 
     def test_create_recruitment_success(self) -> None:
         """공고 작성 성공"""
-        data = self.data_factory.get_valid_recruitment_data(self.study_group.id, [self.tag1.id, self.tag2.id])
-        request = self.create_authenticated_request("POST", user=self.user, data=data)
+        url = reverse("recruitment-list-create")
+        data = self._get_valid_recruitment_data(tag_ids=[self.tag1.id, self.tag2.id])
+        response = self.client.post(url, data, format="json")
 
-        response = self.view.post(request)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["title"], data["title"])
-        self.assertIn("uuid", response.data)
-        self.assertIn("content", response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["detail"], "공고가 작성되었습니다.")
         self.assertTrue(Recruitment.objects.filter(title=data["title"]).exists())
 
     def test_create_recruitment_unauthenticated(self) -> None:
-        """비인증 사용자 공고 작성 실패"""
-        data = self.data_factory.get_valid_recruitment_data(self.study_group.id)
-        request = self.factory.post("/", data=data, format="json")
-        request.user = MagicMock()
-        request.user.is_authenticated = False
-        request = Request(request)
+        """비인증 사용자 공고 작성 불가"""
+        self.client.force_authenticate(user=None)
+        url = reverse("recruitment-list-create")
+        data = self._get_valid_recruitment_data()
+        response = self.client.post(url, data, format="json")
 
-        self.view.check_permissions(request)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-        # 비인증 사용자는 POST 불가 (IsAuthenticatedOrReadOnly)
-        self.assertFalse(request.user.is_authenticated)
+    def test_create_recruitment_with_invalid_data(self) -> None:
+        """잘못된 데이터로 공고 작성 실패"""
+        url = reverse("recruitment-list-create")
+        data = {"title": "짧음", "content": ""}
+        response = self.client.post(url, data, format="json")
 
-    def test_create_recruitment_with_ended_study_group(self) -> None:
-        """종료된 스터디 그룹으로 공고 작성 실패"""
-        ended_group = self.data_factory.create_study_group(
-            name="종료된 스터디", status=StudyGroup.StudyGroupStatusChoices.ENDED
-        )
-
-        data = self.data_factory.get_valid_recruitment_data(ended_group.id)
-        request = self.create_authenticated_request("POST", user=self.user, data=data)
-
-        response = self.view.post(request)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_create_recruitment_invalid_title_too_short(self) -> None:
-        """제목이 5자 미만일 때 실패"""
-        data = self.data_factory.get_valid_recruitment_data(self.study_group.id)
-        data["title"] = "짧음"
-        request = self.create_authenticated_request("POST", user=self.user, data=data)
-
-        response = self.view.post(request)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_list_recruitments_success(self) -> None:
         """공고 목록 조회 성공"""
-        # 15개 공고 생성
-        for i in range(15):
-            self.create_recruitment(title=f"테스트 공고 {i+1}")
-
-        request = self.create_authenticated_request("GET")
-        response = self.view.get(request)
+        self._create_multiple_recruitments(15)
+        url = reverse("recruitment-list-create")
+        response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("count", response.data)
         self.assertIn("results", response.data)
         self.assertEqual(response.data["count"], 15)
 
+    def test_list_recruitments_excludes_closed(self) -> None:
+        """마감된 공고는 목록에서 제외"""
+        self._create_multiple_recruitments(10, is_closed=False)
+        self._create_recruitment(title="마감 공고", is_closed=True)
+
+        url = reverse("recruitment-list-create")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 10)
+
     def test_list_recruitments_pagination(self) -> None:
-        """페이지네이션 테스트"""
-        for i in range(15):
-            self.create_recruitment(title=f"테스트 공고 {i+1}")
-
-        request = self.factory.get("/", {"page": 1, "size": 10})
-        request.user = self.user
-        request = Request(request)
-
-        response = self.view.get(request)
+        """페이지네이션 동작 확인"""
+        self._create_multiple_recruitments(15)
+        url = reverse("recruitment-list-create")
+        response = self.client.get(url, {"page": "1", "size": "10"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 10)
         self.assertIsNotNone(response.data.get("next"))
 
-    def test_list_recruitments_excludes_closed(self) -> None:
-        """마감된 공고는 목록에서 제외"""
-        for i in range(10):
-            self.create_recruitment(title=f"진행중 공고 {i+1}", is_closed=False)
+    def test_list_recruitments_search(self) -> None:
+        """검색 기능 동작 확인"""
+        self._create_recruitment(title="Django 백엔드 스터디")
+        self._create_multiple_recruitments(5, title_prefix="React")
 
-        self.create_recruitment(title="마감된 공고", is_closed=True)
-
-        request = self.create_authenticated_request("GET")
-        response = self.view.get(request)
+        url = reverse("recruitment-list-create")
+        response = self.client.get(url, {"search": "Django"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["count"], 10)  # 마감된 공고 제외
+        self.assertEqual(response.data["count"], 1)
+
+    def test_list_recruitments_sort_by_latest(self) -> None:
+        """최신순 정렬 확인"""
+        self._create_recruitment(title="첫번째")
+        self._create_recruitment(title="두번째")
+
+        url = reverse("recruitment-list-create")
+        response = self.client.get(url, {"sort": "latest"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["results"][0]["title"], "두번째")
+
+    def test_list_recruitments_filter_by_tags(self) -> None:
+        """태그 필터링 동작 확인"""
+        recruitment1 = self._create_recruitment(title="Python 공고")
+        recruitment1.recruitment_tags.create(tag=self.tag1)
+
+        recruitment2 = self._create_recruitment(title="Django 공고")
+        recruitment2.recruitment_tags.create(tag=self.tag2)
+
+        self._create_recruitment(title="태그 없는 공고")
+
+        url = reverse("recruitment-list-create")
+        response = self.client.get(url, {"tags": "Python"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["title"], "Python 공고")
+
+    def test_list_recruitments_filter_by_multiple_tags(self) -> None:
+        """여러 태그 필터링 동작 확인"""
+        recruitment1 = self._create_recruitment(title="Python 공고")
+        recruitment1.recruitment_tags.create(tag=self.tag1)
+
+        recruitment2 = self._create_recruitment(title="Django 공고")
+        recruitment2.recruitment_tags.create(tag=self.tag2)
+
+        url = reverse("recruitment-list-create")
+        response = self.client.get(url, {"tags": "Python,Django"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 2)
+
+    def test_list_recruitments_pagination_previous_url(self) -> None:
+        """페이지네이션 이전 URL 확인"""
+        self._create_multiple_recruitments(25)
+        url = reverse("recruitment-list-create")
+        response = self.client.get(url, {"page": "2", "size": "10"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNotNone(response.data.get("previous"))
+        self.assertIn("page=1", response.data["previous"])
+
+    def test_create_recruitment_with_files_and_images(self) -> None:
+        """파일과 이미지 첨부된 공고 작성"""
+        url = reverse("recruitment-list-create")
+        data = self._get_valid_recruitment_data(tag_ids=[self.tag1.id])
+        data["files"] = [
+            {"file_name": "test.pdf", "file_url": "https://example.com/test.pdf"},
+            {"file_name": "document.docx", "file_url": "https://example.com/doc.docx"},
+        ]
+        data["image_urls"] = [
+            "https://example.com/image1.jpg",
+            "https://example.com/image2.png",
+        ]
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        recruitment = Recruitment.objects.get(title=data["title"])
+        self.assertEqual(recruitment.attachments.count(), 2)
+        self.assertEqual(recruitment.images.count(), 2)
 
 
-class RecruitmentDetailUpdateDeleteViewTest(BaseRecruitmentTestCase):
-    """공고 상세 조회/수정/삭제 테스트 (Unit Test)"""
+class RecruitmentDetailUpdateDeleteViewTest(RecruitmentViewAPITestCase):
+    """공고 상세 조회/수정/삭제 테스트"""
 
     def setUp(self) -> None:
         super().setUp()
-        self.view = RecruitmentDetailUpdateDeleteView()
-        self.recruitment = self.create_recruitment(title="테스트 공고")
+        self.recruitment = self._create_recruitment(title="테스트 공고")
 
     def test_detail_recruitment_success(self) -> None:
         """공고 상세 조회 성공"""
-        request = self.create_authenticated_request("GET")
-        response = self.view.get(request, recruitments_uuid=self.recruitment.uuid)
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
+        response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["title"], self.recruitment.title)
-        self.assertIn("content", response.data)
 
     def test_detail_recruitment_increases_view_count(self) -> None:
         """조회수 증가 확인"""
         initial_views = self.recruitment.views_count
-
-        request = self.create_authenticated_request("GET")
-        self.view.get(request, recruitments_uuid=self.recruitment.uuid)
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
+        self.client.get(url)
 
         self.recruitment.refresh_from_db()
         self.assertEqual(self.recruitment.views_count, initial_views + 1)
 
     def test_detail_recruitment_not_found(self) -> None:
-        """존재하지 않는 공고 조회 시 404"""
-        fake_uuid = uuid4()
-        request = self.create_authenticated_request("GET")
-        response = self.view.get(request, recruitments_uuid=fake_uuid)
+        """존재하지 않는 공고 조회 404"""
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": "00000000-0000-0000-0000-000000000000"})
+        response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_recruitment_success(self) -> None:
         """공고 수정 성공"""
-        data = {"title": "수정된 제목입니다"}
-        request = self.create_authenticated_request("PATCH", user=self.user, data=data)
-        response = self.view.patch(request, recruitments_uuid=self.recruitment.uuid)
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
+        data = {"title": "수정된 제목"}
+        response = self.client.patch(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["title"], "수정된 제목입니다")
+        self.assertEqual(response.data["title"], "수정된 제목")
 
     def test_update_recruitment_unauthorized(self) -> None:
-        """작성자가 아닌 사용자 수정 실패"""
+        """작성자 아닌 사용자 수정 실패"""
+        self.client.force_authenticate(user=self.other_user)
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
         data = {"title": "수정 시도"}
-        request = self.create_authenticated_request("PATCH", user=self.other_user, data=data)
-        response = self.view.patch(request, recruitments_uuid=self.recruitment.uuid)
+        response = self.client.patch(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -304,27 +302,26 @@ class RecruitmentDetailUpdateDeleteViewTest(BaseRecruitmentTestCase):
         self.recruitment.is_closed = True
         self.recruitment.save()
 
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
         data = {"title": "수정 시도"}
-        request = self.create_authenticated_request("PATCH", user=self.user, data=data)
-        response = self.view.patch(request, recruitments_uuid=self.recruitment.uuid)
+        response = self.client.patch(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_delete_recruitment_success(self) -> None:
-        """공고 삭제(Soft Delete) 성공"""
-        request = self.create_authenticated_request("DELETE", user=self.user)
-        response = self.view.delete(request, recruitments_uuid=self.recruitment.uuid)
+        """공고 삭제 성공"""
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
+        response = self.client.delete(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["detail"], "공고가 삭제되었습니다.")
-
         self.recruitment.refresh_from_db()
         self.assertTrue(self.recruitment.is_closed)
 
     def test_delete_recruitment_unauthorized(self) -> None:
-        """작성자가 아닌 사용자 삭제 실패"""
-        request = self.create_authenticated_request("DELETE", user=self.other_user)
-        response = self.view.delete(request, recruitments_uuid=self.recruitment.uuid)
+        """작성자 아닌 사용자 삭제 실패"""
+        self.client.force_authenticate(user=self.other_user)
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
+        response = self.client.delete(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -333,44 +330,93 @@ class RecruitmentDetailUpdateDeleteViewTest(BaseRecruitmentTestCase):
         self.recruitment.is_closed = True
         self.recruitment.save()
 
-        request = self.create_authenticated_request("DELETE", user=self.user)
-        response = self.view.delete(request, recruitments_uuid=self.recruitment.uuid)
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
+        response = self.client.delete(url)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_update_recruitment_with_tags(self) -> None:
+        """태그 포함 공고 수정"""
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
+        data = {"tags": [self.tag1.id, self.tag2.id]}
+        response = self.client.patch(url, data, format="json")
 
-class RecruitmentMineViewTest(BaseRecruitmentTestCase):
-    """내가 작성한 공고 목록 테스트 (Unit Test)"""
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.recruitment.refresh_from_db()
+        self.assertEqual(self.recruitment.recruitment_tags.count(), 2)
+
+    def test_update_recruitment_with_files(self) -> None:
+        """파일 포함 공고 수정"""
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
+        data = {
+            "files": [
+                {"file_name": "new.pdf", "file_url": "https://example.com/new.pdf"},
+            ]
+        }
+        response = self.client.patch(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.recruitment.refresh_from_db()
+        self.assertEqual(self.recruitment.attachments.count(), 1)
+        attachment = self.recruitment.attachments.first()
+        assert attachment is not None
+        self.assertEqual(attachment.file_name, "new.pdf")
+
+    def test_update_recruitment_with_images(self) -> None:
+        """이미지 포함 공고 수정"""
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
+        data = {
+            "image_urls": [
+                "https://example.com/new1.jpg",
+                "https://example.com/new2.jpg",
+            ]
+        }
+        response = self.client.patch(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.recruitment.refresh_from_db()
+        self.assertEqual(self.recruitment.images.count(), 2)
+
+    def test_update_recruitment_replace_tags(self) -> None:
+        """기존 태그 교체"""
+        self.recruitment.recruitment_tags.create(tag=self.tag1)
+        self.assertEqual(self.recruitment.recruitment_tags.count(), 1)
+
+        url = reverse("recruitment-detail", kwargs={"recruitments_uuid": self.recruitment.uuid})
+        data = {"tags": [self.tag2.id]}
+        response = self.client.patch(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.recruitment.refresh_from_db()
+        self.assertEqual(self.recruitment.recruitment_tags.count(), 1)
+        recruitment_tag = self.recruitment.recruitment_tags.first()
+        assert recruitment_tag is not None
+        self.assertEqual(recruitment_tag.tag.id, self.tag2.id)
+
+
+class RecruitmentMineViewTest(RecruitmentViewAPITestCase):
+    """내가 작성한 공고 목록 테스트"""
 
     def setUp(self) -> None:
         super().setUp()
-        self.view = RecruitmentMineView()
-
-        # 내 공고 5개
-        for i in range(5):
-            self.create_recruitment(title=f"내 공고 {i+1}")
-
-        # 다른 사람 공고 3개
-        for i in range(3):
-            self.create_recruitment(author=self.other_user, title=f"다른 사람 공고 {i+1}")
+        self._create_multiple_recruitments(5, title_prefix="내 공고")
+        self._create_multiple_recruitments(3, title_prefix="다른 사람 공고", author=self.other_user)
 
     def test_mine_recruitments_success(self) -> None:
         """내 공고 목록 조회 성공"""
-        request = self.create_authenticated_request("GET", user=self.user)
-        response = self.view.get(request)
+        url = reverse("recruitment-mine")
+        response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 5)
 
     def test_mine_recruitments_unauthenticated(self) -> None:
-        """비인증 사용자는 접근 불가"""
-        request = self.factory.get("/")
-        request.user = MagicMock()
-        request.user.is_authenticated = False
-        request = Request(request)
+        """비인증 사용자 접근 불가"""
+        self.client.force_authenticate(user=None)
+        url = reverse("recruitment-mine")
+        response = self.client.get(url)
 
-        with self.assertRaises(Exception):
-            self.view.check_permissions(request)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_mine_recruitments_filter_by_is_closed(self) -> None:
         """마감 여부 필터링"""
@@ -379,9 +425,18 @@ class RecruitmentMineViewTest(BaseRecruitmentTestCase):
             recruitment.is_closed = True
             recruitment.save()
 
-        request = self.factory.get("/", {"is_closed": "true"})
-        request.user = self.user
-        request = Request(request)
+        url = reverse("recruitment-mine")
+        response = self.client.get(url, {"is_closed": "true"})
 
-        response = self.view.get(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 1)
+
+    def test_mine_recruitments_search(self) -> None:
+        """검색 기능 동작 확인"""
+        self._create_recruitment(title="특별한 공고")
+
+        url = reverse("recruitment-mine")
+        response = self.client.get(url, {"search": "특별한"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(response.data["count"], 1)

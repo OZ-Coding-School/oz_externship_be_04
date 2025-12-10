@@ -33,22 +33,66 @@ SUCCESS_MESSAGES = {
     "BOOKMARK_DELETED": "북마크가 취소되었습니다.",
 }
 
+RESPONSE_SCHEMAS = {
+    "401_UNAUTHORIZED": {
+        "type": "object",
+        "properties": {"error_detail": {"type": "string", "example": "자격 인증 데이터가 제공되지 않았습니다."}},
+    },
+    "403_FORBIDDEN": {
+        "type": "object",
+        "properties": {"error_detail": {"type": "string", "example": "권한이 없습니다."}},
+    },
+    "404_NOT_FOUND": {
+        "type": "object",
+        "properties": {"error_detail": {"type": "string", "example": "해당 공고를 찾을 수 없습니다."}},
+    },
+    "404_BOOKMARK_NOT_FOUND": {
+        "type": "object",
+        "properties": {"error_detail": {"type": "string", "example": "해당 북마크 내역을 찾을 수 없습니다."}},
+    },
+    "409_CONFLICT": {
+        "type": "object",
+        "properties": {"error_detail": {"type": "string", "example": "이미 북마크한 공고입니다."}},
+    },
+}
+
 
 class RecruitmentBookmarkCursorPagination(CursorPagination):
+    """북마크 목록용 커서 페이지네이션"""
+
     page_size = 10
     page_size_query_param = "page_size"
     ordering = "-created_at"
 
 
 def error_response(message: str, status_code: int) -> Response:
+    """에러 응답 생성"""
     return Response({"error_detail": message}, status=status_code)
 
 
 def success_response(message: str, status_code: int = status.HTTP_200_OK) -> Response:
+    """성공 응답 생성"""
     return Response({"detail": message}, status=status_code)
 
 
+def get_authenticated_user(request: Request) -> User:
+    """인증된 사용자 객체 반환"""
+    user = request.user
+    assert isinstance(user, User)
+    return user
+
+
 def get_bookmark_queryset(user: User, search: Optional[str] = None) -> QuerySet[RecruitmentBookmarks]:
+    """
+    북마크 QuerySet 생성 (최적화된 쿼리)
+
+    Args:
+        user: 사용자 객체
+        search: 검색어 (공고 제목)
+
+    Returns:
+        최적화된 북마크 QuerySet
+    """
     queryset = (
         RecruitmentBookmarks.objects.filter(user_id_id=user.id)
         .select_related("recruitment_id__study_group", "recruitment_id__author")
@@ -66,14 +110,20 @@ def get_bookmark_queryset(user: User, search: Optional[str] = None) -> QuerySet[
     return queryset
 
 
-def get_bookmark_with_user(bookmark_id: int) -> Optional[RecruitmentBookmarks]:
-    return RecruitmentBookmarks.objects.filter(id=bookmark_id).select_related("user_id").first()
+def validate_bookmark_permission(bookmark_id: int, user: User) -> tuple[RecruitmentBookmarks | None, Response | None]:
+    """
+    북마크 접근 권한 검증
 
+    Args:
+        bookmark_id: 북마크 ID
+        user: 사용자 객체
 
-def validate_bookmark_permission(
-    bookmark_id: int, user: User
-) -> tuple[Optional[RecruitmentBookmarks], Optional[Response]]:
-    bookmark = get_bookmark_with_user(bookmark_id)
+    Returns:
+        (북마크 객체, 에러 응답) 튜플
+        성공 시: (bookmark, None)
+        실패 시: (None, error_response)
+    """
+    bookmark = RecruitmentBookmarks.objects.filter(id=bookmark_id).select_related("user_id").first()
 
     if bookmark is None:
         return None, error_response(ERROR_MESSAGES["BOOKMARK_NOT_FOUND"], status.HTTP_404_NOT_FOUND)
@@ -85,6 +135,8 @@ def validate_bookmark_permission(
 
 
 class RecruitmentBookmarkListCreateView(APIView):
+    """북마크 목록 조회 및 추가 API"""
+
     permission_classes = [IsAuthenticated]
     pagination_class = RecruitmentBookmarkCursorPagination
 
@@ -98,17 +150,12 @@ class RecruitmentBookmarkListCreateView(APIView):
         ],
         responses={
             200: RecruitmentBookmarkCardSerializer(many=True),
-            401: {
-                "type": "object",
-                "properties": {"error_detail": {"type": "string", "example": "자격 인증 데이터가 제공되지 않았습니다."}},
-            },
+            401: RESPONSE_SCHEMAS["401_UNAUTHORIZED"],
         },
         tags=["Recruitment Bookmarks"],
     )
     def get(self, request: Request) -> Response:
-        user = request.user
-        assert isinstance(user, User)
-
+        user = get_authenticated_user(request)
         search = request.query_params.get("search")
         queryset = get_bookmark_queryset(user, search)
 
@@ -131,26 +178,15 @@ class RecruitmentBookmarkListCreateView(APIView):
                 "type": "object",
                 "properties": {"detail": {"type": "string", "example": "북마크가 추가되었습니다."}},
             },
-            401: {
-                "type": "object",
-                "properties": {"error_detail": {"type": "string", "example": "자격 인증 데이터가 제공되지 않았습니다."}},
-            },
-            404: {
-                "type": "object",
-                "properties": {"error_detail": {"type": "string", "example": "해당 공고를 찾을 수 없습니다."}},
-            },
-            409: {
-                "type": "object",
-                "properties": {"error_detail": {"type": "string", "example": "이미 북마크한 공고입니다."}},
-            },
+            401: RESPONSE_SCHEMAS["401_UNAUTHORIZED"],
+            404: RESPONSE_SCHEMAS["404_NOT_FOUND"],
+            409: RESPONSE_SCHEMAS["409_CONFLICT"],
         },
         tags=["Recruitment Bookmarks"],
     )
     @transaction.atomic
     def post(self, request: Request) -> Response:
-        user = request.user
-        assert isinstance(user, User)
-
+        user = get_authenticated_user(request)
         serializer = RecruitmentBookmarkCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -169,6 +205,8 @@ class RecruitmentBookmarkListCreateView(APIView):
 
 
 class RecruitmentBookmarkDeleteView(APIView):
+    """북마크 삭제 API"""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -179,26 +217,15 @@ class RecruitmentBookmarkDeleteView(APIView):
                 "type": "object",
                 "properties": {"detail": {"type": "string", "example": "북마크가 취소되었습니다."}},
             },
-            401: {
-                "type": "object",
-                "properties": {"error_detail": {"type": "string", "example": "자격 인증 데이터가 제공되지 않았습니다."}},
-            },
-            403: {
-                "type": "object",
-                "properties": {"error_detail": {"type": "string", "example": "권한이 없습니다."}},
-            },
-            404: {
-                "type": "object",
-                "properties": {"error_detail": {"type": "string", "example": "해당 북마크 내역을 찾을 수 없습니다."}},
-            },
+            401: RESPONSE_SCHEMAS["401_UNAUTHORIZED"],
+            403: RESPONSE_SCHEMAS["403_FORBIDDEN"],
+            404: RESPONSE_SCHEMAS["404_BOOKMARK_NOT_FOUND"],
         },
         tags=["Recruitment Bookmarks"],
     )
     @transaction.atomic
     def delete(self, request: Request, bookmark_id: int) -> Response:
-        user = request.user
-        assert isinstance(user, User)
-
+        user = get_authenticated_user(request)
         bookmark, error = validate_bookmark_permission(bookmark_id, user)
         if error:
             return error

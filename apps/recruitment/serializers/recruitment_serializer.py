@@ -13,26 +13,7 @@ from apps.recruitment.serializers.recruitment_attachment_serializer import (
     RecruitmentAttachmentItemSerializer,
     RecruitmentAttachmentUpdateSerializer,
 )
-from apps.recruitment.serializers.tags import TagSerializer
 from apps.study_groups.models import StudyGroup, StudyLecture
-
-
-class LectureSummarySerializer(serializers.ModelSerializer[CrawledLecture]):
-    """강의 요약 정보"""
-
-    class Meta:
-        model = CrawledLecture
-        fields = ["id", "title", "instructor"]
-        read_only_fields = ["id", "title", "instructor"]
-
-
-class TagSummarySerializer(serializers.ModelSerializer[Tag]):
-    """태그 요약 정보"""
-
-    class Meta:
-        model = Tag
-        fields = ["id", "name"]
-        read_only_fields = ["id", "name"]
 
 
 class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
@@ -41,7 +22,7 @@ class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
     thumbnail_img_url = serializers.SerializerMethodField()
     bookmark_count = serializers.IntegerField(read_only=True, default=0)
     lectures = serializers.SerializerMethodField()
-    tags = TagSummarySerializer(source="recruitment_tags.tag", many=True, read_only=True)
+    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = Recruitment
@@ -77,13 +58,17 @@ class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
             for sl in lectures
         ]
 
+    def get_tags(self, obj: Recruitment) -> List[Dict[str, Any]]:
+        """태그 목록 반환"""
+        return [{"id": rt.tag.id, "name": rt.tag.name} for rt in obj.recruitment_tags.all()]
+
 
 class RecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
     """구인공고 상세 조회"""
 
     bookmark_count = serializers.IntegerField(read_only=True, default=0)
     lectures = serializers.SerializerMethodField()
-    tags = TagSerializer(source="recruitment_tags.tag", many=True, read_only=True)
+    tags = serializers.SerializerMethodField()
     files = serializers.SerializerMethodField()
     image_urls = serializers.SerializerMethodField()
 
@@ -114,11 +99,14 @@ class RecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
         ]
 
     def get_lectures(self, obj: Recruitment) -> List[Dict[str, Any]]:
-        """study_group을 거쳐야 해서 SerializerMethodField 사용"""
         study_group = obj.study_group
         lectures: List[StudyLecture] = list(study_group.studylecture_set.select_related("lecture").all())
         crawled_lectures: List[CrawledLecture] = [sl.lecture for sl in lectures]
         return list(CrawledLectureSerializer(crawled_lectures, many=True).data)
+
+    def get_tags(self, obj: Recruitment) -> List[Dict[str, Any]]:
+        """태그 목록 반환"""
+        return [{"id": rt.tag.id, "name": rt.tag.name} for rt in obj.recruitment_tags.all()]
 
     def get_files(self, obj: Recruitment) -> list[dict[str, Any]]:
         """파일 정보를 dict 형태로 가공"""
@@ -228,7 +216,7 @@ class RecruitmentUpdateSerializer(serializers.ModelSerializer[Recruitment]):
     def validate_tags(self, value: list[Tag]) -> list[Tag]:
         tag_ids = [tag.id for tag in value]
         if len(tag_ids) != len(set(tag_ids)):
-            raise serializers.ValidationError("태그 ID는 중복 될수 없습니다.")
+            raise serializers.ValidationError("태그 ID는 중복될 수 없습니다.")
         return value
 
     def validate_image_urls(self, value: list[str]) -> list[str]:

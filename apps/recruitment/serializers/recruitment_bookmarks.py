@@ -6,24 +6,7 @@ from uuid import UUID
 from django.conf import settings
 from rest_framework import serializers
 
-from apps.lectures.models import CrawledLecture
-from apps.recruitment.models import Recruitment, RecruitmentBookmarks, Tag
-
-
-class RecruitmentLectureMinimalSerializer(serializers.ModelSerializer[CrawledLecture]):
-    """북마크용 강의 최소 정보"""
-
-    class Meta:
-        model = CrawledLecture
-        fields = ("id", "title", "instructor")
-
-
-class RecruitmentTagMinimalSerializer(serializers.ModelSerializer[Tag]):
-    """북마크용 태그 최소 정보"""
-
-    class Meta:
-        model = Tag
-        fields = ("id", "name")
+from apps.recruitment.models import Recruitment, RecruitmentBookmarks
 
 
 class RecruitmentInBookmarkSerializer(serializers.Serializer[Any]):
