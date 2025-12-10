@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.users.models import User
-from apps.users.serializers.admin_account import (
+from apps.users.serializers.admin_serializers import (
     AdminAccountDetailReadSerializer,
     AdminAccountDetailSerializer,
     AdminAccountRoleUpdateSerializer,
