@@ -2,10 +2,8 @@ import re
 from typing import List, Optional, Tuple
 
 import numpy as np
-from scipy.sparse import spmatrix, vstack
+from numpy._typing import NDArray
 from sentence_transformers import SentenceTransformer
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from apps.lectures.models import CrawledLecture
 from apps.study_groups.models import GroupMember, StudyLecture
@@ -35,30 +33,29 @@ def clean_text(text: str) -> str:
     return text.strip()
 
 
-def embed_normalize(text: str) -> str:
-    if not text:
-        return ""
-    vec = embedding_model.encode([text])[0]
-    return " ".join([f"{v:.4f}" for v in vec])
-
-
-def build_lecture_corpus(lecture: CrawledLecture) -> str:
+def build_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float32]:
     title = lecture.title or ""
     description = lecture.description or ""
     instructor = lecture.instructor or ""
     category_names = " ".join(cat.name for cat in lecture.categories.all())
     text = f"{title} {description} {instructor} {category_names}"
+
     text = clean_text(text)
     text = remove_stopwords(text)
-    text = embed_normalize(text)
-    return text
+
+    vec: NDArray[np.float32] = embedding_model.encode([text])[0]
+
+    norm = np.float32(np.linalg.norm(vec))
+    if norm == 0:
+        return vec
+    return vec / norm
 
 
 def build_user_vector(
     user: User,
-    lecture_vectors: spmatrix,
+    lecture_vectors: NDArray[np.float32],
     lecture_ids: List[int],
-) -> Optional[np.ndarray]:
+) -> Optional[NDArray[np.float32]]:
     bookmark_ids = set(user.lecture_bookmarks.values_list("lecture_id", flat=True))
 
     group_ids = GroupMember.objects.filter(user_id=user.id).values_list("study_group_id", flat=True)
@@ -81,36 +78,36 @@ def build_user_vector(
     for lec_id in user_lecture_ids:
         idx = id_to_idx.get(lec_id)
         if idx is not None:
-            vectors.append(lecture_vectors.getrow(idx))
+            vectors.append(lecture_vectors[idx])
 
     if not vectors:
         return None
 
-    stacked = vstack(vectors)
-    mean_vec = stacked.mean(axis=0)
-    return np.asarray(mean_vec).ravel()
+    mean_vec: NDArray[np.float32] = np.mean(np.vstack(vectors), axis=0)
+
+    norm = np.float32(np.linalg.norm(mean_vec))
+    if norm == 0:
+        return mean_vec
+    return mean_vec / norm
 
 
 def recommend_lectures(user: User, top_n: int = 3) -> Tuple[List[CrawledLecture], str]:
-    lectures = CrawledLecture.objects.prefetch_related("categories").all()
+    lectures = list(CrawledLecture.objects.prefetch_related("categories").all())
     if not lectures:
         return [], "lecture not crawled"
 
-    corpus = [build_lecture_corpus(lec) for lec in lectures]
     lecture_ids = [lec.id for lec in lectures]
-
-    vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1, 2))
-    lecture_vectors = vectorizer.fit_transform(corpus)
+    lecture_vectors = np.vstack([build_lecture_embedding_vector(lec) for lec in lectures])
 
     user_vec = build_user_vector(user, lecture_vectors, lecture_ids)
 
     if user_vec is not None:
-        sims = cosine_similarity(user_vec, lecture_vectors).flatten()
-        top_idx = sims.argsort()[::-1][:top_n]
+        sims = lecture_vectors @ user_vec
+        top_idx = np.argsort(sims)[::-1][:top_n]
         recommended = [lectures[i] for i in top_idx]
         return recommended, "personalized"
     else:
         import random
 
-        recommended = random.sample(list(lectures), min(top_n, len(lectures)))
+        recommended = random.sample(lectures, min(top_n, len(lectures)))
         return recommended, "random"
