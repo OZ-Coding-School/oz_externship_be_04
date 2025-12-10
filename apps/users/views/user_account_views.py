@@ -1,7 +1,7 @@
 from typing import Any
 
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema_view, OpenApiExample, extend_schema
+from drf_spectacular.utils import OpenApiExample, extend_schema, extend_schema_view
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,17 +9,15 @@ from rest_framework.views import APIView
 from apps.users.serializers.withdrawal_serializers import WithdrawalSerializer
 from apps.users.services.withdrawal_services import withdraw_service
 
+
 @extend_schema_view(
     delete=extend_schema(
-        tags=['Account'],
+        tags=["Account"],
         summary="회원 탈퇴",
         description="회원 탈퇴를 위한 스키마 입니다. 14일 후 영구 삭제 됩니다.",
         request=WithdrawalSerializer,
-        methods=['DELETE'],
-        responses={
-            200: OpenApiTypes.OBJECT,
-            400: OpenApiTypes.OBJECT
-        },
+        methods=["DELETE"],
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
         examples=[
             OpenApiExample(
                 request_only=True,
@@ -46,15 +44,16 @@ from apps.users.services.withdrawal_services import withdraw_service
                 summary="탈퇴 실패 예시 (이미 탈퇴함)",
                 value={
                     "error_detail": {
-                        "non_field_errors": ["이미 탈퇴 처리된 유저 입니다. 다시 로그인 하시면 계정 복구를 진행하실 수 있습니다."]
+                        "non_field_errors": [
+                            "이미 탈퇴 처리된 유저 입니다. 다시 로그인 하시면 계정 복구를 진행하실 수 있습니다."
+                        ]
                     }
                 },
                 status_codes=["400"],
-            )
-        ]
+            ),
+        ],
     )
 )
-
 class UserAccountView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
