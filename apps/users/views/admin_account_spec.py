@@ -15,6 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.pagination import Pageable
 from apps.users.models import User
 from apps.users.serializers.admin_serializers import (
     AdminAccountDetailReadSerializer,
@@ -23,6 +24,7 @@ from apps.users.serializers.admin_serializers import (
     AdminAccountSerializer,
     AdminAccountUpdateSerializer,
 )
+from apps.users.services.admin_services import get_admin_account_list
 from apps.users.utils.permissions import StaffOrSuperUser, SuperUserOnly
 
 AdminAccountUpdate400ErrorSerializer = inline_serializer(
@@ -60,7 +62,7 @@ AdminAccountRoleUpdateSuccessSerializer = inline_serializer(
 
 class AdminAccountListSpec(APIView):
     """
-    Spec API 어드민 페이지 회원 목록 조회 -> mock 데이터입니다.
+    어드민 페이지 회원 목록 조회 APIView
     """
 
     permission_classes = [StaffOrSuperUser]
@@ -68,8 +70,8 @@ class AdminAccountListSpec(APIView):
 
     @extend_schema(
         tags=["Admin"],
-        summary="어드민 페이지 회원 목록 조회 Spec",
-        description="어드민 페이지 회원 목록 조회용 Spec API입니다.",
+        summary="어드민 페이지 회원 목록 조회",
+        description="어드민 페이지 회원 목록 조회용 API입니다.",
         parameters=[
             OpenApiParameter(
                 name="page",
@@ -84,7 +86,7 @@ class AdminAccountListSpec(APIView):
                 description="페이지 당 개수 / 기본값: 10",
             ),
             OpenApiParameter(
-                name="q",
+                name="search",
                 type=OpenApiTypes.STR,
                 location="query",
                 description="검색 (이메일, 닉네임, 이름)",
@@ -145,93 +147,45 @@ class AdminAccountListSpec(APIView):
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
 
-        user1 = User(
-            id=1,
-            email="user1@example.com",
-            nickname="user1",
-            name="홍승우",
-            birthday=date(2005, 1, 1),
-            is_active=True,
-            is_staff=False,
-            is_superuser=False,
-            phone_number="01012345678",
-            gender="M",
-            profile_img_url="https://example.com/profile/user1.png",
-        )
-        user1.created_at = datetime(2025, 11, 25, 13, 0, tzinfo=timezone.utc)
-        user1.status_value = "active"
-
-        user2 = User(
-            id=2,
-            email="user2@example.com",
-            nickname="user2",
-            name="박이준",
-            birthday=date(2007, 12, 25),
-            is_active=True,
-            is_staff=True,
-            is_superuser=False,
-            phone_number="010111112222",
-            gender="M",
-            profile_img_url="https://example.com/profile/user2.png",
-        )
-        user2.created_at = datetime(2024, 2, 24, 17, 0, tzinfo=timezone.utc)
-        user2.status_value = "active"
-
-        user3 = User(
-            id=3,
-            email="user3@example.com",
-            nickname="user3",
-            name="머대용",
-            birthday=date(2001, 9, 2),
-            is_active=False,
-            is_staff=False,
-            is_superuser=False,
-            phone_number="01033334444",
-            gender="F",
-            profile_img_url="https://example.com/profile/user3.png",
-        )
-        user3.created_at = datetime(2021, 3, 9, 10, 0, tzinfo=timezone.utc)
-        user3.status_value = "withdrew"
-
-        accounts = [user1, user2, user3]
-
         params = request.query_params
 
-        q = params.get("q")
-        """검색 (아메일 or 닉네임 or 이름)"""
-        if q:
-            q_lower = q.lower()
-            accounts = [
-                u
-                for u in accounts
-                if q_lower in u.email.lower() or q_lower in u.nickname.lower() or q_lower in u.name.lower()
-            ]
-
-        role = params.get("role")
-        """권한별 확인 (admin, staff, superuser)"""
-        if role == "admin":
-            accounts = [u for u in accounts if u.is_superuser]
-        elif role == "staff":
-            accounts = [u for u in accounts if u.is_staff and not u.is_superuser]
-        elif role == "user":
-            accounts = [u for u in accounts if not u.is_staff and not u.is_superuser]
+        pageable = Pageable.from_params(
+            page_raw=params.get("page"),
+            size_raw=params.get("page_size"),
+        )
 
         status_param = params.get("status")
-        """회원 상태별 확인 (active, inactive, withdrew)"""
-        if status_param:
-            accounts = [u for u in accounts if u.status_value == status_param]
+        role_param = params.get("role")
+        search = params.get("search")
 
-        paginator = self.pagination_class()
-        page: list[User] | None = paginator.paginate_queryset(
-            accounts,  # type: ignore[arg-type]
-            request,
-            view=self,
+        page = get_admin_account_list(
+            pageable=pageable,
+            status_param=status_param,
+            role_param=role_param,
+            search=search,
         )
-        if page is None:
-            page = []
 
-        serializer = AdminAccountSerializer(page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        serializer = AdminAccountSerializer(page.items, many=True)
+
+        base_url = request.build_absolute_uri(request.path)
+
+        def build_page_url(page_number: int) -> str:
+            query_params = params.copy()
+            query_params["page"] = str(page_number)
+            query_params["page_size"] = str(page.size)
+            return f"{base_url}?{query_params.urlencode()}"
+
+        next_url = build_page_url(page.current_page + 1) if page.has_next else None
+        previous_url = build_page_url(page.current_page - 1) if page.has_prev else None
+
+        response_date = {
+            "count": page.total_count,
+            "next": next_url,
+            "previous": previous_url,
+            "results": serializer.data,
+        }
+
+        return Response(response_date)
 
 
 class AdminAccountDetailSpec(APIView):
