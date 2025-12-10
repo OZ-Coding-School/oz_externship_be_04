@@ -191,7 +191,7 @@ class ScheduleAPITest(APITestCase):
         url = f"/api/v1/study-groups/{self.group.id}/schedules/99999"
         response = self.client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn("detail", response.data)
         self.assertEqual(response.data["detail"], "존재하지 않는 스케줄입니다.")
 
