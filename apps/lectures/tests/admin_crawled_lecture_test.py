@@ -19,6 +19,7 @@ class AdminCrawledLectureViewTest(TestCase):
             password="ozcoding",
             nickname="admin",
             phone_number="01012345678",
+            gender="M",
         )
         self.client = APIClient()
         self.client.force_authenticate(self.admin)
@@ -39,22 +40,30 @@ class AdminCrawledLectureViewTest(TestCase):
                 url_link=f"https://url{i}.com",
             )
 
+        self.detail_lecture = CrawledLecture.objects.create(
+            external_id=20,
+            title="테스트 강의",
+            instructor="테스트",
+            description="테스트 설명임미다",
+            total_class_time=90,
+            original_price=100000,
+            discount_price=5000,
+            difficulty="HARD",
+            thumbnail_img_url=f"https://thumbnail20.com",
+            average_rating=4.0,
+            platform="UDEMY",
+            url_link=f"https://url20.com",
+        )
+
         self.url = reverse("admin_crawled_lectures")
-
-    # 기본적인 조회
-    def test_admin_can_get_lecture_list(self) -> None:
-        response = cast(DRFResponse, self.client.get(self.url))
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("results", response.data)
-        self.assertEqual(len(response.data["results"]), 10)
+        self.detail_url = reverse("admin_crawled_lecture_detail", kwargs={"lecture_id": self.detail_lecture.id})
 
     # 페이지네이션 잘 가는지
     def test_pagination_page_2(self) -> None:
         response = cast(DRFResponse, self.client.get(self.url, {"page": 2}))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["results"]), 5)
+        self.assertEqual(len(response.data["results"]), 6)
 
     # 제목으로 검색
     def test_search_by_title(self) -> None:
@@ -87,3 +96,23 @@ class AdminCrawledLectureViewTest(TestCase):
 
         res = client.get(self.url)
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    # 기본적인 조회
+    def test_admin_can_get_lecture_list(self) -> None:
+        response = cast(DRFResponse, self.client.get(self.url))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("results", response.data)
+        self.assertEqual(len(response.data["results"]), 10)
+
+    # 상세조회
+    def test_admin_can_access_detail(self) -> None:
+        response = cast(DRFResponse, self.client.get(self.detail_url))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["title"], "테스트 강의")
+
+    # 강의정보가 없을 때
+    def test_detail_not_found(self) -> None:
+        res = self.client.get(reverse("admin_crawled_lecture_detail", kwargs={"lecture_id": 1111}))
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
