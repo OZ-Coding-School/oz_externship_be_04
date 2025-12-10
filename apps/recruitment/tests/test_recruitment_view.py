@@ -440,3 +440,65 @@ class RecruitmentMineViewTest(RecruitmentViewAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(response.data["count"], 1)
+
+
+class RecruitmentRecommendViewTest(RecruitmentViewAPITestCase):
+    """추천 공고 목록 테스트"""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._create_multiple_recruitments(10, title_prefix="추천 공고")
+
+    def test_recommend_recruitments_success(self) -> None:
+        """추천 공고 목록 조회 성공"""
+        url = reverse("recruitment-recommend")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("count", response.data)
+        self.assertIn("results", response.data)
+
+    def test_recommend_recruitments_unauthenticated(self) -> None:
+        """비인증 사용자 접근 불가"""
+        self.client.force_authenticate(user=None)
+        url = reverse("recruitment-recommend")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_recommend_recruitments_pagination(self) -> None:
+        """페이지네이션 동작 확인"""
+        url = reverse("recruitment-recommend")
+        response = self.client.get(url, {"page": "1", "size": "5"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertLessEqual(len(response.data["results"]), 5)
+
+    def test_recommend_recruitments_search(self) -> None:
+        """검색 기능 동작 확인"""
+        self._create_recruitment(title="특별한 추천 공고")
+
+        url = reverse("recruitment-recommend")
+        response = self.client.get(url, {"search": "특별한"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(response.data["count"], 1)
+
+    def test_recommend_recruitments_filter_by_tags(self) -> None:
+        """태그 필터링 동작 확인"""
+        recruitment = self._create_recruitment(title="Python 추천 공고")
+        recruitment.recruitment_tags.create(tag=self.tag1)
+
+        url = reverse("recruitment-recommend")
+        response = self.client.get(url, {"tags": "Python"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(response.data["count"], 1)
+
+    def test_recommend_recruitments_sort(self) -> None:
+        """정렬 기능 동작 확인"""
+        url = reverse("recruitment-recommend")
+        response = self.client.get(url, {"sort": "most_views"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("results", response.data)
