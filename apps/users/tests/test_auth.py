@@ -19,7 +19,6 @@ class test_user_register(APITestCase):
             "phone_number": "01012345678",
             "gender": "M",
             "birthday": "1990-01-01",
-            "profile_img_url": "https://example.com/profile.jpg",
         }
 
     def tearDown(self) -> None:
@@ -47,14 +46,16 @@ class test_user_register(APITestCase):
                 response = self.client.post(self.account_urls, invalid_data)
 
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-                self.assertIn(field, response.data)
+                self.assertIn("error_detail", response.data)
+                self.assertIn(field, response.data["error_detail"])
 
     def test_email(self) -> None:
         response = self.client.post(self.account_urls, self.valid_user_data)
         second_response = self.client.post(self.account_urls, self.valid_user_data)
 
         self.assertEqual(second_response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("email", second_response.data)
+        self.assertIn("error_detail", second_response.data)
+        self.assertIn("email", second_response.data["error_detail"])
 
     def test_nickname(self) -> None:
         User.objects.create_user(
@@ -68,8 +69,8 @@ class test_user_register(APITestCase):
         )
         response = self.client.post(self.account_urls, self.valid_user_data)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("nickname", response.data)
+        self.assertIn("error_detail", response.data)
+        self.assertIn("nickname", response.data["error_detail"])
 
     def test_phone_number(self) -> None:
         User.objects.create_user(
@@ -83,8 +84,8 @@ class test_user_register(APITestCase):
         )
         response = self.client.post(self.account_urls, self.valid_user_data)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("phone_number", response.data)
+        self.assertIn("error_detail", response.data)
+        self.assertIn("phone_number", response.data["error_detail"])
 
     def test_invalid_phone_number(self) -> None:
         invaild_phone_number = [
@@ -103,8 +104,8 @@ class test_user_register(APITestCase):
                 valid_data["phone_number"] = phone_number
                 response = self.client.post(self.account_urls, valid_data)
 
-                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-                self.assertIn("phone_number", response.data)
+                self.assertIn("error_detail", response.data)
+                self.assertIn("phone_number", response.data["error_detail"])
 
     def test_valid_phone_number(self) -> None:
         valid_phone_number = [
@@ -124,4 +125,4 @@ class test_user_register(APITestCase):
                 response = self.client.post(self.account_urls, valid_data, format="json")
 
                 self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-                self.assertIn("phone_number", response.data)
+                self.assertIn("detail", response.data)
