@@ -111,3 +111,23 @@ def delete_admin_account(*, account_id: int) -> None:
         raise NotFound("사용자 정보를 찾을 수 없습니다.")
 
     user.delete()
+
+def update_admin_account_role(*, account_id: int, role: str) -> None:
+
+    user = User.objects.filter(id=account_id).first()
+    if user is None:
+        raise NotFound("사용자 정보를 찾을 수 없습니다.")
+
+    if role == "admin":
+        user.is_superuser = True
+        user.is_staff = True
+    if role == "staff":
+        user.is_superuser = False
+        user.is_staff = True
+    if role == "user":
+        user.is_superuser = False
+        user.is_staff = False
+    else:
+        raise ValidationError({"detail": "role 파라미터는 admin, staff, user 중에서 하나여야 합니다."})
+
+    user.save()
