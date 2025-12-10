@@ -17,7 +17,7 @@ from apps.users.services.withdrawal_services import withdraw_service
         description="회원 탈퇴를 위한 스키마 입니다. 14일 후 영구 삭제 됩니다.",
         request=WithdrawalSerializer,
         methods=["DELETE"],
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 423: OpenApiTypes.OBJECT},
         examples=[
             OpenApiExample(
                 request_only=True,
@@ -40,7 +40,7 @@ from apps.users.services.withdrawal_services import withdraw_service
             ),
             OpenApiExample(
                 response_only=True,
-                name="error_response",
+                name="already_locked",
                 summary="탈퇴 실패 예시 (이미 탈퇴함)",
                 value={
                     "error_detail": {
@@ -49,7 +49,7 @@ from apps.users.services.withdrawal_services import withdraw_service
                         ]
                     }
                 },
-                status_codes=["400"],
+                status_codes=["423"],
             ),
         ],
     )
