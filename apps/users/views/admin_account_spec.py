@@ -1,4 +1,3 @@
-from datetime import date, datetime, timezone
 from typing import Any
 
 from django.http import Http404
@@ -16,7 +15,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.pagination import Pageable
-from apps.users.models import User
 from apps.users.serializers.admin_serializers import (
     AdminAccountDetailReadSerializer,
     AdminAccountDetailSerializer,
@@ -27,6 +25,7 @@ from apps.users.serializers.admin_serializers import (
 from apps.users.services.admin_services import (
     get_admin_account_detail,
     get_admin_account_list,
+    update_admin_account,
 )
 from apps.users.utils.permissions import StaffOrSuperUser, SuperUserOnly
 
@@ -261,13 +260,8 @@ class AdminAccountDetailSpec(APIView):
 
     @extend_schema(
         tags=["Admin"],
-        summary="어드민 페이지 회원 정보 수정 Spec",
-        description=(
-            "스태프 및 관리자 권한을 가진 유저는 어드민 페이지 내에서 "
-            "특정 회원에 대한 정보를 수정할 수 있습니다.\n\n"
-            "- 수정 가능 항목: 이름, 성별, 닉네임, 전화번호, 상태, 프로필 이미지\n"
-            "- 회원 정보 상세 조회 모달 내의 '수정하기' 버튼을 통해 호출되는 API입니다."
-        ),
+        summary="어드민 페이지 회원 정보 수정",
+        description="스태프 및 관리자 권한을 가진 유저는 어드민 페이지 내에서 특정 회원 정보를 수정할 수 있습니다.",
         request=AdminAccountUpdateSerializer,
         responses={
             200: AdminAccountDetailSerializer,
@@ -301,7 +295,7 @@ class AdminAccountDetailSpec(APIView):
                 value={
                     "error_detail": {
                         "phone_number": [
-                            "11자리 숫자로 구성해야 합니다.",
+                            "11자리 숫자로 구성된 포멧이어야 합니다.",
                         ]
                     }
                 },
@@ -324,28 +318,18 @@ class AdminAccountDetailSpec(APIView):
             ),
         ],
     )
-    def patch(self, _request: Request, account_id: int, *_args: Any, **_kwargs: Any) -> Response:
-        if account_id != 1:
-            raise Http404
+    def patch(self, request: Request, account_id: int) -> Response:
 
-        user = User(
-            id=account_id,
-            email="user1@example.com",
-            nickname="updated_user1",
-            name="홍승우",
-            birthday=date(2005, 1, 1),
-            is_active=True,
-            is_staff=False,
-            is_superuser=False,
-            phone_number="01099999999",
-            gender="M",
-            profile_img_url="https://example.com/profile/user1.png",
+        serializer_in = AdminAccountUpdateSerializer(data=request.data, partial=True)
+        serializer_in.is_valid(raise_exception=True)
+
+        user = update_admin_account(
+            account_id=account_id,
+            data=serializer_in.validated_data,
         )
-        user.created_at = datetime(2005, 1, 1, 13, 00, 47, 50525, tzinfo=timezone.utc)
-        user.updated_at = datetime(2025, 10, 30, 14, 1, 57, 505250, tzinfo=timezone.utc)
 
-        serializer = AdminAccountDetailSerializer(user)
-        return Response(serializer.data)
+        serializer_out = AdminAccountDetailSerializer(user)
+        return Response(serializer_out.data)
 
     @extend_schema(
         tags=["Admin"],
