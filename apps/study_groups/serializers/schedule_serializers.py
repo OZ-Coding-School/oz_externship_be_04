@@ -1,12 +1,11 @@
 from datetime import date, datetime, time, timedelta
-from typing import Any, TypedDict, Union
+from typing import Any, TypedDict
 
 from django.utils import timezone
 from rest_framework import serializers
 
 from apps.study_groups.models import (
     GroupMember,
-    GroupSchedule,
     ScheduleParticipants,
     StudyGroup,
 )
@@ -54,18 +53,9 @@ class GroupScheduleSerializer(serializers.Serializer[Any]):
     )
 
     # session_date 검증
-    def validate_session_date(self, value: Union[str, datetime]) -> datetime:
-        # 문자열로 들어온 경우 처리
-        if isinstance(value, str):
-            try:
-                value = datetime.strptime(value, "%Y-%m-%d")
-            except ValueError:
-                raise serializers.ValidationError("session_date 형식이 올바르지 않습니다. YYYY-MM-DD형식이어야 합니다.")
-
-        # datetime 상태에서 검증
+    def validate_session_date(self, value: datetime) -> datetime:
         if value.date() < timezone.localdate():
-            raise serializers.ValidationError("session_date는 오늘보다 이전일 수 없습니다.")
-
+            raise serializers.ValidationError({"detail": "session_date는 오늘보다 이전일 수 없습니다."})
         return value
 
     def validate(self, attrs: GroupScheduleAttrs) -> GroupScheduleAttrs:
@@ -85,14 +75,15 @@ class GroupScheduleSerializer(serializers.Serializer[Any]):
 
         # 참가자 검증
         if study_group and participants:
-            invalid_ids = []
-            for member in participants:
-                if member.study_group_id.id != study_group.id:
-                    invalid_ids.append(member.id)
+            participant_ids = [m.id for m in participants]
+
+            member_groups = GroupMember.objects.filter(id__in=participant_ids).values_list("id", "study_group_id")
+
+            invalid_ids = [mid for mid, gid in member_groups if gid != study_group.id]
 
             if invalid_ids:
                 ids_str = ", ".join(str(i) for i in invalid_ids)
-                raise serializers.ValidationError({"participants": f"유효하지 않은 스터디 그룹 멤버 id: {ids_str}"})
+                raise serializers.ValidationError({"detail": f"유효하지 않은 스터디 그룹 멤버 id: {ids_str}"})
 
         return attrs
 
