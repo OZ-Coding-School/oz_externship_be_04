@@ -48,11 +48,9 @@ class SignupView(APIView):
             ),
             400: inline_serializer(
                 name="SignUpValidationError",
-                fields={
-                    "error_detail": serializers.DictField(child=serializers.ListField(child=serializers.CharField())),
-                },
+                fields={"error_detail": serializers.CharField()},
             ),
-            409: inline_serializer(name="SignUpValidationError", fields={"error_detail": serializers.CharField()}),
+            409: inline_serializer(name="SignUpConflictError", fields={"error_detail": serializers.CharField()}),
         },
     )
     def post(self, request: Request) -> Response:
@@ -60,4 +58,13 @@ class SignupView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response({"detail": "회원가입 완료"}, status=status.HTTP_201_CREATED)
-        return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        first_error = list(serializer.errors.values())[0][0]
+
+        if "이미 사용 중인" in first_error:
+            return Response(
+                {"error_detail": "이미 중복된 회원가입 내역이 존재합니다."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return Response({"error_detail": first_error}, status=status.HTTP_400_BAD_REQUEST)
