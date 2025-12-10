@@ -1,4 +1,4 @@
-from datetime import date, time, timedelta
+from datetime import time, timedelta
 
 from django.utils import timezone
 from rest_framework import status
@@ -165,3 +165,68 @@ class ScheduleAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(GroupSchedule.objects.count(), 0)
+
+    # 에러 케이스 추가
+
+    def test_create_schedule_not_member(self) -> None:
+        # 권한 없는 맴버의 스케줄 생성 시도
+        other_group = StudyGroup.objects.create(
+            name="다른그룹",
+            introduction="테스트",
+            max_headcount=5,
+            profile_img_url="",
+            start_at=timezone.now(),
+            end_at=timezone.now() + timedelta(days=7),
+        )
+        url = f"/api/v1/study-groups/{other_group.id}/schedules"
+
+        response = self.client.post(url, self.base_payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn("detail", response.data)
+        self.assertEqual(response.data["detail"], "요청 유저는 이 스터디의 멤버가 아닙니다.")
+
+    # 존재하지 않는 스케줄 조회
+    def test_detail_schedule_not_found(self) -> None:
+        url = f"/api/v1/study-groups/{self.group.id}/schedules/99999"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("detail", response.data)
+        self.assertEqual(response.data["detail"], "존재하지 않는 스케줄입니다.")
+
+    # 다른 그룹 스케줄 접속 시도
+    def test_detail_schedule_forbidden(self) -> None:
+        other_group = StudyGroup.objects.create(
+            name="다른그룹",
+            introduction="테스트",
+            max_headcount=5,
+            profile_img_url="",
+            start_at=timezone.now(),
+            end_at=timezone.now() + timedelta(days=7),
+        )
+        schedule = GroupSchedule.objects.create(
+            study_group=other_group,
+            title="권한 테스트",
+            objective="",
+            session_date=timezone.now() + timedelta(days=1),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+        )
+
+        url = f"/api/v1/study-groups/{self.group.id}/schedules/{schedule.id}"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data["detail"], "접근 권한이 없습니다.")
+
+    # 잘못된 시간 설정시
+    def test_create_schedule_invalid_time(self) -> None:
+        payload = self.base_payload.copy()
+        payload["start_time"] = "12:00:00"
+        payload["end_time"] = "11:00:00"
+
+        response = self.client.post(self.schedule_create_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue("detail" in response.data or "error_detail" in response.data, "시간 설정이 잘못 되었습니다.")

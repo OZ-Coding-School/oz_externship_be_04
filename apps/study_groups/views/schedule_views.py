@@ -1,5 +1,3 @@
-from typing import cast
-
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import status
@@ -39,49 +37,26 @@ class ScheduleView(APIView):
         ],
     )
     def post(self, request: Request, group_id: int) -> Response:
-        study_group = StudyGroup.objects.get(id=group_id)
+        study_group = StudyGroup.objects.filter(id=group_id).first()
+        if not study_group:
+            return Response({"detail": "존재하지 않는 스터디 그룹입니다."}, status.HTTP_404_NOT_FOUND)
+        is_member = GroupMember.objects.filter(user_id=request.user.pk, study_group_id=group_id).exists()
+        if not is_member:
+            return Response({"detail": "요청 유저는 이 스터디의 멤버가 아닙니다."}, status.HTTP_403_FORBIDDEN)
 
         serializer = GroupScheduleSerializer(
-            data={
-                "title": request.data["title"],
-                "objective": request.data.get("objective"),
-                "session_date": request.data["session_date"],
-                "start_time": request.data["start_time"],
-                "end_time": request.data["end_time"],
-                "participants": request.data.get("participants", []),
-            },
+            data=request.data,
             context={"study_group": study_group},
         )
         serializer.is_valid(raise_exception=True)
 
-        user_id = cast(int, request.user.id)
-        try:
-            assert request.user.pk is not None
-            GroupMember.objects.get(
-                user_id=request.user.pk,
-                study_group_id=study_group,
-            )
-        except GroupMember.DoesNotExist:
-            from rest_framework.exceptions import (
-                ValidationError,
-            )
-
-            raise ValidationError({"detail": "요청 유저는 이 스터디의 멤버가 아닙니다."})
-
-        participants = serializer.validated_data.get("participants", [])
-
-        validated_data = serializer.validated_data.copy()
-        validated_data["participants"] = participants
-
         schedule = ScheduleService.create_schedule(
-            validated_data=validated_data,
+            validated_data=serializer.validated_data,
             group_id=group_id,
         )
 
-        return Response(
-            {"data": GroupScheduleSerializer(schedule).data},
-            status=status.HTTP_201_CREATED,
-        )
+        serializer = GroupScheduleSerializer(schedule)
+        return Response({"data": serializer.data}, status=status.HTTP_201_CREATED)
 
     # 스케줄 조회
     @extend_schema(
@@ -108,6 +83,9 @@ class ScheduleDetailView(APIView):
     )
     def get(self, request: Request, group_id: int, schedule_id: int) -> Response:
         schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
+
+        if schedule is None:
+            return Response({"detail": "존재하지 않는 스케줄입니다."}, status.HTTP_400_BAD_REQUEST)
 
         if schedule.study_group_id != group_id:
             return Response({"detail": "접근 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
@@ -142,17 +120,8 @@ class ScheduleDetailView(APIView):
         if schedule.study_group_id != group_id:
             return Response({"detail": "접근 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
-        data = {
-            "title": request.data["title"],
-            "objective": request.data.get("objective"),
-            "session_date": request.data["session_date"],
-            "start_time": request.data["start_time"],
-            "end_time": request.data["end_time"],
-            "participants": request.data.get("participants", []),
-        }
-
+        data = request.data.copy()
         serializer = GroupScheduleSerializer(
-            schedule,
             data=data,
             context={"study_group": schedule.study_group},
         )
