@@ -1,8 +1,17 @@
+from typing import Any
+
 from django.db.models import Q, QuerySet
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework import status as drf_status
+from rest_framework.exceptions import APIException, NotFound, ValidationError
 
 from apps.core.pagination import OffsetPage, Pageable, offset_paginate_queryset
 from apps.users.models import User
+
+
+class PhoneNumberConflict(APIException):
+    status_code = drf_status.HTTP_409_CONFLICT
+    default_detail = "휴대폰 번호 중복으로 인하여 요청 처리에 실패하였습니다."
+    default_code = "phone_number_conflict"
 
 
 def get_admin_account_list(
@@ -55,4 +64,43 @@ def get_admin_account_detail(*, account_id: int) -> User:
     if user is None:
         raise NotFound("사용자 정보를 찾을 수 없습니다.")
 
+    return user
+
+
+def update_admin_account(*, account_id: int, data: dict[str, Any]) -> User:
+    user = User.objects.filter(id=account_id).first()
+    if user is None:
+        raise NotFound("사용자 정보를 찾을 수 없습니다.")
+
+    if "phone_number" in data:
+        phone_number = data["phone_number"]
+        if phone_number is not None and User.objects.filter(phone_number=phone_number).exclude(id=account_id).exists():
+            raise PhoneNumberConflict()
+
+    if "nickname" in data:
+        user.nickname = data["nickname"]
+
+    if "name" in data:
+        user.name = data["name"]
+
+    if "phone_number" in data:
+        user.phone_number = data["phone_number"]
+
+    if "birthday" in data:
+        user.birthday = data["birthday"]
+
+    if "gender" in data:
+        user.gender = data["gender"]
+
+    if "profile_img_url" in data:
+        user.profile_img_url = data["profile_img_url"]
+
+    if "status" in data:
+        status_value = data["status"]
+        if status_value == "active":
+            user.is_active = True
+        elif status_value in ("inactive", "withdrew"):
+            user.is_active = False
+
+    user.save()
     return user

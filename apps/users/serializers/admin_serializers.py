@@ -121,7 +121,7 @@ class AdminAccountUpdateSerializer(serializers.Serializer[Any]):
             ("inactive", "inactive"),
             ("withdrew", "withdrew"),
         ],
-        help_text="계정 상태 (active/inactive/withdrew)"
+        help_text="계정 상태 (active/inactive/withdrew)",
     )
     profile_img_url = serializers.URLField(required=False, help_text="프로필 이미지 URL")
 
