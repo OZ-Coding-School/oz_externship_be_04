@@ -2,7 +2,7 @@ import random
 from decimal import Decimal
 from typing import cast
 
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Q
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -69,7 +69,14 @@ class AdminCrawledLectureView(APIView):
         },
     )
     def get(self, request: Request) -> Response:
+        search: str | None = request.query_params.get("search")
         queryset = CrawledLecture.objects.all().order_by("-created_at")
+
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) |
+                Q(instrector__icontains=search)
+            )
 
         paginator = self.pagination_class()
         paginated_qs = paginator.paginate_queryset(queryset, request)
