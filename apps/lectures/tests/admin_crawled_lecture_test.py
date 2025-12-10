@@ -13,13 +13,16 @@ class AdminCrawledLectureViewTest(TestCase):
     def setUp(self):
         self.admin = User.objects.create_superuser(
             email="admin@admin.com",
-            password="ozcoding"
+            password="ozcoding",
+            nickname="admin",
+            phone_number="01012345678",
         )
         self.client = APIClient()
         self.client.force_authenticate(self.admin)
 
         for i in range(1, 16):
             CrawledLecture.objects.create(
+                external_id=i,
                 title=f"제목 {i}",
                 instructor=f"강사 {i}",
                 description="테스트 설명",
@@ -33,21 +36,24 @@ class AdminCrawledLectureViewTest(TestCase):
                 url_link=f"https://url{i}.com",
             )
 
-        self.url = reverse("v1_admin_crawled_lectures_list")
+        self.url = reverse("admin_crawled_lectures")
 
+    # 기본적인 조회
     def test_admin_can_get_lecture_list(self):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("results", response.data)
-        self.assertEqual(len(response.data["results"]), 10)  # 페이지당 10개
+        self.assertEqual(len(response.data["results"]), 10)
 
+    # 페이지네이션 잘 가는지
     def test_pagination_page_2(self):
         response = self.client.get(self.url, {"page": 2})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["results"]), 5)  # 16개 중 나머지 6번째~15번째
+        self.assertEqual(len(response.data["results"]), 5)
 
+    # 제목으로 검색
     def test_search_by_title(self):
         response = self.client.get(self.url, {"search": "제목 3"})
 
@@ -55,6 +61,7 @@ class AdminCrawledLectureViewTest(TestCase):
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["title"], "제목 3")
 
+    # 강사명으로 검색
     def test_search_by_instructor(self):
         response = self.client.get(self.url, {"search": "강사 5"})
 
@@ -62,12 +69,14 @@ class AdminCrawledLectureViewTest(TestCase):
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["instructor"], "강사 5")
 
+    # 로그인 안했을 때
     def test_unauthenticated_user_cannot_access(self):
         client = APIClient()
         res = client.get(self.url)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    # 일반유저로 했을 때
     def test_non_admin_user_forbidden(self):
         user = User.objects.create_user(email="user@example.com", password="userpass")
         client = APIClient()
