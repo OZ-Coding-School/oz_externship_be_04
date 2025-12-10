@@ -186,6 +186,10 @@ class WithdrawalCheckView(APITestCase):
         self.assertEqual(Withdrawal.objects.count(), 0)
         self.assertIn("error_detail", response.data)
         self.assertEqual(
-            response.data["error_detail"][0],
-            "이미 탈퇴 처리된 유저 입니다. 다시 로그인 하시면 계정 복구를 진행하실 수 있습니다.",
+            response.data["error_detail"],
+            (
+                {
+                    "non_field_errors": "이미 탈퇴 처리된 유저 입니다. 다시 로그인 하시면 계정 복구를 진행하실 수 있습니다."
+                }
+            ),
         )
