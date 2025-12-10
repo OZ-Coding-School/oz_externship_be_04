@@ -23,11 +23,11 @@ def get_admin_account_list(
             )
 
         if status_param == "active":
-            qs = qs.filter(is_active=True, withdrawal__isnull=True)
+            qs = qs.filter(is_active=True, withdrawals__isnull=True)
         elif status_param == "inactive":
-            qs = qs.filter(is_active=False, withdrawal__isnull=True)
+            qs = qs.filter(is_active=False, withdrawals__isnull=True)
         elif status_param == "withdrawal_pending":
-            qs = qs.filter(withdrawal__isnull=False).distinct()
+            qs = qs.filter(withdrawals__isnull=False).distinct()
 
     if role_param:
         allowed_role = {"admin", "staff", "user"}
