@@ -212,7 +212,7 @@ class AdminAccountDetailSpec(APIView):
         summary="어드민 페이지 회원 정보 상세 조회",
         description="어드민 페이지 회원 정보 상세 조회용 API입니다.",
         responses={
-            200: AdminAccountDetailReadSerializer,
+            200: AdminAccountDeleteSuccessSerializer,
             401: AdminAccountUpdateSimpleErrorSerializer,
             403: AdminAccountUpdateSimpleErrorSerializer,
             404: AdminAccountUpdateSimpleErrorSerializer,
@@ -415,7 +415,7 @@ class AdminAccountRoleUpdateSpec(APIView):
         serializer_in = AdminAccountRoleUpdateSerializer(data=request.data)
         serializer_in.is_valid(raise_exception=True)
 
-        role: str = serializer_in.validated_data.get["role"]
+        role: str = serializer_in.validated_data["role"]
 
         update_admin_account_role(account_id=account_id, role=role)
 
