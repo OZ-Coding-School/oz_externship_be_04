@@ -104,3 +104,10 @@ def update_admin_account(*, account_id: int, data: dict[str, Any]) -> User:
 
     user.save()
     return user
+
+def delete_admin_account(*, account_id: int) -> None:
+    user = User.objects.filter(id=account_id).first()
+    if user is None:
+        raise NotFound("사용자 정보를 찾을 수 없습니다.")
+
+    user.delete()

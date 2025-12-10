@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.users.views.admin_account_spec import (
+from apps.users.views.admin_account_views import (
     AdminAccountDetailSpec,
     AdminAccountListSpec,
     AdminAccountRoleUpdateSpec,
