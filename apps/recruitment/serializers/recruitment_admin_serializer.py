@@ -133,7 +133,7 @@ class AdminRecruitmentDetailSerializer(TimestampSerializerMixin, serializers.Mod
         return AdminRecruitmentLectureSerializer(lecture_list, many=True).data
 
     def get_applications(self, obj: Recruitment) -> Any:
-        apps = obj.applications.select_related("applicant").all()
+        apps = obj.applications.all()
         return AdminRecruitmentApplicationSummarySerializer(apps, many=True, context=self.context).data
 
     def get_bookmark_count(self, obj: Recruitment) -> int:

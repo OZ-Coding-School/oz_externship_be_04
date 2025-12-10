@@ -1,6 +1,6 @@
 import uuid
 
-from django.db.models import Count, Q, QuerySet
+from django.db.models import Count, QuerySet
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -167,6 +167,11 @@ class AdminRecruitmentDetailView(APIView):
         },
     )
     def delete(self, request: Request, recruitment_uuid: str) -> Response:
-        recruitment = get_object_or_404(Recruitment, uuid=recruitment_uuid)
+        try:
+            recruitment_uuid_obj = uuid.UUID(recruitment_uuid)
+        except ValueError:
+            return Response({"error_detail": "잘못된 UUID 형식입니다."}, status=400)
+
+        recruitment = get_object_or_404(Recruitment, uuid=recruitment_uuid_obj)
         recruitment.delete()
         return Response({"detail": "구인공고가 삭제되었습니다."}, status=status.HTTP_200_OK)
