@@ -1,5 +1,3 @@
-from typing import cast
-
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import status
@@ -42,7 +40,8 @@ class ScheduleView(APIView):
         study_group = StudyGroup.objects.filter(id=group_id).first()
         if not study_group:
             return Response({"detail": "존재하지 않는 스터디 그룹입니다."}, status.HTTP_404_NOT_FOUND)
-        if not GroupMember.objects.filter(user_id=cast(int, request.user.pk), study_group_id=group_id).exists():
+        assert request.user.pk is not None
+        if not GroupMember.objects.filter(user_id=request.user.pk, study_group_id=group_id).exists():
             return Response({"detail": "요청 유저는 이 스터디의 멤버가 아닙니다."}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = GroupScheduleSerializer(
@@ -84,9 +83,8 @@ class ScheduleDetailView(APIView):
     )
     def get(self, request: Request, group_id: int, schedule_id: int) -> Response:
         schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
-
         if schedule is None:
-            return Response({"detail": "존재하지 않는 스케줄입니다."}, status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "존재하지 않는 스케줄입니다."}, status=status.HTTP_404_NOT_FOUND)
 
         if schedule.study_group_id != group_id:
             return Response({"detail": "접근 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
@@ -117,26 +115,26 @@ class ScheduleDetailView(APIView):
     )
     def put(self, request: Request, group_id: int, schedule_id: int) -> Response:
         schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
+        if schedule is None:
+            return Response({"detail": "존재하지 않는 스케줄입니다."}, status=status.HTTP_404_NOT_FOUND)
 
         if schedule.study_group_id != group_id:
             return Response({"detail": "접근 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
-        data = request.data.copy()
         serializer = GroupScheduleSerializer(
-            data=data,
+            schedule,
+            data=request.data,
             context={"study_group": schedule.study_group},
         )
         serializer.is_valid(raise_exception=True)
 
-        updated_schedule = ScheduleService.update_schedule(
+        ScheduleService.update_schedule(
             schedule=schedule,
             validated_data=serializer.validated_data,
         )
 
-        return Response(
-            {"data": GroupScheduleSerializer(updated_schedule).data},
-            status=status.HTTP_200_OK,
-        )
+        serializer = GroupScheduleSerializer(schedule)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
 
     # 스케줄 삭제
     @extend_schema(
@@ -147,6 +145,8 @@ class ScheduleDetailView(APIView):
     )
     def delete(self, request: Request, group_id: int, schedule_id: int) -> Response:
         schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
+        if schedule is None:
+            return Response({"detail": "존재하지 않는 스케줄입니다."}, status=status.HTTP_404_NOT_FOUND)
 
         if schedule.study_group_id != group_id:
             return Response({"detail": "접근 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
