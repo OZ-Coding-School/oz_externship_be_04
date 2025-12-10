@@ -15,9 +15,7 @@ class UserAccountView(APIView):
         serializer = WithdrawalSerializer(data=request.data)
 
         if not serializer.is_valid():
-            error_key = next(iter(serializer.errors))
-            error_call = serializer.errors[error_key][0]
-            return Response({"error_detail": error_call}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         data = serializer.validated_data
         data.pop("agree_check")
