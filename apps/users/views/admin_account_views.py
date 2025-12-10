@@ -26,6 +26,7 @@ from apps.users.services.admin_services import (
     get_admin_account_detail,
     get_admin_account_list,
     update_admin_account,
+    delete_admin_account,
 )
 from apps.users.utils.permissions import StaffOrSuperUser, SuperUserOnly
 
@@ -333,7 +334,7 @@ class AdminAccountDetailSpec(APIView):
 
     @extend_schema(
         tags=["Admin"],
-        summary="어드민 페이지 회원 정보 삭제 Spec",
+        summary="어드민 페이지 회원 정보 삭제",
         description="관리자 권한을 가진 유저는 어드민 페이지에서 특정 회원 정보를 삭제할 수 있습니다.",
         responses={
             200: AdminAccountDetailSerializer,
@@ -365,13 +366,10 @@ class AdminAccountDetailSpec(APIView):
         ],
     )
     def delete(self, _request: Request, account_id: int) -> Response:
-        if account_id != 1:
-            raise Http404
 
-        return Response(
-            {"detail": f"유저 데이터가 삭제되었습니다. - pk: {account_id}"},
-        )
+        delete_admin_account(account_id=account_id)
 
+        return Response({"detail": f"유저 데이터가 삭제되었습니다. - pk: {account_id}"})
 
 class AdminAccountRoleUpdateSpec(APIView):
 
