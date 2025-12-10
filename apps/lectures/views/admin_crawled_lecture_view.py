@@ -1,20 +1,14 @@
-import random
-from decimal import Decimal
-from typing import cast
-
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.lectures import models
 from apps.lectures.models import CrawledLecture
 from apps.lectures.serializers.admin_crawled_lecture_serializer import (
     AdminCrawledLectureRetrieveSerializer,
@@ -35,7 +29,7 @@ class AdminCrawledLectureView(APIView):
 
     @extend_schema(
         operation_id="v1_admin_crawled_lectures_list",
-        tags=["lectures"],
+        tags=["Admin"],
         summary="크롤링한 강의 목록 (관리자)",
         parameters=[
             OpenApiParameter(
@@ -88,7 +82,7 @@ class AdminCrawledLectureRetrieveView(APIView):
 
     @extend_schema(
         operation_id="v1_admin_crawled_lecture_detail",
-        tags=["lectures"],
+        tags=["Admin"],
         summary="크롤링한 강의 상세 조회 (관리자)",
         responses={
             200: AdminCrawledLectureRetrieveSerializer(),
