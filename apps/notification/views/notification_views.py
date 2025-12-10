@@ -68,7 +68,7 @@ class NotificationListAPIView(APIView):
                 qs = qs.filter(is_read=False)
 
         paginator = self.pagination_class()
-        paginated_qs: list[Notification] = paginator.paginate_queryset(qs, request)  # type: ignore
+        paginated_qs = paginator.paginate_queryset(qs, request)
 
         # 시리얼라이즈
         serializer = self.serializer_class(paginated_qs, many=True)
