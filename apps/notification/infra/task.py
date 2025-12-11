@@ -94,6 +94,12 @@ async def send_tomorrow_schedule_notification() -> None:
             )
             for participant in participanes
         ]
+
+        created_notifications = Notification.objects.bulk_create(notifications)
+
+        for notification in created_notifications:
+            send_to_pubsub.delay(notification.id)
+
     except Exception as e:
         logger.error(f"예정 스케줄 알림 테스크 오류: {e}")
 
