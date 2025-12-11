@@ -7,7 +7,7 @@ from celery.schedules import crontab
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 
-os.environ["DISABLE_GSSAPI"] = "true" # 윈도우라서 넣었어요
+os.environ["DISABLE_GSSAPI"] = "true"  # 윈도우라서 넣었어요
 
 app = Celery("config")
 
