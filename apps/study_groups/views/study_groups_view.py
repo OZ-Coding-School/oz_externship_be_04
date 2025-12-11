@@ -73,6 +73,12 @@ class StudyGroupListAPIView(APIView):
         responses=StudyGroupListSerializer,
         parameters=[
             OpenApiParameter(
+                name="search",
+                type=OpenApiTypes.STR,
+                description="검색어",
+                required=False,
+            ),
+            OpenApiParameter(
                 name="status",
                 type=OpenApiTypes.STR,
                 description="스터디 그룹 상태 필터",
