@@ -88,7 +88,7 @@ class AdminAccountDetailSpecTests(AdminAccountBaseTestCase):
 
         self.client.force_authenticate(user=self.normal_user)
 
-        url = reverse("admin_account_detail", kwargs={"account_id": 1})
+        url = reverse("admin_account_detail", kwargs={"account_id": self.normal_user.id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -97,7 +97,7 @@ class AdminAccountDetailSpecTests(AdminAccountBaseTestCase):
 
         self.client.force_authenticate(user=self.admin_user)
 
-        url = reverse("admin_account_detail", kwargs={"account_id": 1})
+        url = reverse("admin_account_detail", kwargs={"account_id": self.normal_user.id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -123,7 +123,7 @@ class AdminAccountDetailSpecTests(AdminAccountBaseTestCase):
 
         self.client.force_authenticate(user=self.admin_user)
 
-        url = reverse("admin_account_detail", kwargs={"account_id": 999})
+        url = reverse("admin_account_detail", kwargs={"account_id": 999999})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
