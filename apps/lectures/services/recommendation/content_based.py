@@ -43,6 +43,8 @@ EMBED_DIM = int(os.getenv("EMBED_DIM", 384))
 def lecture_embed_key(lecture_id: int) -> str:
     return f"lecture:embed:{lecture_id}"
 
+def user_embed_key(user_id: int) -> str:
+    return f"user:embed:{user_id}"
 
 def remove_stopwords(text: str) -> str:
     tokens = text.split()
@@ -120,6 +122,47 @@ def get_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float32]
     return vec
 
 
+def get_user_embedding_vector(user: User, lecture_vectors: NDArray[np.float32], lecture_ids: List[int]) -> Optional[NDArray[np.float32]]:
+    key = user_embed_key(user.id)
+
+    cached = None
+    try:
+        cached = redis_client.get(key)
+    except redis.exceptions.ConnectionError:
+        logger.exception(f"Redis 연결 실패: 키 {key} 조회 중 오류 발생")
+    except redis.exceptions.TimeoutError as e:
+        logger.warning(f"Redis 타임아웃: 키 {key} 조회 중 {e} 발생")
+    except redis.exceptions.RedisError as e:
+        logger.warning(f"Redis 일반 오류: 키 {key} 조회 중 {e} 발생")
+
+    if cached:
+        try:
+            arr = np.frombuffer(cached, dtype=np.float32)
+            if arr.size == EMBED_DIM:
+                return arr
+            else:
+                logger.warning(f"캐시된 유저 벡터 크기 불일치: 키 {key}, 예상 {EMBED_DIM}, 실제 {arr.size}")
+        except ValueError:
+            logger.exception(f"캐시된 유저 벡터 역직렬화 실패: 키 {key}")
+        except Exception as e:
+            logger.warning(f"캐시된 유저 벡터 읽기 중 예상치 못한 오류: 키 {key}, 오류 {e}")
+
+    user_vec = build_user_vector(user, lecture_vectors, lecture_ids)
+    if user_vec is None:
+        return None
+
+    try:
+        redis_client.set(key, user_vec.tobytes(), ex=EMBED_TTL)
+    except redis.exceptions.ConnectionError:
+        logger.exception(f"Redis 연결 실패: 키 {key} 저장 중 오류 발생")
+    except redis.exceptions.TimeoutError as e:
+        logger.warning(f"Redis 타임아웃: 키 {key} 저장 중 {e} 발생")
+    except redis.exceptions.RedisError as e:
+        logger.warning(f"Redis 일반 오류: 키 {key} 저장 중 {e} 발생")
+
+    return user_vec
+
+
 def build_user_vector(
     user: User,
     lecture_vectors: NDArray[np.float32],
@@ -188,7 +231,7 @@ def recommend_lectures(user: User, top_n: int = 3) -> Tuple[List[CrawledLecture]
     lecture_ids = [lec.id for lec in lectures]
     lecture_vectors = np.vstack([get_lecture_embedding_vector(lec) for lec in lectures])
 
-    user_vec = build_user_vector(user, lecture_vectors, lecture_ids)
+    user_vec = get_user_embedding_vector(user, lecture_vectors, lecture_ids)
 
     if user_vec is not None:
         sims = lecture_vectors @ user_vec
