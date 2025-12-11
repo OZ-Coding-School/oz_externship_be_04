@@ -1,108 +1,66 @@
-from typing import Optional
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from django.conf import settings
 from rest_framework import serializers
 
-from apps.lectures.models import CrawledLecture
-from apps.recruitment.models import RecruitmentBookmarks, Tag
+from apps.recruitment.models import Recruitment, RecruitmentBookmarks
 
 
-class RecruitmentLectureSerializer(serializers.ModelSerializer[CrawledLecture]):
-    class Meta:
-        model = CrawledLecture
-        fields = ("id", "title", "instructor")
+class RecruitmentInBookmarkSerializer(serializers.Serializer[Any]):
+    """북마크 목록에서 사용되는 공고 정보 (명세서 형식)"""
 
+    uuid = serializers.UUIDField(read_only=True)
+    title = serializers.CharField(read_only=True)
+    thumbnail_img_url = serializers.SerializerMethodField()
+    expected_headcount = serializers.IntegerField(read_only=True)
+    close_at = serializers.DateTimeField(read_only=True)
+    views_count = serializers.IntegerField(read_only=True)
+    bookmark_count = serializers.IntegerField(read_only=True)
+    lectures = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
 
-class RecruitmentTagSerializer(serializers.ModelSerializer[Tag]):
-    class Meta:
-        model = Tag
-        fields = ("id", "name")
+    def get_thumbnail_img_url(self, obj: Recruitment) -> Optional[str]:
+        """첫 번째 이미지를 썸네일로 반환"""
+        first_img = obj.images.first()
+        if first_img is not None:
+            return getattr(first_img, "img_url", None)
+        return getattr(settings, "DEFAULT_THUMBNAIL_URL", None)
+
+    def get_lectures(self, obj: Recruitment) -> List[Dict[str, Any]]:
+        """강의 목록 반환"""
+        study_group = obj.study_group
+        lectures = list(study_group.studylecture_set.all())
+        return [
+            {
+                "id": sl.lecture.id,
+                "title": sl.lecture.title,
+                "instructor": sl.lecture.instructor or "",
+            }
+            for sl in lectures
+        ]
+
+    def get_tags(self, obj: Recruitment) -> List[Dict[str, Any]]:
+        """태그 목록 반환"""
+        return [{"id": rt.tag.id, "name": rt.tag.name} for rt in obj.recruitment_tags.all()]
 
 
 class RecruitmentBookmarkCardSerializer(serializers.ModelSerializer[RecruitmentBookmarks]):
-    #  스터디 구인 공고 제목
-    study_group_recruitment_title = serializers.CharField(
-        source="recruitment.title",
-        read_only=True,
-    )
+    """북마크 목록 조회 (명세서 형식 - recruitment 객체 포함)"""
 
-    #  썸네일 이미지
-    thumbnail_img_url = serializers.SerializerMethodField()
-
-    #  예상 모집 인원
-    expected_headcount = serializers.IntegerField(
-        source="recruitment.expected_headcount",
-        read_only=True,
-    )
-
-    #  강의 목록
-    lectures = RecruitmentLectureSerializer(
-        source="recruitment.lectures",
-        many=True,
-        read_only=True,
-    )
-
-    # 사용자 정의 태그 목록
-    tags = RecruitmentTagSerializer(
-        source="recruitment.tags",
-        many=True,
-        read_only=True,
-    )
-
-    #  마감 기한
-    close_at = serializers.DateTimeField(
-        source="recruitment.close_at",
-        read_only=True,
-    )
-
-    #  조회수
-    views_count = serializers.IntegerField(
-        source="recruitment.views_count",
-        read_only=True,
-    )
-
-    #  북마크 수
-    bookmark_count = serializers.IntegerField(
-        read_only=True,
-    )
+    recruitment = serializers.SerializerMethodField()
 
     class Meta:
         model = RecruitmentBookmarks
-        fields = (
-            "id",
-            "study_group_recruitment_title",
-            "thumbnail_img_url",
-            "expected_headcount",
-            "lectures",
-            "tags",
-            "close_at",
-            "views_count",
-            "bookmark_count",
-        )
+        fields = ("id", "recruitment")
+        read_only_fields = fields
 
-    def get_thumbnail_img_url(self, obj: "RecruitmentBookmarks") -> Optional[str]:
-        recruitment = getattr(obj, "recruitment", None)
-        if recruitment is None:
-            return getattr(settings, "DEFAULT_THUMBNAIL_IMG_URL", None)
-
-        images = getattr(recruitment, "first_image_list", None)
-        first_img: Optional[object] = None
-
-        if isinstance(images, list):
-            first_img = images[0] if images else None
-        elif images is not None and hasattr(images, "first"):
-            first_img = images.first()
-
-        if first_img is not None:
-            img_url = getattr(first_img, "img_url", None)
-            if img_url is not None:
-                return str(img_url)
-            url = getattr(first_img, "url", None)
-            if url is not None:
-                return str(url)
-
-        return getattr(settings, "DEFAULT_THUMBNAIL_IMG_URL", None)
+    def get_recruitment(self, obj: RecruitmentBookmarks) -> Dict[str, Any]:
+        """명세서에 맞는 recruitment 객체 반환"""
+        recruitment = obj.recruitment_id
+        return RecruitmentInBookmarkSerializer(recruitment).data
 
 
 class RecruitmentBookmarkCreateSerializer(serializers.Serializer[RecruitmentBookmarks]):
