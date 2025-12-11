@@ -25,11 +25,11 @@ EMBED_CACHE_TTL = int(os.getenv("EMBED_CACHE_TTL", 86400))
 EMBED_DIM = int(os.getenv("EMBED_DIM", 384))
 
 
-def lecture_embed_key(lecture_id: int) -> str:
+def build_lecture_embed_cache_key(lecture_id: int) -> str:
     return f"lecture:embed:{lecture_id}"
 
 
-def user_embed_key(user_id: int) -> str:
+def build_user_embed_cached_key(user_id: int) -> str:
     return f"user:embed:{user_id}"
 
 
@@ -71,7 +71,7 @@ def build_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float3
 
 
 def get_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float32]:
-    key = lecture_embed_key(lecture.id)
+    key = build_lecture_embed_cache_key(lecture.id)
 
     if cached := cache.get(key):
         try:
@@ -93,7 +93,7 @@ def get_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float32]
 def get_user_embedding_vector(
     user: User, lecture_vectors: NDArray[np.float32], lecture_ids: List[int]
 ) -> Optional[NDArray[np.float32]]:
-    key = user_embed_key(user.id)
+    key = build_user_embed_cached_key(user.id)
 
     if cached := cache.get(key):
         try:
