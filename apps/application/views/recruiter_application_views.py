@@ -114,7 +114,7 @@ class ApplicationListView(APIView):
             OpenApiParameter("page_size", OpenApiTypes.INT, description="페이지 크기 (기본값: 10)"),
         ],
         responses={200: RecruiterApplicationListSerializer(many=True)},
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     def get(self, request: Request, recruitment_uuid: str) -> Response:
         user = request.user
@@ -150,7 +150,7 @@ class ApplicationReviewView(APIView):
         summary="작성자용 지원자 상세 조회",
         description="모집 공고 작성자가 지원자의 상세 정보를 조회합니다.",
         responses={200: RecruiterApplicationDetailSerializer},
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     def get(self, request: Request, application_id: int) -> Response:
         user = request.user
@@ -178,7 +178,7 @@ class ApplicationAcceptView(APIView):
                 "properties": {"detail": {"type": "string", "example": SUCCESS_MESSAGES["ACCEPTED"]}},
             }
         },
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     @transaction.atomic
     def post(self, request: Request, application_id: int) -> Response:
@@ -213,7 +213,7 @@ class ApplicationRejectView(APIView):
                 "properties": {"detail": {"type": "string", "example": SUCCESS_MESSAGES["REJECTED"]}},
             }
         },
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     @transaction.atomic
     def post(self, request: Request, application_id: int) -> Response:

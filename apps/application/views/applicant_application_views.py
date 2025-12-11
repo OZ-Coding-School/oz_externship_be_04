@@ -33,7 +33,7 @@ class ApplicationCreateView(APIView):
     @extend_schema(
         summary="지원서 제출",
         request=ApplicationCreateSerializer,
-        tags=["Recruitments"],
+        tags=["Recruitment"],
         responses={
             200: OpenApiResponse(
                 response={
@@ -103,7 +103,7 @@ class MyApplicationListView(APIView):
             OpenApiParameter("page_size", OpenApiTypes.INT, required=False),
         ],
         responses={200: ApplicantApplicationListSerializer(many=True)},
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     def get(self, request: Request) -> Response:
 
@@ -139,7 +139,7 @@ class MyApplicationDetailView(APIView):
                 }
             ),
         },
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     def get(self, request: Request, application_id: int) -> Response:
 
@@ -167,7 +167,7 @@ class ApplicationCancelView(APIView):
 
     @extend_schema(
         summary="지원 취소",
-        tags=["Recruitments"],
+        tags=["Recruitment"],
         responses={
             200: OpenApiResponse(
                 response={
@@ -215,7 +215,7 @@ class ApplicationDeleteView(APIView):
 
     @extend_schema(
         summary="지원 내역 삭제",
-        tags=["Recruitments"],
+        tags=["Recruitment"],
         responses={
             200: OpenApiResponse(
                 response={
