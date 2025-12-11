@@ -1,15 +1,17 @@
 import asyncio
 import logging
-from datetime import timedelta, date
+from datetime import date, timedelta
 
-from celery import shared_task # type: ignore
+from celery import shared_task  # type: ignore
+
 from apps.notification.models import Notification
 from apps.notification.services.pubsub_creator import notification_service
 from apps.study_groups.models.schedule import ScheduleParticipants
 
 logger = logging.getLogger(__name__)
 
-@shared_task(async_=True) #type: ignore[misc]
+
+@shared_task(async_=True)  # type: ignore[misc]
 def send_to_pubsub(notification_id: int) -> None:
     async def _async_task() -> None:
         try:
@@ -41,8 +43,8 @@ def send_to_pubsub(notification_id: int) -> None:
         event_loop.run_until_complete(_async_task())
 
 
-@shared_task #type: ignore[misc]
-def send_study_group_notification(notification_id : int, group_id: int) -> None:
+@shared_task  # type: ignore[misc]
+def send_study_group_notification(notification_id: int, group_id: int) -> None:
     async def _async_task() -> None:
         try:
             notification = await Notification.objects.aget(id=notification_id)
@@ -53,7 +55,7 @@ def send_study_group_notification(notification_id : int, group_id: int) -> None:
                 "content": notification.content,
                 "back_ulr_link": notification.back_url_link,
                 "create_at": notification.created_at,
-                "is_read": notification.is_read
+                "is_read": notification.is_read,
             }
             await notification_service.publish_group_notification(
                 group_id=group_id, notification_data=notification_data
@@ -72,7 +74,8 @@ def send_study_group_notification(notification_id : int, group_id: int) -> None:
     else:
         event_loop.run_until_complete(_async_task())
 
-@shared_task(name="send_tomorrow_schedule_notifications") #type: ignore[misc]
+
+@shared_task(name="send_tomorrow_schedule_notifications")  # type: ignore[misc]
 async def send_tomorrow_schedule_notification() -> None:
     """예정 스케줄 알림 생성 및 배치 작업"""
     try:
@@ -82,8 +85,8 @@ async def send_tomorrow_schedule_notification() -> None:
             "schedule", "schedule__study_group", "member__user"
         )
 
-        notifications =[
-                Notification(
+        notifications = [
+            Notification(
                 user_id=participant.member.user_id.id,
                 content=f"{participant.schedule.study_group.name}에 {participant.member.user_id.nickname}님이 참여했습니다.",
                 type=Notification.NotificationType.STUDY_JOIN,
@@ -95,8 +98,7 @@ async def send_tomorrow_schedule_notification() -> None:
         logger.error(f"예정 스케줄 알림 테스크 오류: {e}")
 
 
-
-@shared_task(name="send_today_schedule_notifications") #type: ignore[misc]
+@shared_task(name="send_today_schedule_notifications")  # type: ignore[misc]
 async def send_today_schedule_notification() -> None:
     """당일 스케줄 알림 생성"""
     try:
@@ -124,4 +126,4 @@ async def send_today_schedule_notification() -> None:
             send_to_pubsub.delay(notification.id)
 
     except Exception as e:
-        logger.error(f"그일 스케줄 알림 전송 오류:{e}")
+        logger.error(f"금일 스케줄 알림 전송 오류:{e}")

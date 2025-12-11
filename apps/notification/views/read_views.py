@@ -16,7 +16,7 @@ class NotificationReadAllView(APIView):
     permission_classes = [AllowAny]  # 유저 구현되기 전 AllowAny로 지정
 
     @extend_schema(
-        tags=["notification"],
+        tags=["Notification"],
         summary="로그인 유저가 수신한 알림중 읽지 않은 모든 알림을 읽음 처리하는 API 입니다.",
         responses={
             200: {"type": "object", "example": {"detail": "모든 알림 읽음처리에 성공하였습니다."}},
@@ -34,7 +34,7 @@ class NotificationReadView(APIView):
     permission_classes = [AllowAny]  # 유저 구현되기 전 AllowAny로 지정
 
     @extend_schema(
-        tags=["notification"],
+        tags=["Notification"],
         summary="로그인 유저가 수신한 특정 알림을 읽음 처리하는 API 입니다.",
         responses={
             200: {"type": "object", "example": {"detail": "알림 읽음처리에 성공하였습니다."}},

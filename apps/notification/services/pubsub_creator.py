@@ -53,7 +53,7 @@ class RedisPubSubService:
         channels = []
         if user_id:
             channels.append(self.get_user_channel(user_id))
-        # 복수의 그룹도 처리할 수 있게끔 수정
+        # 복수의 그룹도 처리할 수 있게끔 수정 todo 추후 Task 및 'group_ids' 체크사항
         if group_ids:
             for gid in group_ids:
                 channels.append(self.get_group_channel(gid))

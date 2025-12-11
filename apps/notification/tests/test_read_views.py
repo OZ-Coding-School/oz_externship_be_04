@@ -75,5 +75,3 @@ class NotificationReadAPITestCase(APITestCase):
         self.assertIn("알림 읽음처리에 성공하였습니다.", response.data["detail"])
         self.assertEqual(unread_count, 0)
 
-
-# todo 로그인 된 유저만 알림 확인 할 수 있는 테스트 추가 하기
