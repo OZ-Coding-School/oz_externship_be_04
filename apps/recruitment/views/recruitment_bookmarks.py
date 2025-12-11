@@ -152,7 +152,7 @@ class RecruitmentBookmarkListCreateView(APIView):
             200: RecruitmentBookmarkCardSerializer(many=True),
             401: RESPONSE_SCHEMAS["401_UNAUTHORIZED"],
         },
-        tags=["Recruitment Bookmarks"],
+        tags=["Recruitment"],
     )
     def get(self, request: Request) -> Response:
         user = get_authenticated_user(request)
@@ -182,7 +182,7 @@ class RecruitmentBookmarkListCreateView(APIView):
             404: RESPONSE_SCHEMAS["404_NOT_FOUND"],
             409: RESPONSE_SCHEMAS["409_CONFLICT"],
         },
-        tags=["Recruitment Bookmarks"],
+        tags=["Recruitment"],
     )
     @transaction.atomic
     def post(self, request: Request) -> Response:
@@ -221,7 +221,7 @@ class RecruitmentBookmarkDeleteView(APIView):
             403: RESPONSE_SCHEMAS["403_FORBIDDEN"],
             404: RESPONSE_SCHEMAS["404_BOOKMARK_NOT_FOUND"],
         },
-        tags=["Recruitment Bookmarks"],
+        tags=["Recruitment"],
     )
     @transaction.atomic
     def delete(self, request: Request, bookmark_id: int) -> Response:
