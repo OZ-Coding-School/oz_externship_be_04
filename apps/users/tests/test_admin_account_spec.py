@@ -214,7 +214,7 @@ class AdminAccountUpdateTests(AdminAccountBaseTestCase):
 
         url = reverse(self.url_name, kwargs={"account_id": self.normal_user.id})
         payload = {
-            "nickname": "updated_nickname",
+            "nickname": "renickname",
             "name": "변경된 이름",
             "phone_number": "01099999999",
             "gender": "M",
@@ -241,7 +241,7 @@ class AdminAccountUpdateTests(AdminAccountBaseTestCase):
         ]:
             self.assertIn(field, data)
 
-        self.assertEqual(data["nickname"], "updated_nickname")
+        self.assertEqual(data["nickname"], "renickname")
         self.assertEqual(data["name"], "변경된 이름")
         self.assertEqual(data["phone_number"], "01099999999")
         self.assertEqual(data["status"], "inactive")
