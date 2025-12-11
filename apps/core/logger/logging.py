@@ -6,7 +6,8 @@ try:
     from django.conf import settings
 
     ENV = getattr(settings, "ENV", "development")
-    BASE_DIR = Path(settings, "BASE_DIR", Path(__file__).resolve().parent.parent.parent)
+    BASE_DIR = Path(settings.BASE_DIR)
+
 except Exception:
     ENV = "development"
     BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -15,7 +16,7 @@ except Exception:
 def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
 
-    if logger.handlers:
+    if any(isinstance(h, RotatingFileHandler) for h in logger.handlers):
         return logger
 
     log_level = logging.DEBUG if ENV == "development" else logging.INFO
