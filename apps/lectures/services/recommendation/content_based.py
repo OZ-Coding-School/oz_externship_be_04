@@ -3,7 +3,7 @@ import re
 from typing import List, Optional, Tuple
 
 import numpy as np
-import redis
+from django.core.cache import cache
 from dotenv import load_dotenv
 from numpy._typing import NDArray
 from sentence_transformers import SentenceTransformer
@@ -17,25 +17,21 @@ load_dotenv()
 
 logger = get_logger(__name__)
 
-redis_client = redis.Redis(
-    host=os.getenv("REDIS_HOST", "localhost"),
-    port=int(os.getenv("REDIS_PORT", 6379)),
-    db=int(os.getenv("REDIS_DB", 0)),
-)
-
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 STOPWORDS = {"강의", "수업", "소개", "배우기", "공부", "사용법"}
 
-EMBED_TTL = int(os.getenv("EMBED_TTL", 86400))
+EMBED_CACHE_TTL = int(os.getenv("EMBED_CACHE_TTL", 86400))
 EMBED_DIM = int(os.getenv("EMBED_DIM", 384))
 
 
 def lecture_embed_key(lecture_id: int) -> str:
     return f"lecture:embed:{lecture_id}"
 
+
 def user_embed_key(user_id: int) -> str:
     return f"user:embed:{user_id}"
+
 
 def remove_stopwords(text: str) -> str:
     tokens = text.split()
@@ -77,17 +73,7 @@ def build_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float3
 def get_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float32]:
     key = lecture_embed_key(lecture.id)
 
-    cached = None
-    try:
-        cached = redis_client.get(key)
-    except redis.exceptions.ConnectionError:
-        logger.exception(f"Redis 연결 실패: 키 {key} 조회 중 오류 발생")
-    except redis.exceptions.TimeoutError as e:
-        logger.warning(f"Redis 타임아웃: 키 {key} 조회 중 {e} 발생")
-    except redis.exceptions.RedisError as e:
-        logger.warning(f"Redis 일반 오류: 키 {key} 조회 중 {e} 발생")
-
-    if cached:
+    if cached := cache.get(key):
         try:
             arr = np.frombuffer(cached, dtype=np.float32)
             if arr.size == EMBED_DIM:
@@ -100,33 +86,16 @@ def get_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float32]
             logger.warning(f"캐시된 벡터 읽기 중 예상치 못한 오류: 키 {key}, 오류 {e}")
 
     vec = build_lecture_embedding_vector(lecture)
-
-    try:
-        redis_client.set(key, vec.tobytes(), ex=EMBED_TTL)
-    except redis.exceptions.ConnectionError:
-        logger.exception(f"Redis 연결 실패: 키 {key} 저장 중 오류 발생")
-    except redis.exceptions.TimeoutError as e:
-        logger.warning(f"Redis 타임아웃: 키 {key} 저장 중 {e} 발생")
-    except redis.exceptions.RedisError as e:
-        logger.warning(f"Redis 일반 오류: 키 {key} 저장 중 {e} 발생")
-
+    cache.set(key, vec.tobytes(), timeout=EMBED_CACHE_TTL)
     return vec
 
 
-def get_user_embedding_vector(user: User, lecture_vectors: NDArray[np.float32], lecture_ids: List[int]) -> Optional[NDArray[np.float32]]:
+def get_user_embedding_vector(
+    user: User, lecture_vectors: NDArray[np.float32], lecture_ids: List[int]
+) -> Optional[NDArray[np.float32]]:
     key = user_embed_key(user.id)
 
-    cached = None
-    try:
-        cached = redis_client.get(key)
-    except redis.exceptions.ConnectionError:
-        logger.exception(f"Redis 연결 실패: 키 {key} 조회 중 오류 발생")
-    except redis.exceptions.TimeoutError as e:
-        logger.warning(f"Redis 타임아웃: 키 {key} 조회 중 {e} 발생")
-    except redis.exceptions.RedisError as e:
-        logger.warning(f"Redis 일반 오류: 키 {key} 조회 중 {e} 발생")
-
-    if cached:
+    if cached := cache.get(key):
         try:
             arr = np.frombuffer(cached, dtype=np.float32)
             if arr.size == EMBED_DIM:
@@ -142,15 +111,7 @@ def get_user_embedding_vector(user: User, lecture_vectors: NDArray[np.float32], 
     if user_vec is None:
         return None
 
-    try:
-        redis_client.set(key, user_vec.tobytes(), ex=EMBED_TTL)
-    except redis.exceptions.ConnectionError:
-        logger.exception(f"Redis 연결 실패: 키 {key} 저장 중 오류 발생")
-    except redis.exceptions.TimeoutError as e:
-        logger.warning(f"Redis 타임아웃: 키 {key} 저장 중 {e} 발생")
-    except redis.exceptions.RedisError as e:
-        logger.warning(f"Redis 일반 오류: 키 {key} 저장 중 {e} 발생")
-
+    cache.set(key, user_vec.tobytes(), timeout=EMBED_CACHE_TTL)
     return user_vec
 
 
