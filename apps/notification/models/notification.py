@@ -16,7 +16,7 @@ class Notification(TimeStampedModel):
 
     user = models.ForeignKey("users.User", on_delete=models.CASCADE, null=False, related_name="notifications")
     content = models.CharField(max_length=300)
-    type = models.CharField(choices=NotificationType.choices)
+    type = models.CharField(max_length=300, choices=NotificationType.choices)
     is_read = models.BooleanField(default=False)
     back_url_link = models.CharField(max_length=500)
 
