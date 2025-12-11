@@ -227,3 +227,41 @@ class LeaveStudyGroupMeAPIView(APIView):
 
         membership.delete()
         return Response(status=200)
+
+
+# 멤버 추방
+class KickStudyGroupMemberAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="스터디 그룹 멤버 추방",
+        description="리더가 스터디 그룹의 특정 멤버를 추방합니다.",
+        responses={
+            200: DetailResponseSerializer,
+            400: ErrorDetailResponseSerializer,
+            401: ErrorDetailResponseSerializer,
+            403: ErrorDetailResponseSerializer,
+            404: ErrorDetailResponseSerializer,
+        },
+        tags=["StudyGroup"],
+    )
+    def delete(self, request: Request, study_group_id: int, member_id: int) -> Response:
+        member = get_authenticated_user(request)
+        if member is None:
+            return Response({"error_detail": "인증 정보가 올바르지 않습니다."}, status=401)
+
+        current_membership = GroupMember.objects.filter(study_group_id=study_group_id, user_id=member.id).first()
+        if current_membership is None:
+            return Response({"error_detail": "리더만 멤버를 추방할 수 있습니다."}, status=403)
+        if not current_membership.is_leader:
+            return Response({"error_detail": "리더만 멤버를 추방할 수 있습니다."}, status=403)
+
+        target_membership = GroupMember.objects.filter(study_group_id=study_group_id, user_id=member_id).first()
+        if target_membership is None:
+            return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
+
+        if target_membership.is_leader:
+            return Response({"error_detail": "리더는 추방할 수 없습니다."}, status=400)
+
+        target_membership.delete()
+        return Response(status=200)
