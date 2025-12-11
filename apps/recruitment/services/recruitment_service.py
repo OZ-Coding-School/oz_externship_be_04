@@ -221,7 +221,7 @@ class RecruitmentService:
             PermissionDenied: 권한 없음
             ValidationError: 마감된 공고
         """
-        recruitment = get_object_or_404(Recruitment, uuid=uuid)
+        recruitment = get_object_or_404(cls._get_base_queryset(include_attachments=True), uuid=uuid)
         cls._validate_author_permission(recruitment, user)
 
         tags = validated_data.pop("tags", None)
@@ -253,7 +253,7 @@ class RecruitmentService:
     @staticmethod
     def delete_recruitment(uuid: UUID, user: User) -> None:
         """
-        공고 삭제 (Soft Delete)
+        공고 마감 (Soft Delete)
 
         Args:
             uuid: 공고 UUID

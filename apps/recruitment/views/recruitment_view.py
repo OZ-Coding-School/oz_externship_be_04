@@ -259,8 +259,8 @@ class RecruitmentDetailUpdateDeleteView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
     @extend_schema(
-        summary="공고 삭제",
-        description="공고를 삭제합니다. 작성자만 가능합니다.",
+        summary="공고 마감",
+        description="공고를 마감합니다. 작성자만 가능합니다.",
         responses={
             200: {
                 "type": "object",
