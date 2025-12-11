@@ -33,7 +33,7 @@ class ApplicationCreateView(APIView):
     @extend_schema(
         summary="지원서 제출",
         request=ApplicationCreateSerializer,
-        tags=["Application - Applicant"],
+        tags=["Recruitments"],
         responses={
             200: OpenApiResponse(
                 response={
@@ -103,7 +103,7 @@ class MyApplicationListView(APIView):
             OpenApiParameter("page_size", OpenApiTypes.INT, required=False),
         ],
         responses={200: ApplicantApplicationListSerializer(many=True)},
-        tags=["Application - Applicant"],
+        tags=["Recruitments"],
     )
     def get(self, request: Request) -> Response:
 
@@ -139,7 +139,7 @@ class MyApplicationDetailView(APIView):
                 }
             ),
         },
-        tags=["Application - Applicant"],
+        tags=["Recruitments"],
     )
     def get(self, request: Request, application_id: int) -> Response:
 
@@ -167,7 +167,7 @@ class ApplicationCancelView(APIView):
 
     @extend_schema(
         summary="지원 취소",
-        tags=["Application - Applicant"],
+        tags=["Recruitments"],
         responses={
             200: OpenApiResponse(
                 response={
@@ -178,7 +178,7 @@ class ApplicationCancelView(APIView):
             404: OpenApiResponse(
                 response={
                     "type": "object",
-                    "properties": {"error_detail": {"type": "string", "example": "해당 지원내역을 찾을 수 없습니다."}},
+                    "properties": {"error_detail": {"type": "string", "example": "해당 지원 내역을 찾을 수 없습니다."}},
                 }
             ),
             403: OpenApiResponse(
@@ -198,7 +198,7 @@ class ApplicationCancelView(APIView):
 
         if not application:
             return Response(
-                {"error_detail": "해당 지원내역을 찾을 수 없습니다."},
+                {"error_detail": "해당 지원 내역을 찾을 수 없습니다."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -215,7 +215,7 @@ class ApplicationDeleteView(APIView):
 
     @extend_schema(
         summary="지원 내역 삭제",
-        tags=["Application - Applicant"],
+        tags=["Recruitments"],
         responses={
             200: OpenApiResponse(
                 response={
@@ -232,7 +232,7 @@ class ApplicationDeleteView(APIView):
             404: OpenApiResponse(
                 response={
                     "type": "object",
-                    "properties": {"error_detail": {"type": "string", "example": "해당 지원내역을 찾을 수 없습니다."}},
+                    "properties": {"error_detail": {"type": "string", "example": "해당 지원 내역을 찾을 수 없습니다."}},
                 }
             ),
         },
@@ -245,7 +245,7 @@ class ApplicationDeleteView(APIView):
         application = Application.objects.filter(id=application_id).first()
         if not application:
             return Response(
-                {"error_detail": "해당 지원내역을 찾을 수 없습니다."},
+                {"error_detail": "해당 지원 내역을 찾을 수 없습니다."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 

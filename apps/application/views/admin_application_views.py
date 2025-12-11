@@ -44,7 +44,7 @@ class AdminApplicationListView(APIView):
     @extend_schema(
         operation_id="admin_application_list",
         summary="Admin 지원서 목록 조회",
-        tags=["Application - Admin"],
+        tags=["Admin"],
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, required=False, description="지원 상태 필터"),
             OpenApiParameter("search", OpenApiTypes.STR, required=False, description="통합 검색"),
@@ -104,7 +104,7 @@ class AdminApplicationDetailView(APIView):
                 "properties": {"error_detail": {"type": "string", "example": "해당 지원서를 찾을 수 없습니다."}},
             },
         },
-        tags=["Application - Admin"],
+        tags=["Admin"],
     )
     def get(self, request: Request, application_id: str) -> Response:
 
