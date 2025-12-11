@@ -197,3 +197,33 @@ class DelegateLeaderAPIView(APIView):
 
         return Response({"detail": "리더 권한이 위임되었습니다."}, status=200)
 
+
+# 스터디 그룹 나가기
+class LeaveStudyGroupMeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="스터디 그룹 나가기",
+        description="본인이 속한 스터디 그룹에서 나갑니다. 리더는 나갈 수 없습니다.",
+        responses={
+            200: DetailResponseSerializer,
+            400: ErrorDetailResponseSerializer,
+            401: ErrorDetailResponseSerializer,
+            404: ErrorDetailResponseSerializer,
+        },
+        tags=["StudyGroup"],
+    )
+    def delete(self, request: Request, study_group_id: int) -> Response:
+        user = get_authenticated_user(request)
+        if user is None:
+            return Response({"error_detail": "인증 정보가 올바르지 않습니다."}, status=401)
+
+        membership = GroupMember.objects.filter(study_group_id=study_group_id, user_id=user.id).first()
+        if membership is None:
+            return Response({"error_detail": "스터디 그룹을 찾을 수 없습니다."}, status=404)
+
+        if membership.is_leader:
+            return Response({"error_detail": "리더는 스터디 그룹을 나갈 수 없습니다."}, status=400)
+
+        membership.delete()
+        return Response(status=200)
