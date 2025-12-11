@@ -2,26 +2,41 @@ from typing import Any, Dict
 
 from rest_framework import serializers
 
-from apps.lectures.models import LectureBookmark
-from apps.lectures.serializers.bookmark_lecture_serializer import (
-    BookmarkLectureSerializer,
-)
+from apps.lectures.models import CrawledLecture, LectureBookmark
+
+
+class BookmarkLectureSerializer(serializers.ModelSerializer[LectureBookmark]):
+    discounted_price = serializers.IntegerField(
+        source="discount_price",
+        read_only=True,
+    )
+
+    class Meta:
+        model = CrawledLecture
+        fields = [
+            "id",
+            "title",
+            "instructor",
+            "total_class_time",
+            "original_price",
+            "discounted_price",
+            "difficulty",
+            "thumbnail_img_url",
+            "platform",
+            "url_link",
+        ]
+        read_only_fields = fields
 
 
 class LectureBookmarkSerializer(serializers.ModelSerializer[LectureBookmark]):
-
     class Meta:
         model = LectureBookmark
         fields = ["user", "lecture", "created_at", "updated_at"]
         read_only_fields = ["user", "created_at", "updated_at"]
 
 
-class LectureBookmarkListSerializer(serializers.ModelSerializer[LectureBookmark]):
-    class Meta:
-        model = LectureBookmark
-        fields = ["lecture"]
+class LectureBookmarkListSerializer(BookmarkLectureSerializer):
+    def to_representation(self, instance: Any) -> Dict[str, Any]:
 
-    def to_representation(self, instance: LectureBookmark) -> Dict[str, Any]:
         lecture = instance.lecture
-        data = BookmarkLectureSerializer(lecture).data
-        return dict(data)
+        return super().to_representation(lecture)

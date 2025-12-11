@@ -1,6 +1,5 @@
 from django.urls import path
 
-from apps.lectures.views.bookmark_lecture_view import LectureBookmarkIdListAPIView
 from apps.lectures.views.lecture_bookmark_view import (
     LectureBookmarkDestroyAPIView,
     LectureBookmarkListCreateAPIView,
@@ -18,10 +17,5 @@ urlpatterns = [
         "/lecture-bookmarks/<int:bookmark_id>",
         LectureBookmarkDestroyAPIView.as_view(),
         name="lecture-bookmark-destroy",
-    ),
-    path(
-        "/lecture-bookmarks",
-        LectureBookmarkIdListAPIView.as_view(),
-        name="lecture-bookmark-id-list",
     ),
 ]
