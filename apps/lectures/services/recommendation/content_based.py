@@ -1,11 +1,12 @@
+import logging
 import os
 import re
 from typing import List, Optional, Tuple
 
 import numpy as np
+import redis
 from dotenv import load_dotenv
 from numpy._typing import NDArray
-from redis import Redis
 from sentence_transformers import SentenceTransformer
 
 from apps.lectures.models import CrawledLecture
@@ -14,7 +15,18 @@ from apps.users.models import User
 
 load_dotenv()
 
-redis_client = Redis(
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+ch.setFormatter(formatter)
+
+logger.addHandler(ch)
+
+redis_client = redis.Redis(
     host=os.getenv("REDIS_HOST", "localhost"),
     port=int(os.getenv("REDIS_PORT", 6379)),
     db=int(os.getenv("REDIS_DB", 0)),
@@ -72,18 +84,38 @@ def build_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float3
 def get_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float32]:
     key = lecture_embed_key(lecture.id)
 
-    cached = redis_client.get(key)
+    cached = None
+    try:
+        cached = redis_client.get(key)
+    except redis.exceptions.ConnectionError:
+        logger.exception(f"Redis 연결 실패: 키 {key} 조회 중 오류 발생")
+    except redis.exceptions.TimeoutError as e:
+        logger.warning(f"Redis 타임아웃: 키 {key} 조회 중 {e} 발생")
+    except redis.exceptions.RedisError as e:
+        logger.warning(f"Redis 일반 오류: 키 {key} 조회 중 {e} 발생")
+
     if cached:
         try:
             arr = np.frombuffer(cached, dtype=np.float32)
             if arr.size == EMBED_DIM:
                 return arr
-        except Exception:
-            pass
+            else:
+                logger.warning(f"캐시된 벡터 크기 불일치: 키 {key}, 예상 {EMBED_DIM}, 실제 {arr.size}")
+        except ValueError:
+            logger.exception(f"캐시된 벡터 역직렬화 실패: 키 {key}")
+        except Exception as e:
+            logger.warning(f"캐시된 벡터 읽기 중 예상치 못한 오류: 키 {key}, 오류 {e}")
 
     vec = build_lecture_embedding_vector(lecture)
 
-    redis_client.set(key, vec.tobytes(), ex=EMBED_TTL)
+    try:
+        redis_client.set(key, vec.tobytes(), ex=EMBED_TTL)
+    except redis.exceptions.ConnectionError:
+        logger.exception(f"Redis 연결 실패: 키 {key} 저장 중 오류 발생")
+    except redis.exceptions.TimeoutError as e:
+        logger.warning(f"Redis 타임아웃: 키 {key} 저장 중 {e} 발생")
+    except redis.exceptions.RedisError as e:
+        logger.warning(f"Redis 일반 오류: 키 {key} 저장 중 {e} 발생")
 
     return vec
 
