@@ -1,17 +1,35 @@
+import os
 import re
 from typing import List, Optional, Tuple
 
 import numpy as np
+from dotenv import load_dotenv
 from numpy._typing import NDArray
+from redis import Redis
 from sentence_transformers import SentenceTransformer
 
 from apps.lectures.models import CrawledLecture
 from apps.study_groups.models import GroupMember, StudyLecture
 from apps.users.models import User
 
+load_dotenv()
+
+redis_client = Redis(
+    host=os.getenv("REDIS_HOST", "localhost"),
+    port=int(os.getenv("REDIS_PORT", 6379)),
+    db=int(os.getenv("REDIS_DB", 0)),
+)
+
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 STOPWORDS = {"강의", "수업", "소개", "배우기", "공부", "사용법"}
+
+EMBED_TTL = int(os.getenv("EMBED_TTL", 86400))
+EMBED_DIM = int(os.getenv("EMBED_DIM", 384))
+
+
+def lecture_embed_key(lecture_id: int) -> str:
+    return f"lecture:embed:{lecture_id}"
 
 
 def remove_stopwords(text: str) -> str:
@@ -43,12 +61,31 @@ def build_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float3
     text = clean_text(text)
     text = remove_stopwords(text)
 
-    vec: NDArray[np.float32] = embedding_model.encode([text])[0]
+    vec: NDArray[np.float32] = embedding_model.encode([text])[0].astype(np.float32)
 
     norm = np.float32(np.linalg.norm(vec))
     if norm == 0:
         return vec
     return vec / norm
+
+
+def get_lecture_embedding_vector(lecture: CrawledLecture) -> NDArray[np.float32]:
+    key = lecture_embed_key(lecture.id)
+
+    cached = redis_client.get(key)
+    if cached:
+        try:
+            arr = np.frombuffer(cached, dtype=np.float32)
+            if arr.size == EMBED_DIM:
+                return arr
+        except Exception:
+            pass
+
+    vec = build_lecture_embedding_vector(lecture)
+
+    redis_client.set(key, vec.tobytes(), ex=EMBED_TTL)
+
+    return vec
 
 
 def build_user_vector(
@@ -117,7 +154,7 @@ def recommend_lectures(user: User, top_n: int = 3) -> Tuple[List[CrawledLecture]
         return [], "lecture not crawled"
 
     lecture_ids = [lec.id for lec in lectures]
-    lecture_vectors = np.vstack([build_lecture_embedding_vector(lec) for lec in lectures])
+    lecture_vectors = np.vstack([get_lecture_embedding_vector(lec) for lec in lectures])
 
     user_vec = build_user_vector(user, lecture_vectors, lecture_ids)
 
