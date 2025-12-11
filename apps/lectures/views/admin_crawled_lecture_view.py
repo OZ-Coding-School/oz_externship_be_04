@@ -1,19 +1,14 @@
-import random
-from decimal import Decimal
-from typing import cast
-
-from django.db.models import QuerySet
-from django.utils import timezone
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.lectures import models
 from apps.lectures.models import CrawledLecture
 from apps.lectures.serializers.admin_crawled_lecture_serializer import (
     AdminCrawledLectureRetrieveSerializer,
@@ -29,12 +24,12 @@ class AdminLecturePagination(PageNumberPagination):
 
 class AdminCrawledLectureView(APIView):
     serializer_class = AdminCrawledLectureSerializer
-    permission_classes = [AllowAny]  # 추후에 [IsAdminUser]로 수정예정
+    permission_classes = [IsAdminUser]
     pagination_class = AdminLecturePagination
 
     @extend_schema(
         operation_id="v1_admin_crawled_lectures_list",
-        tags=["Admin Crawled Lectures"],
+        tags=["Admin"],
         summary="크롤링한 강의 목록 (관리자)",
         parameters=[
             OpenApiParameter(
@@ -68,24 +63,14 @@ class AdminCrawledLectureView(APIView):
         },
     )
     def get(self, request: Request) -> Response:
-        mock_data = [
-            models.CrawledLecture(
-                id=i,
-                title=f"제목 {i}",
-                instructor=f"강사 {i}",
-                thumbnail_img_url=f"https://example_thumbnail_{i}.com",
-                platform=random.choice([platform[0] for platform in CrawledLecture.PlatformEnum.choices]),
-                url_link=f"https://example_url_{i}.com",
-                created_at=timezone.now(),
-                updated_at=timezone.now(),
-            )
-            for i in range(1, 16)
-        ]
+        search: str | None = request.query_params.get("search")
+        queryset = CrawledLecture.objects.all().order_by("-created_at")
+
+        if search:
+            queryset = queryset.filter(Q(title__icontains=search) | Q(instructor__icontains=search))
 
         paginator = self.pagination_class()
-
-        queryset_like = cast(QuerySet[CrawledLecture], mock_data)
-        paginated_qs = paginator.paginate_queryset(queryset_like, request)
+        paginated_qs = paginator.paginate_queryset(queryset, request)
 
         serializer = self.serializer_class(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
@@ -93,11 +78,11 @@ class AdminCrawledLectureView(APIView):
 
 class AdminCrawledLectureRetrieveView(APIView):
     serializer_class = AdminCrawledLectureRetrieveSerializer
-    permission_classes = [AllowAny]  # 추후에 [IsAdminUser]로 수정예정
+    permission_classes = [IsAdminUser]
 
     @extend_schema(
         operation_id="v1_admin_crawled_lecture_detail",
-        tags=["Admin Crawled Lectures"],
+        tags=["Admin"],
         summary="크롤링한 강의 상세 조회 (관리자)",
         responses={
             200: AdminCrawledLectureRetrieveSerializer(),
@@ -107,23 +92,7 @@ class AdminCrawledLectureRetrieveView(APIView):
         },
     )
     def get(self, request: Request, lecture_id: int) -> Response:
-        mock_data = CrawledLecture(
-            id=lecture_id,
-            title=f"제목 {lecture_id}",
-            instructor=f"강사 {lecture_id}",
-            description=f"목데이터용 강의 설명입니다.",
-            total_class_time=random.randint(1, 60),
-            original_price=random.randint(30000, 200000),
-            discount_price=random.randint(10000, 100000),
-            difficulty=random.choice([difficulty[0] for difficulty in CrawledLecture.DifficultyEnum.choices]),
-            thumbnail_img_url=f"https://example_thumbnail_{lecture_id}.com",
-            average_rating=Decimal(random.randint(100, 500) / 100),
-            platform=random.choice([platform[0] for platform in CrawledLecture.PlatformEnum.choices]),
-            url_link=f"https://example_url_{lecture_id}.com",
-            created_at=timezone.now(),
-            updated_at=timezone.now(),
-        )
-
-        serializer = self.serializer_class(mock_data)
+        lecture = get_object_or_404(CrawledLecture, id=lecture_id)
+        serializer = self.serializer_class(lecture)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
