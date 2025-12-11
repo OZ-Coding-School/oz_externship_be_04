@@ -29,6 +29,7 @@ dependencies = [
     "psycopg2-binary (>=2.9.11,<3.0.0)",
     "httpx[http2] (>=0.28.1,<0.29.0)",
     "scikit-learn (>=1.7.2,<2.0.0)",
+    "sentence-transformers (>=5.1.2,<6.0.0)",
 ]
 
 [tool.poetry.group.dev.dependencies]
