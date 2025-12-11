@@ -1,8 +1,12 @@
 from typing import cast
 
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import permissions
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    extend_schema,
+    inline_serializer,
+)
+from rest_framework import permissions, serializers
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -27,11 +31,18 @@ class ChatRoomMessageListView(APIView):
         tags=["chat"],
         summary="특정 채팅방의 메시지 목록 조회 API",
         parameters=[
-            OpenApiParameter(name="cursor", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY),
-            OpenApiParameter(name="page_size", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
+            OpenApiParameter("cursor", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("page_size", OpenApiTypes.INT, OpenApiParameter.QUERY),
         ],
         responses={
-            200: MessageSerializer(many=True),
+            200: inline_serializer(
+                name="MessageListResponse",
+                fields={
+                    "next": serializers.CharField(allow_null=True),
+                    "previous": serializers.CharField(allow_null=True),
+                    "results": MessageSerializer(many=True),
+                },
+            ),
             401: ErrorResponseSerializer,
             403: ErrorResponseSerializer,
             404: ErrorResponseSerializer,
@@ -45,7 +56,6 @@ class ChatRoomMessageListView(APIView):
         except StudyGroup.DoesNotExist:
             raise NotFound("해당 채팅방을 찾을 수 없습니다.")
 
-        # 그룹 멤버십 검증
         ChatRoomService.validate_member(group, user)
 
         cursor_str = request.query_params.get("cursor")
@@ -88,7 +98,6 @@ class MessageCreateView(APIView):
         except StudyGroup.DoesNotExist:
             raise NotFound("해당 채팅방을 찾을 수 없습니다.")
 
-        # 그룹 멤버십 검증
         ChatRoomService.validate_member(group, user)
 
         serializer = MessageCreateRequestSerializer(data=request.data)
@@ -123,7 +132,6 @@ class MessageDetailView(APIView):
         except Exception:
             raise NotFound("메시지를 찾을 수 없습니다.")
 
-        # 메시지가 속한 그룹의 멤버인지 확인
         try:
             ChatRoomService.validate_member(message.study_group, user)
         except PermissionDenied:

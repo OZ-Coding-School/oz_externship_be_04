@@ -1,7 +1,7 @@
 from typing import cast
 
-from drf_spectacular.utils import extend_schema
-from rest_framework import permissions
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import permissions, serializers
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -24,7 +24,17 @@ class ChatRoomListView(APIView):
     @extend_schema(
         tags=["chat"],
         summary="채팅방 목록 조회 API",
-        responses={200: ChatroomSerializer(many=True), 401: ErrorResponseSerializer},
+        responses={
+            200: inline_serializer(
+                name="ChatRoomListResponse",
+                fields={
+                    "next": serializers.CharField(allow_null=True),
+                    "previous": serializers.CharField(allow_null=True),
+                    "results": ChatroomSerializer(many=True),
+                },
+            ),
+            401: ErrorResponseSerializer,
+        },
     )
     def get(self, request: Request) -> Response:
         user = cast(User, request.user)
@@ -48,7 +58,11 @@ class ChatRoomDetailView(APIView):
     @extend_schema(
         tags=["chat"],
         summary="채팅방 정보 조회 API",
-        responses={200: ChatroomSerializer, 404: ErrorResponseSerializer, 403: ErrorResponseSerializer},
+        responses={
+            200: ChatroomSerializer,
+            404: ErrorResponseSerializer,
+            403: ErrorResponseSerializer,
+        },
     )
     def get(self, request: Request, group_id: int) -> Response:
         user = cast(User, request.user)
