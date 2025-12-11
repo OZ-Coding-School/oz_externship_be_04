@@ -170,4 +170,4 @@ class ApplicantApplicationAPITestCase(APITestCase):
         response = self.client.post(url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data["error_detail"], "해당 지원내역을 찾을 수 없습니다.")
+        self.assertEqual(response.data["error_detail"], "해당 지원 내역을 찾을 수 없습니다.")
