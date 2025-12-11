@@ -1,7 +1,5 @@
-from datetime import date, datetime, timezone
 from typing import Any
 
-from django.http import Http404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -15,13 +13,20 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.users.models import User
-from apps.users.serializers.admin_account import (
+from apps.core.pagination import Pageable
+from apps.users.serializers.admin_serializers import (
     AdminAccountDetailReadSerializer,
     AdminAccountDetailSerializer,
     AdminAccountRoleUpdateSerializer,
     AdminAccountSerializer,
     AdminAccountUpdateSerializer,
+)
+from apps.users.services.admin_services import (
+    delete_admin_account,
+    get_admin_account_detail,
+    get_admin_account_list,
+    update_admin_account,
+    update_admin_account_role,
 )
 from apps.users.utils.permissions import StaffOrSuperUser, SuperUserOnly
 
@@ -60,7 +65,7 @@ AdminAccountRoleUpdateSuccessSerializer = inline_serializer(
 
 class AdminAccountListSpec(APIView):
     """
-    Spec API 어드민 페이지 회원 목록 조회 -> mock 데이터입니다.
+    어드민 페이지 회원 목록 조회 APIView
     """
 
     permission_classes = [StaffOrSuperUser]
@@ -68,8 +73,8 @@ class AdminAccountListSpec(APIView):
 
     @extend_schema(
         tags=["Admin"],
-        summary="어드민 페이지 회원 목록 조회 Spec",
-        description="어드민 페이지 회원 목록 조회용 Spec API입니다.",
+        summary="어드민 페이지 회원 목록 조회",
+        description="어드민 페이지 회원 목록 조회용 API입니다.",
         parameters=[
             OpenApiParameter(
                 name="page",
@@ -84,7 +89,7 @@ class AdminAccountListSpec(APIView):
                 description="페이지 당 개수 / 기본값: 10",
             ),
             OpenApiParameter(
-                name="q",
+                name="search",
                 type=OpenApiTypes.STR,
                 location="query",
                 description="검색 (이메일, 닉네임, 이름)",
@@ -100,8 +105,8 @@ class AdminAccountListSpec(APIView):
                 name="status",
                 type=OpenApiTypes.STR,
                 location="query",
-                description="상세 필터 (active, inactive, withdrew)",
-                enum=["active", "inactive", "withdrew"],
+                description="상세 필터 (active, inactive, withdrawal_pending)",
+                enum=["active", "inactive", "withdrawal_pending"],
             ),
         ],
         responses={
@@ -145,98 +150,50 @@ class AdminAccountListSpec(APIView):
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
 
-        user1 = User(
-            id=1,
-            email="user1@example.com",
-            nickname="user1",
-            name="홍승우",
-            birthday=date(2005, 1, 1),
-            is_active=True,
-            is_staff=False,
-            is_superuser=False,
-            phone_number="01012345678",
-            gender="M",
-            profile_img_url="https://example.com/profile/user1.png",
-        )
-        user1.created_at = datetime(2025, 11, 25, 13, 0, tzinfo=timezone.utc)
-        user1.status_value = "active"
-
-        user2 = User(
-            id=2,
-            email="user2@example.com",
-            nickname="user2",
-            name="박이준",
-            birthday=date(2007, 12, 25),
-            is_active=True,
-            is_staff=True,
-            is_superuser=False,
-            phone_number="010111112222",
-            gender="M",
-            profile_img_url="https://example.com/profile/user2.png",
-        )
-        user2.created_at = datetime(2024, 2, 24, 17, 0, tzinfo=timezone.utc)
-        user2.status_value = "active"
-
-        user3 = User(
-            id=3,
-            email="user3@example.com",
-            nickname="user3",
-            name="머대용",
-            birthday=date(2001, 9, 2),
-            is_active=False,
-            is_staff=False,
-            is_superuser=False,
-            phone_number="01033334444",
-            gender="F",
-            profile_img_url="https://example.com/profile/user3.png",
-        )
-        user3.created_at = datetime(2021, 3, 9, 10, 0, tzinfo=timezone.utc)
-        user3.status_value = "withdrew"
-
-        accounts = [user1, user2, user3]
-
         params = request.query_params
 
-        q = params.get("q")
-        """검색 (아메일 or 닉네임 or 이름)"""
-        if q:
-            q_lower = q.lower()
-            accounts = [
-                u
-                for u in accounts
-                if q_lower in u.email.lower() or q_lower in u.nickname.lower() or q_lower in u.name.lower()
-            ]
-
-        role = params.get("role")
-        """권한별 확인 (admin, staff, superuser)"""
-        if role == "admin":
-            accounts = [u for u in accounts if u.is_superuser]
-        elif role == "staff":
-            accounts = [u for u in accounts if u.is_staff and not u.is_superuser]
-        elif role == "user":
-            accounts = [u for u in accounts if not u.is_staff and not u.is_superuser]
+        pageable = Pageable.from_params(
+            page_raw=params.get("page"),
+            size_raw=params.get("page_size"),
+        )
 
         status_param = params.get("status")
-        """회원 상태별 확인 (active, inactive, withdrew)"""
-        if status_param:
-            accounts = [u for u in accounts if u.status_value == status_param]
+        role_param = params.get("role")
+        search = params.get("search")
 
-        paginator = self.pagination_class()
-        page: list[User] | None = paginator.paginate_queryset(
-            accounts,  # type: ignore[arg-type]
-            request,
-            view=self,
+        page = get_admin_account_list(
+            pageable=pageable,
+            status_param=status_param,
+            role_param=role_param,
+            search=search,
         )
-        if page is None:
-            page = []
 
-        serializer = AdminAccountSerializer(page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        serializer = AdminAccountSerializer(page.items, many=True)
+
+        base_url = request.build_absolute_uri(request.path)
+
+        def build_page_url(page_number: int) -> str:
+            query_params = params.copy()
+            query_params["page"] = str(page_number)
+            query_params["page_size"] = str(page.size)
+            return f"{base_url}?{query_params.urlencode()}"
+
+        next_url = build_page_url(page.current_page + 1) if page.has_next else None
+        previous_url = build_page_url(page.current_page - 1) if page.has_prev else None
+
+        response_date = {
+            "count": page.total_count,
+            "next": next_url,
+            "previous": previous_url,
+            "results": serializer.data,
+        }
+
+        return Response(response_date)
 
 
 class AdminAccountDetailSpec(APIView):
     """
-    Spec API 어드민 페이지 회원 정보 상세 조회 -> mock 데이터입니다.
+    어드민 페이지 회원 정보 상세 조회 APIView
     """
 
     permission_classes = [StaffOrSuperUser]
@@ -252,10 +209,10 @@ class AdminAccountDetailSpec(APIView):
 
     @extend_schema(
         tags=["Admin"],
-        summary="어드민 페이지 회원 정보 상세 조회 Spec",
-        description="어드민 페이지 회원 정보 상세 조회용 Spec API입니다.",
+        summary="어드민 페이지 회원 정보 상세 조회",
+        description="어드민 페이지 회원 정보 상세 조회용 API입니다.",
         responses={
-            200: AdminAccountDetailReadSerializer,
+            200: AdminAccountDeleteSuccessSerializer,
             401: AdminAccountUpdateSimpleErrorSerializer,
             403: AdminAccountUpdateSimpleErrorSerializer,
             404: AdminAccountUpdateSimpleErrorSerializer,
@@ -297,36 +254,15 @@ class AdminAccountDetailSpec(APIView):
     )
     def get(self, request: Request, account_id: int, *args: Any, **kwargs: Any) -> Response:
 
-        if account_id != 1:
-            raise Http404
-
-        user = User(
-            id=account_id,
-            email="user1@example.com",
-            nickname="user1",
-            name="홍승우",
-            birthday=date(2005, 1, 1),
-            is_active=True,
-            is_staff=False,
-            is_superuser=False,
-            phone_number="01012345678",
-            gender="M",
-            profile_img_url="https://example.com/profile/user1.png",
-        )
-        user.created_at = datetime(2005, 1, 1, 13, 00, 47, 50525, tzinfo=timezone.utc)
-
+        user = get_admin_account_detail(account_id=account_id)
         serializer = AdminAccountDetailReadSerializer(user)
+
         return Response(serializer.data)
 
     @extend_schema(
         tags=["Admin"],
-        summary="어드민 페이지 회원 정보 수정 Spec",
-        description=(
-            "스태프 및 관리자 권한을 가진 유저는 어드민 페이지 내에서 "
-            "특정 회원에 대한 정보를 수정할 수 있습니다.\n\n"
-            "- 수정 가능 항목: 이름, 성별, 닉네임, 전화번호, 상태, 프로필 이미지\n"
-            "- 회원 정보 상세 조회 모달 내의 '수정하기' 버튼을 통해 호출되는 API입니다."
-        ),
+        summary="어드민 페이지 회원 정보 수정",
+        description="스태프 및 관리자 권한을 가진 유저는 어드민 페이지 내에서 특정 회원 정보를 수정할 수 있습니다.",
         request=AdminAccountUpdateSerializer,
         responses={
             200: AdminAccountDetailSerializer,
@@ -360,7 +296,7 @@ class AdminAccountDetailSpec(APIView):
                 value={
                     "error_detail": {
                         "phone_number": [
-                            "11자리 숫자로 구성해야 합니다.",
+                            "11자리 숫자로 구성된 포멧이어야 합니다.",
                         ]
                     }
                 },
@@ -383,32 +319,22 @@ class AdminAccountDetailSpec(APIView):
             ),
         ],
     )
-    def patch(self, _request: Request, account_id: int, *_args: Any, **_kwargs: Any) -> Response:
-        if account_id != 1:
-            raise Http404
+    def patch(self, request: Request, account_id: int) -> Response:
 
-        user = User(
-            id=account_id,
-            email="user1@example.com",
-            nickname="updated_user1",
-            name="홍승우",
-            birthday=date(2005, 1, 1),
-            is_active=True,
-            is_staff=False,
-            is_superuser=False,
-            phone_number="01099999999",
-            gender="M",
-            profile_img_url="https://example.com/profile/user1.png",
+        serializer_in = AdminAccountUpdateSerializer(data=request.data, partial=True)
+        serializer_in.is_valid(raise_exception=True)
+
+        user = update_admin_account(
+            account_id=account_id,
+            data=serializer_in.validated_data,
         )
-        user.created_at = datetime(2005, 1, 1, 13, 00, 47, 50525, tzinfo=timezone.utc)
-        user.updated_at = datetime(2025, 10, 30, 14, 1, 57, 505250, tzinfo=timezone.utc)
 
-        serializer = AdminAccountDetailSerializer(user)
-        return Response(serializer.data)
+        serializer_out = AdminAccountDetailSerializer(user)
+        return Response(serializer_out.data)
 
     @extend_schema(
         tags=["Admin"],
-        summary="어드민 페이지 회원 정보 삭제 Spec",
+        summary="어드민 페이지 회원 정보 삭제",
         description="관리자 권한을 가진 유저는 어드민 페이지에서 특정 회원 정보를 삭제할 수 있습니다.",
         responses={
             200: AdminAccountDetailSerializer,
@@ -440,12 +366,10 @@ class AdminAccountDetailSpec(APIView):
         ],
     )
     def delete(self, _request: Request, account_id: int) -> Response:
-        if account_id != 1:
-            raise Http404
 
-        return Response(
-            {"detail": f"유저 데이터가 삭제되었습니다. - pk: {account_id}"},
-        )
+        delete_admin_account(account_id=account_id)
+
+        return Response({"detail": f"유저 데이터가 삭제되었습니다. - pk: {account_id}"})
 
 
 class AdminAccountRoleUpdateSpec(APIView):
@@ -454,7 +378,7 @@ class AdminAccountRoleUpdateSpec(APIView):
 
     @extend_schema(
         tags=["Admin"],
-        summary="어드민 페이지 회원 권한 변경 Spec",
+        summary="어드민 페이지 회원 권한 변경",
         description="관리자 권한을 가진 유저는 어드민 페이지에서 특정 유저의 권한을 변경할 수 있습니다.",
         request=AdminAccountRoleUpdateSerializer,
         responses={
@@ -491,7 +415,8 @@ class AdminAccountRoleUpdateSpec(APIView):
         serializer_in = AdminAccountRoleUpdateSerializer(data=request.data)
         serializer_in.is_valid(raise_exception=True)
 
-        if account_id != 1:
-            raise Http404
+        role: str = serializer_in.validated_data["role"]
+
+        update_admin_account_role(account_id=account_id, role=role)
 
         return Response({"detail": "권한이 변경되었습니다."})

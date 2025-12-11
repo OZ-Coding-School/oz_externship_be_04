@@ -50,16 +50,16 @@ class AdminAccountDetailReadSerializer(serializers.ModelSerializer[User]):
         model = User
         fields = [
             "id",
-            "name",
-            "gender",
-            "nickname",
-            "birthday",
-            "phone_number",
             "email",
-            "role",
+            "nickname",
+            "name",
+            "phone_number",
+            "birthday",
+            "gender",
             "status",
-            "created_at",
+            "role",
             "profile_img_url",
+            "created_at",
         ]
 
 
@@ -68,26 +68,22 @@ class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
     어드민 회원 정보 상세 serializer
     """
 
-    role = serializers.CharField(read_only=True)
     status = serializers.CharField(read_only=True)
-    created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = User
         fields = [
             "id",
-            "name",
-            "gender",
-            "nickname",
-            "birthday",
-            "phone_number",
             "email",
-            "role",
+            "nickname",
+            "name",
+            "phone_number",
+            "birthday",
+            "gender",
             "status",
-            "created_at",
-            "updated_at",
             "profile_img_url",
+            "updated_at",
         ]
 
 
@@ -109,12 +105,20 @@ class AdminAccountUpdateSerializer(serializers.Serializer[Any]):
     phone_number = serializers.RegexField(
         regex=r"^\d{11}$",
         required=False,
-        error_messages={"invalid": "11자리 숫자로 구성해야 합니다."},
+        error_messages={"invalid": "11자리 숫자로 구성된 포멧이어야 합니다."},
         help_text="휴대폰 번호(예: 01012349876)",
     )
     birthday = serializers.DateField(required=False, help_text="생년월일 (예: 2001-09-07)")
     gender = serializers.ChoiceField(required=False, choices=[("M", "M"), ("F", "F")], help_text="성별 (M/F 선택)")
-    is_active = serializers.BooleanField(required=False, help_text="계정 활성화 여부")
+    status = serializers.ChoiceField(
+        required=False,
+        choices=[
+            ("active", "active"),
+            ("inactive", "inactive"),
+            ("withdrew", "withdrew"),
+        ],
+        help_text="계정 상태 (active/inactive/withdrew)",
+    )
     profile_img_url = serializers.URLField(required=False, help_text="프로필 이미지 URL")
 
 
