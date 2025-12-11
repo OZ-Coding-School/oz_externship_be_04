@@ -146,3 +146,54 @@ class StudyGroupDestroyAPIView(APIView):
         # 204 -> 삭제이므로 별도 디테일한 응답 필요x NO_CONTENT
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+# 리더 위임
+class DelegateLeaderAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="스터디 그룹 리더 위임",
+        description="스터디 그룹 리더 권한을 특정 멤버에게 위임합니다.",
+        request=DelegateLeaderRequestSerializer,
+        responses={
+            200: DetailResponseSerializer,
+            401: ErrorDetailResponseSerializer,
+            403: ErrorDetailResponseSerializer,
+            404: ErrorDetailResponseSerializer,
+        },
+        tags=["StudyGroup"],
+    )
+    def post(self, request: Request, study_group_id: int) -> Response:
+        user = get_authenticated_user(request)
+        if user is None:
+            return Response({"error_detail": "인증 정보가 올바르지 않습니다."}, status=401)
+
+        current_leader = GroupMember.objects.filter(
+            study_group_id=study_group_id,
+            user_id=user.pk,
+            is_leader=True,
+        ).first()
+
+        if current_leader is None:
+            return Response({"error_detail": "권한이 없습니다."}, status=403)
+
+        serializer = DelegateLeaderRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        target_member_id = serializer.validated_data["target_member_id"]
+
+        target_member = GroupMember.objects.filter(
+            study_group_id=study_group_id,
+            user_id=target_member_id,
+        ).first()
+
+        if target_member is None:
+            return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
+
+        current_leader.is_leader = False
+        current_leader.save(update_fields=["is_leader"])
+
+        target_member.is_leader = True
+        target_member.save(update_fields=["is_leader"])
+
+        return Response({"detail": "리더 권한이 위임되었습니다."}, status=200)
+
