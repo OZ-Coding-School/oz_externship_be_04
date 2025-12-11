@@ -1,14 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from django.db import models
 from django.db.models.enums import TextChoices
 
 from apps.core.models import TimeStampedModel
-
-if TYPE_CHECKING:
-    from apps.lectures.models import Category, CrawledLectureReview
 
 
 class CrawledLecture(TimeStampedModel):
@@ -44,51 +39,3 @@ class CrawledLecture(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"[{self.difficulty}] ({self.instructor}) {self.title}"
-
-    @property
-    def mock_crawled_lecture_categories(self) -> list[Category]:
-        import random
-        from datetime import datetime, timedelta
-
-        tags = [
-            "artificial-intelligence",
-            "Applied-ai",
-            "it-programming",
-            "game-dev-all",
-            "data-science",
-            "it",
-            "hardware",
-            "design",
-        ]
-
-        from apps.lectures.models import Category
-
-        return [
-            Category(
-                id=random.randint(1, 100),
-                name=tag,
-                created_at=(now := datetime(random.randint(2000, 2025), random.randint(1, 12), random.randint(1, 28))),
-                updated_at=now + timedelta(days=random.randint(0, 365)),
-            )
-            for tag in random.sample(tags, 2)
-        ]
-
-    @property
-    def mock_crawled_lecture_reviews(self) -> list[CrawledLectureReview]:
-        import random
-        from datetime import datetime, timedelta
-
-        from apps.lectures.models.crawled_lecture_review import CrawledLectureReview
-
-        return [
-            CrawledLectureReview(
-                id=random.randint(1, 100),
-                lecture=self,
-                external_id=random.randint(1, 100),
-                rating=random.choice([rating[0] for rating in CrawledLectureReview.RatingEnum.choices]),
-                content=f"예시 내용{i}",
-                created_at=(now := datetime(random.randint(2000, 2025), random.randint(1, 12), random.randint(1, 28))),
-                updated_at=now + timedelta(days=random.randint(0, 365)),
-            )
-            for i in range(1, 5)
-        ]
