@@ -116,7 +116,7 @@ class RecruitmentListCreateView(APIView):
             400: RESPONSE_SCHEMAS["400_BAD_REQUEST"],
             404: RESPONSE_SCHEMAS["404_PAGE_NOT_FOUND"],
         },
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     def get(self, request: Request) -> Response:
         queryset = RecruitmentService.get_filtered_recruitments(
@@ -153,7 +153,7 @@ class RecruitmentListCreateView(APIView):
                 "properties": {"error_detail": {"type": "string", "example": "스터디 그룹을 찾을 수 없습니다."}},
             },
         },
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     def post(self, request: Request) -> Response:
         serializer = RecruitmentCreateSerializer(data=request.data)
@@ -192,7 +192,7 @@ class RecruitmentMineView(APIView):
             403: RESPONSE_SCHEMAS["403_FORBIDDEN"],
             404: RESPONSE_SCHEMAS["404_PAGE_NOT_FOUND"],
         },
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     def get(self, request: Request) -> Response:
         queryset = RecruitmentService.get_filtered_recruitments(
@@ -224,7 +224,7 @@ class RecruitmentDetailUpdateDeleteView(APIView):
             200: RecruitmentDetailSerializer,
             404: RESPONSE_SCHEMAS["404_NOT_FOUND"],
         },
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     def get(self, request: Request, recruitments_uuid: UUID) -> Response:
         recruitment = RecruitmentService.get_recruitment_detail(recruitments_uuid)
@@ -244,7 +244,7 @@ class RecruitmentDetailUpdateDeleteView(APIView):
             403: RESPONSE_SCHEMAS["403_FORBIDDEN"],
             404: RESPONSE_SCHEMAS["404_NOT_FOUND"],
         },
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     def patch(self, request: Request, recruitments_uuid: UUID) -> Response:
         serializer = RecruitmentUpdateSerializer(data=request.data, partial=True)
@@ -270,7 +270,7 @@ class RecruitmentDetailUpdateDeleteView(APIView):
             403: RESPONSE_SCHEMAS["403_FORBIDDEN"],
             404: RESPONSE_SCHEMAS["404_NOT_FOUND"],
         },
-        tags=["Recruitments"],
+        tags=["Recruitment"],
     )
     def delete(self, request: Request, recruitments_uuid: UUID) -> Response:
         user = cast(User, request.user)
