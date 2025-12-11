@@ -41,7 +41,7 @@ class CrawledLectureListAPIView(APIView):
 
     @extend_schema_field(dict)
     def get_queryset(self) -> QuerySet[CrawledLecture]:
-        queryset = CrawledLecture.objects.all()
+        queryset = CrawledLecture.objects.prefetch_related("categories", "reviews").all()
 
         filterset = self.filterset_class(data=self.request.GET, queryset=queryset, request=self.request)
         queryset = cast(QuerySet[CrawledLecture], filterset.qs)
