@@ -55,7 +55,7 @@ class AdminRecruitmentListView(APIView):
     @extend_schema(
         operation_id="admin_Recruitment_list",
         summary="Admin 구인 공고 목록 조회",
-        tags=["Recruitment - Admin"],
+        tags=["Admin"],
         parameters=[
             OpenApiParameter("search", OpenApiTypes.STR, required=False, description="구인공고 제목 검색"),
             OpenApiParameter(
@@ -132,7 +132,7 @@ class AdminRecruitmentDetailView(APIView):
                 "properties": {"error_detail": {"type": "string", "example": "해당 공고를 찾을 수 없습니다."}},
             },
         },
-        tags=["Recruitment - Admin"],
+        tags=["Admin"],
     )
     def get(self, request: Request, recruitment_uuid: str) -> Response:
         try:
@@ -149,8 +149,8 @@ class AdminRecruitmentDetailView(APIView):
         return Response(serializer.data, status=200)
 
     @extend_schema(
-        tags=["Recruitment - Admin"],
-        summary="관리자용 스터디 구인공고 삭제",
+        tags=["Admin"],
+        summary="Admin 구인 공고 삭제",
         responses={
             200: {
                 "type": "object",
