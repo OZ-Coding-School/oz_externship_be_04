@@ -1,4 +1,3 @@
-import logging
 import os
 import re
 from typing import List, Optional, Tuple
@@ -9,22 +8,14 @@ from dotenv import load_dotenv
 from numpy._typing import NDArray
 from sentence_transformers import SentenceTransformer
 
+from apps.core.logger.logging import get_logger
 from apps.lectures.models import CrawledLecture
 from apps.study_groups.models import GroupMember, StudyLecture
 from apps.users.models import User
 
 load_dotenv()
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
+logger = get_logger(__name__)
 
 redis_client = redis.Redis(
     host=os.getenv("REDIS_HOST", "localhost"),
