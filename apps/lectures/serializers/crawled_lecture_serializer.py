@@ -9,11 +9,11 @@ from apps.lectures.serializers.crawled_lecture_review_serializer import (
 
 
 class CrawledLectureSerializer(serializers.ModelSerializer[CrawledLecture]):
-    # categories = CategorySerializer(source="lecture_categories.category", many=True, read_only=True) 실기능
-    # reviews = CrawledLectureReviewSerializer(many=True, read_only=True) 실기능
-    categories = CategorySerializer(source="mock_crawled_lecture_categories", many=True, read_only=True)  # mock
     discounted_price = serializers.IntegerField(source="discount_price", read_only=True)
-    reviews = CrawledLectureReviewSerializer(source="mock_crawled_lecture_reviews", many=True, read_only=True)  # mock
+
+    categories = CategorySerializer(many=True, read_only=True)
+    reviews = CrawledLectureReviewSerializer(many=True, read_only=True)
+
     average_rating = serializers.SerializerMethodField()
 
     class Meta:
