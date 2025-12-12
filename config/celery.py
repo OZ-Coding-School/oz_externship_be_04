@@ -11,6 +11,10 @@ os.environ["DISABLE_GSSAPI"] = "true"
 app = Celery("config")
 
 app.config_from_object("django.conf:settings", namespace="CELERY")
+
+app.conf.TASK_ALWAYS_EAGER = True
+app.conf.task_eager_propagates = True
+
 app.autodiscover_tasks()
 
 app.conf.timezone = "Asia/Seoul"
