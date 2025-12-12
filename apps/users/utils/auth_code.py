@@ -1,7 +1,9 @@
 import random
 import uuid
-from apps.core.utils import base62
+
 from django.core.cache import cache
+
+from apps.core.utils import base62
 
 
 class AuthCodeGenerator:
@@ -17,10 +19,11 @@ class AuthCodeGenerator:
         auth_sms_code = random.randint(100000, 999999)
         return auth_sms_code
 
+
 class AuthCodeCache(AuthCodeGenerator):
 
     @classmethod
-    def save(cls,key: str, code: str, expires_time = 300) -> None:
+    def save(cls, key: str, code: str, expires_time: int = 300) -> None:
         cache.set(key, code, expires_time)
 
     @classmethod

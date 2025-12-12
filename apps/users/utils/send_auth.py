@@ -7,27 +7,17 @@ from config.settings.base import DEFAULT_FROM_EMAIL
 
 class SendAuth:
     TEMPLATES = {
-        "signup": {
-            "subject": "회원가입 이메일 인증",
-            "message": "{code}"
-        },
-        "reset_password": {
-            "subject": "비밀번호 재설정 이메일 인증",
-            "message":"{code}"
-        },
-        "restore": {
-            "subject": "계정 복구 이메일 인증",
-            "message": "{code}"
-        }
+        "signup": {"subject": "회원가입 이메일 인증", "message": "{code}"},
+        "reset_password": {"subject": "비밀번호 재설정 이메일 인증", "message": "{code}"},
+        "restore": {"subject": "계정 복구 이메일 인증", "message": "{code}"},
     }
+
     @classmethod
-    def send_email_auth(cls, email: str, auth_type: str) ->Response:
+    def send_email_auth(cls, email: str, auth_type: str) -> Response:
         try:
             template = cls.TEMPLATES.get(auth_type)
             if not template:
-                return Response(
-                    {"error_detail": "잘못된 접근입니다"},
-                            status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error_detail": "잘못된 접근입니다"}, status=status.HTTP_400_BAD_REQUEST)
             code = AuthCodeCache.generate_mail_code(6)
             key = f"email:{auth_type}:{email}"
             AuthCodeCache.save(key, code, expires_time=300)
@@ -37,8 +27,8 @@ class SendAuth:
                 from_email=DEFAULT_FROM_EMAIL,
                 recipient_list=[email],
                 fail_silently=False,
-         )
-            return Response({"detail":"이메일 발송완료"})
+            )
+            return Response({"detail": "이메일 발송완료"})
         except Exception as e:
             return Response({"error_detail": f"이메일 발송실패: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
