@@ -107,39 +107,60 @@ class StudyGroupSerializer(serializers.ModelSerializer[StudyGroup]):
 
 class StudyGroupListSerializer(serializers.ModelSerializer[StudyGroup]):
     lectures = serializers.SerializerMethodField()
-    member_count = serializers.SerializerMethodField()
+    current_headcount = serializers.SerializerMethodField()
     is_leader = serializers.SerializerMethodField()
+    reviews = serializers.SerializerMethodField()
 
     class Meta:
         model = StudyGroup
         fields = [
             "id",
             "name",
-            "member_count",
             "is_leader",
-            "profile_img_url",
             "start_at",
             "end_at",
+            "max_headcount",
+            "current_headcount",
+            "profile_img_url",
             "status",
             "lectures",
+            "reviews",
         ]
 
     def get_lectures(self, obj: StudyGroup) -> list[dict[str, Any]]:
-        return [{"title": sl.lecture.title, "instructor": sl.lecture.instructor} for sl in obj.studylecture_set.all()]
+        return [
+            {"id": sl.lecture.id, "title": sl.lecture.title, "instructor": sl.lecture.instructor}
+            for sl in obj.studylecture_set.all()
+        ]
 
-    def get_member_count(self, obj: StudyGroup) -> str:
-        return f"{obj.groupmember_set.count()} / {obj.max_headcount}"
+    def get_current_headcount(self, obj: StudyGroup) -> int:
+        return obj.groupmember_study_groups.count()
 
     def get_is_leader(self, obj: StudyGroup) -> bool:
         user = self.context["request"].user
         if not user.is_authenticated:
             return False
-        return obj.groupmember_set.filter(user_id=user.id, is_leader=True).exists()
+        return obj.groupmember_study_groups.filter(user_id=user.id, is_leader=True).exists()
+
+    def get_reviews(self, obj: StudyGroup) -> list[dict[str, Any]]:
+        user = self.context["request"].user  # 요청유저 = user 변수 지정
+        rvws = obj.review_study_groups.all()  # review의 스터디그룹 FK 역참조명?? 임시로 set 사용
+
+        return [
+            {
+                "id": rvw.id,
+                "is_mine": (rvw.user_id == user.id) if user.is_authenticated else False,
+                "star_rating": rvw.star_rating,
+                "content": rvw.content,
+            }
+            for rvw in rvws
+        ]
 
 
 class StudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
     lectures = serializers.SerializerMethodField()
     members = serializers.SerializerMethodField()
+    current_headcount = serializers.SerializerMethodField()
 
     class Meta:
         model = StudyGroup
@@ -150,24 +171,30 @@ class StudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
             "profile_img_url",
             "start_at",
             "end_at",
+            "max_headcount",
+            "current_headcount",
             "status",
             "lectures",
             "members",
         ]
 
+    def get_current_headcount(self, obj: StudyGroup) -> int:
+        return obj.groupmember_study_groups.count()
+
     def get_lectures(self, obj: StudyGroup) -> list[dict[str, Any]]:
         return [
             {
-                "thumbnail": sl.lecture.thumbnail_img_url,
+                "id": sl.lecture.id,
                 "title": sl.lecture.title,
+                "thumbnail_img_url": sl.lecture.thumbnail_img_url,
                 "instructor": sl.lecture.instructor,
-                "url": sl.lecture.url_link,
+                "url_lint": sl.lecture.url_link,
             }
             for sl in obj.studylecture_set.all()
         ]
 
     def get_members(self, obj: StudyGroup) -> list[dict[str, Any]]:
-        members = obj.groupmember_set.all().order_by("-is_leader")
+        members = obj.groupmember_study_groups.all().order_by("-is_leader")
         return [{"nickname": m.user_id.nickname, "is_leader": m.is_leader} for m in members]
 
 
