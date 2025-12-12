@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from apps.users.utils.auth_code import AuthCodeCache
 from config.settings.base import DEFAULT_FROM_EMAIL
 
+
 class SendAuth:
     TEMPLATES = {
         "signup": {"subject": "회원가입 이메일 인증", "message": "{code}"},
