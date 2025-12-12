@@ -81,6 +81,8 @@ class ScheduleAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(GroupSchedule.objects.count(), 1)
         self.assertEqual(ScheduleParticipants.objects.count(), 1)
+        self.assertIn("detail", response.data)
+        self.assertEqual(response.data["detail"], "스터디 스케줄 생성에 성공했습니다.")
 
         # 스케줄 목록 조회
 
@@ -98,7 +100,7 @@ class ScheduleAPITest(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["data"]), 1)
+        self.assertEqual(response.data[0]["title"], "조회 테스트")
 
         # 스케줄 상세 조회
 
@@ -116,7 +118,7 @@ class ScheduleAPITest(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["data"]["title"], "상세 테스트")
+        self.assertEqual(response.data["title"], "상세 테스트")
 
         # 스케줄 수정
 
@@ -147,6 +149,7 @@ class ScheduleAPITest(APITestCase):
         schedule.refresh_from_db()
         self.assertEqual(schedule.title, "수정 후")
         self.assertEqual(ScheduleParticipants.objects.count(), 1)
+        self.assertEqual(response.data["title"], "수정 후")
 
         # 스케줄 삭제
 
@@ -163,7 +166,9 @@ class ScheduleAPITest(APITestCase):
         url = f"/api/v1/study-groups/{self.group.id}/schedules/{schedule.id}"
         response = self.client.delete(url)
 
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("detail", response.data)
+        self.assertEqual(response.data["detail"], "스터디 스케줄 삭제에 성공했습니다.")
         self.assertEqual(GroupSchedule.objects.count(), 0)
 
     # 에러 케이스 추가
@@ -183,8 +188,8 @@ class ScheduleAPITest(APITestCase):
         response = self.client.post(url, self.base_payload, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertIn("detail", response.data)
-        self.assertEqual(response.data["detail"], "요청 유저는 이 스터디의 멤버가 아닙니다.")
+        self.assertIn("error_detail", response.data)
+        self.assertEqual(response.data["error_detail"], "권한이 없습니다.")
 
     # 존재하지 않는 스케줄 조회
     def test_detail_schedule_not_found(self) -> None:
@@ -192,8 +197,8 @@ class ScheduleAPITest(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertIn("detail", response.data)
-        self.assertEqual(response.data["detail"], "존재하지 않는 스케줄입니다.")
+        self.assertIn("error_detail", response.data)
+        self.assertEqual(response.data["error_detail"], "스터디 스케줄을 찾을 수 없습니다.")
 
     # 다른 그룹 스케줄 접속 시도
     def test_detail_schedule_forbidden(self) -> None:
@@ -218,7 +223,8 @@ class ScheduleAPITest(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data["detail"], "접근 권한이 없습니다.")
+        self.assertIn("error_detail", response.data)
+        self.assertEqual(response.data["error_detail"], "권한이 없습니다.")
 
     # 잘못된 시간 설정시
     def test_create_schedule_invalid_time(self) -> None:
@@ -229,4 +235,4 @@ class ScheduleAPITest(APITestCase):
         response = self.client.post(self.schedule_create_url, payload, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertTrue("detail" in response.data or "error_detail" in response.data, "시간 설정이 잘못 되었습니다.")
+        self.assertIn("error_detail", response.data)

@@ -95,10 +95,10 @@ class ScheduleView(APIView):
     def post(self, request: Request, group_id: int) -> Response:
         study_group = StudyGroup.objects.filter(id=group_id).first()
         if not study_group:
-            return Response({"detail": "존재하지 않는 스터디 그룹입니다."}, status.HTTP_404_NOT_FOUND)
+            return Response({"error_detail": "스터디 그룹을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
         assert request.user.pk is not None
         if not GroupMember.objects.filter(user_id=request.user.pk, study_group_id=group_id).exists():
-            return Response({"detail": "요청 유저는 이 스터디의 멤버가 아닙니다."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error_detail": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = GroupScheduleSerializer(
             data=request.data,
@@ -112,7 +112,7 @@ class ScheduleView(APIView):
         )
 
         serializer = GroupScheduleSerializer(schedule)
-        return Response({"data": serializer.data}, status=status.HTTP_201_CREATED)
+        return Response({"detail": "스터디 스케줄 생성에 성공했습니다."}, status=status.HTTP_201_CREATED)
 
     # 스케줄 조회
     @extend_schema(
@@ -164,7 +164,7 @@ class ScheduleView(APIView):
     def get(self, request: Request, group_id: int) -> Response:
         schedules = ScheduleService.list_schedules(group_id=group_id)
         serializer = GroupScheduleSerializer(schedules, many=True)
-        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ScheduleDetailView(APIView):
@@ -241,13 +241,13 @@ class ScheduleDetailView(APIView):
     def get(self, request: Request, group_id: int, schedule_id: int) -> Response:
         schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
         if schedule is None:
-            return Response({"detail": "존재하지 않는 스케줄입니다."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error_detail": "스터디 스케줄을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
         if schedule.study_group_id != group_id:
-            return Response({"detail": "접근 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error_detail": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = GroupScheduleSerializer(schedule)
-        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     # 스케줄 수정
     @extend_schema(
@@ -345,10 +345,10 @@ class ScheduleDetailView(APIView):
     def put(self, request: Request, group_id: int, schedule_id: int) -> Response:
         schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
         if schedule is None:
-            return Response({"detail": "존재하지 않는 스케줄입니다."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error_detail": "스터디 스케줄을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
         if schedule.study_group_id != group_id:
-            return Response({"detail": "접근 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error_detail": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = GroupScheduleSerializer(
             schedule,
@@ -363,7 +363,7 @@ class ScheduleDetailView(APIView):
         )
 
         serializer = GroupScheduleSerializer(schedule)
-        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     # 스케줄 삭제
     @extend_schema(
@@ -425,10 +425,10 @@ class ScheduleDetailView(APIView):
     def delete(self, request: Request, group_id: int, schedule_id: int) -> Response:
         schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
         if schedule is None:
-            return Response({"detail": "존재하지 않는 스케줄입니다."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error_detail": "스터디 스케줄을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
         if schedule.study_group_id != group_id:
-            return Response({"detail": "접근 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error_detail": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
         ScheduleService.delete_schedule(schedule=schedule)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({"detail": "스터디 스케줄 삭제에 성공했습니다."}, status=status.HTTP_200_OK)
