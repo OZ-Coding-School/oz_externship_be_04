@@ -5,7 +5,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.study_groups.models import GroupMember, StudyGroup, StudyNote
-from apps.study_groups.serializers import StudyNoteCreateSerializer, StudyNoteListSerializer
+from apps.study_groups.serializers import (
+    StudyNoteCreateSerializer,
+    StudyNoteListSerializer,
+)
 
 
 class NotePagination(PageNumberPagination):

@@ -1,3 +1,4 @@
+from .note import StudyNoteAPIView
 from .study_groups_view import (
     StudyGroupCreateAPIView,
     StudyGroupDestroyAPIView,
@@ -5,13 +6,12 @@ from .study_groups_view import (
     StudyGroupRetrieveAPIView,
     StudyGroupUpdateAPIView,
 )
-from .note import StudyNoteAPIView
 
 __all__ = [
+    "StudyNoteAPIView",
     "StudyGroupCreateAPIView",
     "StudyGroupListAPIView",
     "StudyGroupRetrieveAPIView",
     "StudyGroupUpdateAPIView",
     "StudyGroupDestroyAPIView",
-    "StudyNoteAPIView",
 ]

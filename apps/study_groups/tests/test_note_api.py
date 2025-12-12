@@ -3,7 +3,13 @@ from datetime import datetime, timedelta
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.study_groups.models import GroupMember, StudyGroup, StudyNote, StudyNoteAttachment, StudyNoteImage
+from apps.study_groups.models import (
+    GroupMember,
+    StudyGroup,
+    StudyNote,
+    StudyNoteAttachment,
+    StudyNoteImage,
+)
 from apps.users.models import User
 
 
