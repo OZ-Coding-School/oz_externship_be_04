@@ -1,14 +1,12 @@
 from rest_framework import serializers
 
-from apps.users.models import Withdrawal
+from apps.users.utils.reason_choices import WithdrawalReason
 
 
-class WithdrawalSerializer(serializers.ModelSerializer):  # type: ignore
-    agree_check = serializers.BooleanField(write_only=True)
-
-    class Meta:
-        model = Withdrawal
-        fields = ["reason", "reason_detail", "agree_check"]
+class WithdrawalSerializer(serializers.Serializer):  # type: ignore
+    reason = serializers.ChoiceField(choices=WithdrawalReason.choices)
+    reason_detail = serializers.CharField()
+    agree_check = serializers.BooleanField()
 
     def validate_agree_check(self, value: bool) -> bool:
         if not value:
