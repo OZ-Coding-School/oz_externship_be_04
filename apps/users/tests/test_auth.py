@@ -117,7 +117,6 @@ class test_user_register(APITestCase):
             ("01112345678", "user3", "test3@test.com"),  # 011 하이픈 없음
             ("011-1234-5679", "user4", "test4@test.com"),  # 011 하이픈 포함
         ]
-
         for phone_number, nickname, email in valid_phone_number:
             with self.subTest(phone_number=phone_number):
                 valid_data = self.valid_user_data.copy()
