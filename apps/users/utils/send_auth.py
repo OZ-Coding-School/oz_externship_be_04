@@ -23,7 +23,7 @@ class SendAuth:
     @classmethod
     def send_email_auth(cls, email: str, auth_type: str) ->Response:
         try:
-            template = cls.TEMPLATES[auth_type]
+            template = cls.TEMPLATES.get(auth_type)
             if not template:
                 return Response(
                     {"error_detail": "잘못된 접근입니다"},
