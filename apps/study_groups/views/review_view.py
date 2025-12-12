@@ -1,0 +1,125 @@
+from django.db import IntegrityError
+from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.study_groups.models import GroupMember, StudyGroup, Review
+from apps.study_groups.serializers.review_serializer import ReviewCreateSerializer, ReviewListSerializer
+
+
+class StudyGroupReviewCreateAPIView(APIView):
+    def post(self, request, group_id: int):
+        try:
+            # 인증여부 확인
+            if not request.user.is_authenticated:
+                return Response(
+                    {"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # 스터디 그룹 존재여부 확인
+            try:
+                study_group = StudyGroup.objects.get(id=group_id)
+            except StudyGroup.DoesNotExist:
+                return Response(
+                    {"error_detail": "스터디 그룹을 찾을 수 없습니다."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            # 스터디 그룹 참여여부 확인
+            if not self._has_permission_to_review(request.user, study_group):
+                return Response(
+                    {"error_detail": "권한이 없습니다."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            # 데이터 검증
+            serializer = ReviewCreateSerializer(
+                data=request.data,
+                context={
+                    "request": request,
+                    "study_group": study_group,
+                },
+            )
+
+            if not serializer.is_valid():
+                return Response(
+                    {"error_detail": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # 리뷰 생성
+            try:
+                serializer.save()
+                # 이미 리뷰를 작성한 경우
+            except IntegrityError:
+                return Response(
+                    {"error_detail": {"non_field_errors": ["이미 이 스터디 그룹에 대한 리뷰를 작성했습니다."]}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            return Response(
+                {"detail": "스터디 리뷰 작성에 성공했습니다."},
+                status=status.HTTP_200_OK,
+            )
+
+        except PermissionDenied:
+            return Response(
+                {"error_detail": "권한이 없습니다."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        except Exception:
+            # 공통 500 에러
+            return Response(
+                {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def get(self, request, pk: int):
+        try:
+            # 인증여부 확인
+            if not request.user.is_authenticated:
+                return Response(
+                    {"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # 스터디 그룹 존재여부 확인
+            try:
+                study_group = StudyGroup.objects.get(id=pk)
+            except StudyGroup.DoesNotExist:
+                return Response(
+                    {"error_detail": "스터디 그룹을 찾을 수 없습니다."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            # 스터디 그룹 참여여부 확인
+            if not self._has_permission_to_review(request.user, study_group):
+                return Response(
+                    {"error_detail": "권한이 없습니다."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            # 해당 스터디 그룹의 리뷰 목록 조회
+            reviews = Review.objects.filter(study_group=study_group).order_by("-created_at")
+
+            serializer = ReviewListSerializer(reviews, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except PermissionDenied:
+            return Response(
+                {"error_detail": "권한이 없습니다."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        except Exception:
+            return Response(
+                {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def _has_permission_to_review(self, user, study_group) -> bool:
+        return GroupMember.objects.filter(
+            study_group_id=study_group,
+            user_id=user,
+        ).exists()
