@@ -134,23 +134,6 @@ class WithdrawalCheckView(APITestCase):
             is_active=True,
         )
 
-    # 탈퇴 성공 case
-    # def test_withdrawal_view_success(self) -> None:
-    #     url = "/api/v1/accounts/me"
-    #     self.client.force_authenticate(user=self.user)
-    #     data = {
-    #         "reason": "TOO_DIFFICULT",
-    #         "reason_detail": "view 탈퇴 성공 테스트 입니다.",
-    #         "agree_check": True,
-    #     }
-    #     response = self.client.delete(url, data=data, format="json")
-    #
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     self.user.refresh_from_db()
-    #     self.assertFalse(self.user.is_active)
-    #     self.assertEqual(Withdrawal.objects.count(), 1)
-
-    # 회원 탈퇴 동의 안했을 경우 ( 실패 case )
     def test_withdrawal_view_without_agree_check(self) -> None:
         url = "/api/v1/accounts/me"
         self.client.force_authenticate(user=self.user)
@@ -167,33 +150,3 @@ class WithdrawalCheckView(APITestCase):
         self.assertEqual(Withdrawal.objects.count(), 0)
         self.assertIn("error_detail", response.data)
         self.assertEqual(response.data["error_detail"]["agree_check"][0], "회원 탈퇴에 동의해야 탈퇴 가능합니다.")
-
-    # 이미 탈퇴한 회원이 다시 탈퇴 신청을 할 경우 ( 실패 case )
-    # def test_withdrawal_view_already_active(self) -> None:
-    #     url = "/api/v1/accounts/me"
-    #     self.client.force_authenticate(user=self.user)
-    #     self.user.is_active = False
-    #     self.user.save()
-    #
-    #     data = {
-    #         "reason": "TOO_DIFFICULT",
-    #         "reason_detail": "이미 탈퇴 처리된 유저 실패 테스트 입니다.",
-    #         "agree_check": True,
-    #     }
-    #     response = self.client.delete(url, data=data, format="json")
-    #
-    #     self.assertEqual(response.status_code, status.HTTP_423_LOCKED)
-    #     self.user.refresh_from_db()
-    #     self.assertFalse(self.user.is_active)
-    #     self.assertEqual(Withdrawal.objects.count(), 0)
-    #     self.assertIn("error_detail", response.data)
-    #     self.assertEqual(
-    #         response.data["error_detail"],
-    #         (
-    #             {
-    #                 "non_field_errors": [
-    #                     "이미 탈퇴 처리된 유저 입니다. 다시 로그인 하시면 계정 복구를 진행하실 수 있습니다."
-    #                 ]
-    #             }
-    #         ),
-    #     )
