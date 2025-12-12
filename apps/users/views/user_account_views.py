@@ -133,7 +133,7 @@ class UserAccountView(APIView):
                 description="탈퇴 사유 (객관식)",
                 required=True,
                 type=str,
-                enum=[choice.value for choice in WithdrawalReason], # type: ignore
+                enum=[choice.value for choice in WithdrawalReason],  # type: ignore
             ),
             OpenApiParameter(
                 name="reason_detail",
