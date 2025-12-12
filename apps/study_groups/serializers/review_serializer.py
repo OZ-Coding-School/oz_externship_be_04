@@ -10,6 +10,7 @@ class StarRatingField(serializers.IntegerField):
             raise serializers.ValidationError("0부터 5까지의 정수만 입력 가능합니다.")
         return value
 
+
 class ReviewCreateSerializer(serializers.Serializer):
     star_rating = StarRatingField(required=True)
     content = serializers.CharField(max_length=300, required=True)
@@ -33,6 +34,7 @@ class ReviewListSerializer(serializers.Serializer):
     content = serializers.CharField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
+
 
 class ReviewUpdateSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)

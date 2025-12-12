@@ -12,33 +12,50 @@ from apps.study_groups.serializers.review_serializer import (
 )
 
 
-class StudyGroupReviewCreateAPIView(APIView):
+class StudyGroupReviewBaseAPIView(APIView):
+    def _error(self, message, http_status):
+        return Response({"error_detail": message}, status=http_status)
+
+    def _has_permission_to_review(self, user, study_group) -> bool:
+        return GroupMember.objects.filter(
+            study_group_id=study_group,
+            user_id=user,
+        ).exists()
+
+    def _auth_and_get_group_or_response(self, request, group_id: int):
+        # 인증여부 확인
+        if not request.user.is_authenticated:
+            return None, self._error(
+                "자격 인증 데이터가 제공되지 않았습니다.",
+                status.HTTP_401_UNAUTHORIZED,
+            )
+
+        # 스터디 그룹 존재여부 확인
+        try:
+            study_group = StudyGroup.objects.get(id=group_id)
+        except StudyGroup.DoesNotExist:
+            return None, self._error(
+                "스터디 그룹을 찾을 수 없습니다.",
+                status.HTTP_404_NOT_FOUND,
+            )
+
+        # 스터디 그룹 참여여부 확인
+        if not self._has_permission_to_review(request.user, study_group):
+            return None, self._error(
+                "소속된 스터디 그룹이 아닙니다.",
+                status.HTTP_403_FORBIDDEN,
+            )
+
+        return study_group, None
+
+
+class StudyGroupReviewCreateAPIView(StudyGroupReviewBaseAPIView):
     def post(self, request, group_id: int):
         try:
-            # 인증여부 확인
-            if not request.user.is_authenticated:
-                return Response(
-                    {"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+            study_group, error_response = self._auth_and_get_group_or_response(request, group_id)
+            if error_response:
+                return error_response
 
-            # 스터디 그룹 존재여부 확인
-            try:
-                study_group = StudyGroup.objects.get(id=group_id)
-            except StudyGroup.DoesNotExist:
-                return Response(
-                    {"error_detail": "스터디 그룹을 찾을 수 없습니다."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-
-            # 스터디 그룹 참여여부 확인
-            if not self._has_permission_to_review(request.user, study_group):
-                return Response(
-                    {"error_detail": "권한이 없습니다."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
-            # 데이터 검증
             serializer = ReviewCreateSerializer(
                 data=request.data,
                 context={
@@ -82,28 +99,9 @@ class StudyGroupReviewCreateAPIView(APIView):
 
     def get(self, request, pk: int):
         try:
-            # 인증여부 확인
-            if not request.user.is_authenticated:
-                return Response(
-                    {"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
-
-            # 스터디 그룹 존재여부 확인
-            try:
-                study_group = StudyGroup.objects.get(id=pk)
-            except StudyGroup.DoesNotExist:
-                return Response(
-                    {"error_detail": "스터디 그룹을 찾을 수 없습니다."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-
-            # 스터디 그룹 참여여부 확인
-            if not self._has_permission_to_review(request.user, study_group):
-                return Response(
-                    {"error_detail": "권한이 없습니다."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+            study_group, error_response = self._auth_and_get_group_or_response(request, pk)
+            if error_response:
+                return error_response
 
             # 해당 스터디 그룹의 리뷰 목록 조회
             reviews = Review.objects.filter(study_group=study_group).order_by("-created_at")
@@ -123,31 +121,12 @@ class StudyGroupReviewCreateAPIView(APIView):
             )
 
 
-class StudyGroupReviewUpdateAPIView(APIView):
-    def put(self, request, group_id: int, review_id: int):
+class StudyGroupReviewUpdateAPIView(StudyGroupReviewBaseAPIView):
+    def patch(self, request, group_id: int, review_id: int):
         try:
-            # 인증여부 확인
-            if not request.user.is_authenticated:
-                return Response(
-                    {"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
-
-            # 스터디 그룹 존재 여부 확인
-            try:
-                study_group = StudyGroup.objects.get(id=group_id)
-            except StudyGroup.DoesNotExist:
-                return Response(
-                    {"error_detail": "스터디 그룹을 찾을 수 없습니다."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-
-            # 스터디 그룹 참여 여부 확인
-            if not self._has_permission_to_review(request.user, study_group):
-                return Response(
-                    {"error_detail": "권한이 없습니다."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+            study_group, error_response = self._auth_and_get_group_or_response(request, group_id)
+            if error_response:
+                return error_response
 
             # 리뷰 존재 여부 확인
             try:
@@ -184,9 +163,3 @@ class StudyGroupReviewUpdateAPIView(APIView):
                 {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-    def _has_permission_to_review(self, user, study_group) -> bool:
-        return GroupMember.objects.filter(
-            study_group_id=study_group,
-            user_id=user,
-        ).exists()
