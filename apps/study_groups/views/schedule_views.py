@@ -1,5 +1,5 @@
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiExample, extend_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -17,11 +17,10 @@ class ScheduleView(APIView):
 
     # 스케줄 생성
     @extend_schema(
-        tags=["Schedules"],
+        tags=["StudyGroups"],
         summary="스케줄 생성",
         description="스터디 그룹에 새로운 스케줄을 생성합니다.",
         request=GroupScheduleSerializer,
-        responses={201: GroupScheduleSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
         examples=[
             OpenApiExample(
                 name="스케줄 생성 예시",
@@ -35,6 +34,63 @@ class ScheduleView(APIView):
                 },
             )
         ],
+        responses={
+            201: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="생성 성공",
+                examples=[
+                    OpenApiExample(
+                        name="201 응답 예시",
+                        value={"detail": "스터디 스케줄 생성에 성공했습니다."},
+                        status_codes=["201"],
+                    )
+                ],
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="잘못된 요청",
+                examples=[
+                    OpenApiExample(
+                        name="400 예시",
+                        value={"error_detail": {"start_date": ["이 필드는 필수항목입니다."]}},
+                        status_codes=["400"],
+                    )
+                ],
+            ),
+            401: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="인증 실패",
+                examples=[
+                    OpenApiExample(
+                        name="401 예시",
+                        value={"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                        status_codes=["401"],
+                    )
+                ],
+            ),
+            403: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="권한 없음",
+                examples=[
+                    OpenApiExample(
+                        name="403 예시",
+                        value={"error_detail": "권한이 없습니다."},
+                        status_codes=["403"],
+                    )
+                ],
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="리소스를 찾을 수 없음",
+                examples=[
+                    OpenApiExample(
+                        name="404 예시",
+                        value={"error_detail": "스터디 그룹을 찾을 수 없습니다."},
+                        status_codes=["404"],
+                    )
+                ],
+            ),
+        },
     )
     def post(self, request: Request, group_id: int) -> Response:
         study_group = StudyGroup.objects.filter(id=group_id).first()
@@ -60,10 +116,50 @@ class ScheduleView(APIView):
 
     # 스케줄 조회
     @extend_schema(
-        tags=["Schedules"],
+        tags=["StudyGroups"],
         summary="스케줄 목록 조회",
         description="스터디 그룹의 전체 스케줄 목록을 조회합니다.",
-        responses={200: GroupScheduleSerializer},
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="요청 성공",
+                examples=[
+                    OpenApiExample(
+                        name="200 예시",
+                        value={
+                            "id": 1,
+                            "title": "파이썬 스터디 1회차",
+                            "session_date": "2025-11-20",
+                            "start_time": "10:00",
+                            "end_time": "11:00",
+                        },
+                        status_codes=["200"],
+                    )
+                ],
+            ),
+            401: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="인증 실패",
+                examples=[
+                    OpenApiExample(
+                        name="401 예시",
+                        value={"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                        status_codes=["401"],
+                    )
+                ],
+            ),
+            403: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="권한 없음",
+                examples=[
+                    OpenApiExample(
+                        name="403 예시",
+                        value={"error_detail": "권한이 없습니다."},
+                        status_codes=["403"],
+                    )
+                ],
+            ),
+        },
     )
     def get(self, request: Request, group_id: int) -> Response:
         schedules = ScheduleService.list_schedules(group_id=group_id)
@@ -76,10 +172,71 @@ class ScheduleDetailView(APIView):
 
     # 스케줄 상세조회
     @extend_schema(
-        tags=["Schedules"],
+        tags=["StudyGroups"],
         summary="스케줄 상세 조회",
         description="특정 스케줄의 상세 정보를 조회합니다.",
-        responses={200: GroupScheduleSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="요청 성공",
+                examples=[
+                    OpenApiExample(
+                        name="200 예시",
+                        value={
+                            "id": 1,
+                            "group_id": 1,
+                            "title": "파이썬 스터디 1회차",
+                            "objective": "파이썬 자료형 마스터하기",
+                            "session_date": "2025-11-20",
+                            "start_time": "10:00",
+                            "end_time": "11:00",
+                            "participants": [
+                                {
+                                    "id": 1,
+                                    "nickname": "testuser",
+                                    "is_leader": True,
+                                    "profile_img_url": "https://example.com/images/users/profiles/image.png",
+                                }
+                            ],
+                        },
+                        status_codes=["200"],
+                    )
+                ],
+            ),
+            401: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="인증 실패",
+                examples=[
+                    OpenApiExample(
+                        name="401 예시",
+                        value={"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                        status_codes=["401"],
+                    )
+                ],
+            ),
+            403: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="권한 없음",
+                examples=[
+                    OpenApiExample(
+                        name="403 예시",
+                        value={"error_detail": "권한이 없습니다."},
+                        status_codes=["403"],
+                    )
+                ],
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="리소스를 찾을 수 없음",
+                examples=[
+                    OpenApiExample(
+                        name="404 예시",
+                        value={"error_detail": "스터디 그룹을 찾을 수 없습니다."},
+                        status_codes=["404"],
+                    )
+                ],
+            ),
+        },
     )
     def get(self, request: Request, group_id: int, schedule_id: int) -> Response:
         schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
@@ -94,14 +251,86 @@ class ScheduleDetailView(APIView):
 
     # 스케줄 수정
     @extend_schema(
-        tags=["Schedules"],
+        tags=["StudyGroups"],
         summary="스케줄 수정",
         description="기존 스케줄의 정보를 수정합니다.",
         request=GroupScheduleSerializer,
-        responses={200: GroupScheduleSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="요청 성공",
+                examples=[
+                    OpenApiExample(
+                        name="200 예시",
+                        value={
+                            "id": 1,
+                            "group_id": 1,
+                            "title": "파이썬 스터디 2회차",
+                            "objective": "파이썬 자료형 마스터하기",
+                            "session_date": "2025-11-20",
+                            "start_time": "10:00",
+                            "end_time": "11:00",
+                            "participants": [
+                                {
+                                    "id": 3,
+                                    "nickname": "testuser3",
+                                    "is_leader": True,
+                                    "profile_img_url": "https://example.com/images/users/profiles/image.png",
+                                }
+                            ],
+                        },
+                        status_codes=["200"],
+                    )
+                ],
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="잘못된 요청",
+                examples=[
+                    OpenApiExample(
+                        name="400 예시",
+                        value={"error_detail": {"start_date": ["이 필드는 필수항목입니다."]}},
+                        status_codes=["400"],
+                    )
+                ],
+            ),
+            401: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="인증 실패",
+                examples=[
+                    OpenApiExample(
+                        name="401 예시",
+                        value={"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                        status_codes=["401"],
+                    )
+                ],
+            ),
+            403: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="권한 없음",
+                examples=[
+                    OpenApiExample(
+                        name="403 예시",
+                        value={"error_detail": "권한이 없습니다."},
+                        status_codes=["403"],
+                    )
+                ],
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="리소스를 찾을 수 없음",
+                examples=[
+                    OpenApiExample(
+                        name="404 예시",
+                        value={"error_detail": "스터디 스케줄을 찾을 수 없습니다."},
+                        status_codes=["404"],
+                    )
+                ],
+            ),
+        },
         examples=[
             OpenApiExample(
-                name="스케줄 수성 예시",
+                name="스케줄 수정 예시",
                 value={
                     "title": "스케줄 제목 수정123",
                     "objective": "설명수정123",
@@ -138,10 +367,60 @@ class ScheduleDetailView(APIView):
 
     # 스케줄 삭제
     @extend_schema(
-        tags=["Schedules"],
+        tags=["StudyGroups"],
         summary="스케줄 삭제",
         description="특정 스케줄을 삭제합니다.",
-        responses={200: OpenApiTypes.OBJECT},
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="요청 성공",
+                examples=[
+                    OpenApiExample(
+                        name="200 예시",
+                        value={"detail": "스터디 스케줄 삭제에 성공했습니다."},
+                        status_codes=["200"],
+                    )
+                ],
+            ),
+            401: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="인증 실패",
+                examples=[
+                    OpenApiExample(
+                        name="401 예시",
+                        value={"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                        status_codes=["401"],
+                    )
+                ],
+            ),
+            403: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="권한 없음",
+                examples=[
+                    OpenApiExample(
+                        name="403 예시",
+                        value={"error_detail": "권한이 없습니다."},
+                        status_codes=["403"],
+                    )
+                ],
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description="리소스를 찾을 수 없음",
+                examples=[
+                    OpenApiExample(
+                        name="404 예시",
+                        value={"error_detail": "스터디 그룹을 찾을 수 없습니다."},
+                        status_codes=["404"],
+                    ),
+                    OpenApiExample(
+                        name="404 예시",
+                        value={"error_detail": "스터디 스케줄을 찾을 수 없습니다."},
+                        status_codes=["404"],
+                    ),
+                ],
+            ),
+        },
     )
     def delete(self, request: Request, group_id: int, schedule_id: int) -> Response:
         schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
