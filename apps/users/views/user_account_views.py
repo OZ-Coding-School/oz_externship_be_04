@@ -11,11 +11,15 @@ from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.users.serializers.mypage_serializers import MyPageSerializer
+from apps.users.serializers.mypage_serializers import (
+    MyPageSerializer,
+    PasswordResetSerializer,
+)
 from apps.users.serializers.withdrawal_serializers import WithdrawalSerializer
 from apps.users.services.mypage_services import (
     account_update_service,
     nickname_check_service,
+    password_reset_service,
 )
 from apps.users.services.withdrawal_services import withdraw_service
 from apps.users.utils.reason_choices import WithdrawalReason
@@ -249,3 +253,53 @@ class NicknameCheckView(APIView):
 
         nickname_check_service(nickname)
         return Response({"detail": "사용가능한 닉네임 입니다."}, status=status.HTTP_200_OK)
+
+
+class UserPasswordResetView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @extend_schema(
+        tags=["Account"],
+        summary="비밀번호 변경",
+        description="현재 로그인 된 유저의 비밀번호를 변경합니다.",
+        request=PasswordResetSerializer,
+        methods=["PATCH"],
+        responses={
+            200: OpenApiTypes.OBJECT,
+            400: OpenApiTypes.OBJECT,
+            401: inline_serializer(
+                name="UnauthorizedError_PW",
+                fields={"error_detail": serializers.CharField(default="자격 인증 데이터가 제공되지 않았습니다.")},
+            ),
+        },
+        examples=[
+            OpenApiExample(
+                response_only=True,
+                name="success_case",
+                summary="변경 성공",
+                value={"detail": "비밀번호 변경 성공."},
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                response_only=True,
+                name="password_mismatch",
+                summary="현재 비밀번호 불일치",
+                value={"error_detail": {"current_password": ["현재 비밀번호가 일치하지 않습니다."]}},
+                status_codes=["400"],
+            ),
+            OpenApiExample(
+                response_only=True,
+                name="new_password_mismatch",
+                summary="새 비밀번호 불일치",
+                value={"error_detail": {"new_password": ["새 비밀번호가 일치하지 않습니다."]}},
+                status_codes=["400"],
+            ),
+        ],
+    )
+    def patch(self, request: Any) -> Response:
+        serializer = PasswordResetSerializer(data=request.data, context={"request": request})
+
+        if serializer.is_valid():
+            password_reset_service(request.user, serializer.validated_data)
+            return Response({"detail": "비밀번호 변경 성공."}, status=status.HTTP_200_OK)
+        return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
