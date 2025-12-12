@@ -56,3 +56,12 @@ class StudyNoteCreateSerializer(serializers.Serializer):
                 file_url=file_url,
                 file_name=file_name,
             )
+
+
+class StudyNoteListSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    author_nickname = serializers.CharField()
+    author_profile_img = serializers.CharField(allow_null=True)
+    created_at = serializers.CharField()
+    thumbnail = serializers.CharField(allow_null=True)
