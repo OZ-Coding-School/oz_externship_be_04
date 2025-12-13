@@ -1,8 +1,8 @@
 from datetime import datetime
-from django.utils import timezone
 from typing import Any
 
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.lectures.models import CrawledLecture

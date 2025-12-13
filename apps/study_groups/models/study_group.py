@@ -62,9 +62,17 @@ class GroupMember(TimeStampedModel):
 
 
 class StudyLecture(TimeStampedModel):
-    lecture = models.ForeignKey("lectures.CrawledLecture", on_delete=models.CASCADE, db_column="lecture_id" ,related_name="studylecture_lectures")
+    lecture = models.ForeignKey(
+        "lectures.CrawledLecture",
+        on_delete=models.CASCADE,
+        db_column="lecture_id",
+        related_name="studylecture_lectures",
+    )
     study_group = models.ForeignKey(
-        "study_groups.StudyGroup", on_delete=models.CASCADE, db_column="study_group_id" ,related_name="studylecture_study_groups"
+        "study_groups.StudyGroup",
+        on_delete=models.CASCADE,
+        db_column="study_group_id",
+        related_name="studylecture_study_groups",
     )
 
     class Meta:
