@@ -91,7 +91,11 @@ class StudyGroupListAPIView(APIView):
     )
     def get(self, request: Request) -> Response:
         status_filter = request.query_params.get("status")
-        queryset: QuerySet[StudyGroup] = StudyGroup.objects.all()
+        #prefetch_related (일괄 조회)
+        queryset: QuerySet[StudyGroup] = StudyGroup.objects.prefetch_related(
+            "studylecture_study_groups",         # lectures 정보
+            "groupmember_study_groups").all()
+
         if status_filter:
             queryset = queryset.filter(status=status_filter)
         serializer = StudyGroupListSerializer(queryset, many=True, context={"request": request})
@@ -109,7 +113,13 @@ class StudyGroupRetrieveAPIView(APIView):
         tags=["StudyGroup"],
     )
     def get(self, request: Request, pk: int) -> Response:
-        study_group = get_object_or_404(StudyGroup, pk=pk)
+        study_group = get_object_or_404(
+            StudyGroup.objects.prefetch_related(
+                'studylecture_study_groups',
+                'groupmember_study_groups',
+            ),
+            pk=pk
+        )
         serializer = StudyGroupDetailSerializer(study_group, context={"request": request})
         return Response(serializer.data)
 

@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.utils import timezone
 from typing import Any
 
 from django.db import transaction
@@ -36,14 +37,14 @@ class StudyGroupSerializer(serializers.ModelSerializer[StudyGroup]):
         ### datetime() vs. timezone.now()
         # https://jongseoung.tistory.com/257
         # 학습 후 택1하여 유지 or 수정할 것
-        if value.date() < datetime.now().date():
+        if value.date() < timezone.now().date():
             raise serializers.ValidationError("스터디 시작일은 오늘 이후여야 합니다.")
         return value
 
     def validate_end_at(self, value: datetime) -> datetime:
         ### datetime() vs. timezone.now()
         # https://jongseoung.tistory.com/257
-        # 학습 후 택1하여 유지 or 수정할 것
+        # timezone.fromisoformat은 존재하지 x -> datetime.fromisoformat 사용
         start_at = self.initial_data.get("start_at")
         if start_at:
             start_date = datetime.fromisoformat(start_at).date()
@@ -130,7 +131,7 @@ class StudyGroupListSerializer(serializers.ModelSerializer[StudyGroup]):
     def get_lectures(self, obj: StudyGroup) -> list[dict[str, Any]]:
         return [
             {"id": sl.lecture.id, "title": sl.lecture.title, "instructor": sl.lecture.instructor}
-            for sl in obj.studylecture_set.all()
+            for sl in obj.studylecture_study_groups.all()
         ]
 
     def get_current_headcount(self, obj: StudyGroup) -> int:
@@ -190,7 +191,7 @@ class StudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
                 "instructor": sl.lecture.instructor,
                 "url_lint": sl.lecture.url_link,
             }
-            for sl in obj.studylecture_set.all()
+            for sl in obj.studylecture_study_groups.all()
         ]
 
     def get_members(self, obj: StudyGroup) -> list[dict[str, Any]]:
