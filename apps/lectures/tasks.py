@@ -1,5 +1,6 @@
 import asyncio
 from typing import Any
+
 from celery import shared_task
 
 from apps.lectures.services.inflearn_sync_service import run_inflearn_sync
