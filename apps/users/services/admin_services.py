@@ -152,5 +152,3 @@ def activate_admin_account(*, account_id: int) -> None:
     user.is_active = True
     withdrawals_qs.delete()
     user.save()
-
-    user.save()
