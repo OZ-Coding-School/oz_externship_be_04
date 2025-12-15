@@ -4,6 +4,7 @@ from apps.users.views.admin_account_views import (
     AdminAccountDetailSpec,
     AdminAccountListSpec,
     AdminAccountRoleUpdateSpec,
+    AdminAccountActivateView,
 )
 
 urlpatterns = [
@@ -22,4 +23,9 @@ urlpatterns = [
         AdminAccountRoleUpdateSpec.as_view(),
         name="admin_account_role_update",
     ),
+    path(
+        "/admin/account/<int:account_id>/activate",
+        AdminAccountActivateView.as_view(),
+        name="admin_account_activate",
+    )
 ]
