@@ -63,6 +63,11 @@ class StudyGroupAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["name"], "detail")
 
+    def test_retrieve_study_group_not_found(self) -> None:
+        response = self.client.get(f"{self.base_url}/9999")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_update_study_group(self) -> None:
         group = StudyGroup.objects.create(**self._make_payload("patch-target"))
         payload = {"introduction": "updated"}
@@ -123,6 +128,12 @@ class StudyGroupAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(StudyGroup.objects.filter(id=group.id).exists())
+
+    def test_delete_study_group_not_found(self) -> None:
+        self.client.force_authenticate(user=self.user)
+        response = self.client.delete(f"{self.base_url}/9999/delete")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_create_study_group_with_lectures(self) -> None:
         """강의 id를 보내면 StudyLecture가 생성된다."""
@@ -197,6 +208,21 @@ class StudyGroupAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("lectures", response.data.get("error_detail", {}))
+
+    def test_list_study_groups_is_leader_flag(self) -> None:
+        """목록에서 is_leader, member_count를 포함한다."""
+        group = StudyGroup.objects.create(**self._make_payload("leader"))
+        # 현재 테스트 유저를 리더로 추가
+        from apps.study_groups.models import GroupMember
+
+        GroupMember.objects.create(study_group_id=group, user_id=self.user, is_leader=True)
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(self.base_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0]["is_leader"], True)
+        self.assertIn("member_count", response.data[0])
 
     def test_serializer_create_with_lectures(self) -> None:
         """시리얼라이저 create도 StudyLecture를 만든다."""

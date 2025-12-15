@@ -104,6 +104,15 @@ class StudyNoteAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_create_note_group_not_found(self) -> None:
+        """없는 그룹이면 404"""
+        self.client.force_authenticate(user=self.user)
+        missing_url = "/api/v1/study-groups/9999/notes"
+
+        response = self.client.post(missing_url, data={"title": "x", "content": "y"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_create_note_blank_fields(self) -> None:
         """제목/내용이 공백이면 400"""
         self.client.force_authenticate(user=self.user)
@@ -209,6 +218,15 @@ class StudyNoteAPITest(APITestCase):
         response = self.client.get(detail_url)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_detail_note_not_found(self) -> None:
+        """없는 노트면 404"""
+        self.client.force_authenticate(user=self.user)
+        url = f"/api/v1/study-groups/{self.study_group.id}/notes/9999"
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_patch_note_success(self) -> None:
         """작성자는 노트를 수정할 수 있다."""
@@ -365,6 +383,18 @@ class StudyNoteSerializerTest(APITestCase):
         serializer = StudyNoteDetailSerializer(instance=note)
 
         self.assertEqual(serializer.data["images"][0], "https://x.com/img.png")
+
+    def test_create_serializer_invalid_images_type(self) -> None:
+        """images가 리스트가 아니면 400"""
+        serializer = StudyNoteCreateSerializer(
+            data={
+                "title": "bad",
+                "content": "c",
+                "images": "not-a-list",
+            }
+        )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("images", serializer.errors)
 
 
 class StudyNoteViewUnitTest(APITestCase):
