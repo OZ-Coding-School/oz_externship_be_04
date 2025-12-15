@@ -91,7 +91,7 @@ class LectureBookmarkListCreateAPIView(APIView):
         return mock_bookmarks
 
     @extend_schema(
-        tags=["lectures"],
+        tags=["Lecture"],
         summary="강의 북마크 목록을 조회하는 API입니다.",
         parameters=[
             OpenApiParameter(
@@ -140,7 +140,7 @@ class LectureBookmarkListCreateAPIView(APIView):
         return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
-        tags=["lectures"],
+        tags=["Lecture"],
         summary="강의 북마크를 등록/취소하는 API입니다.",
         request=LectureBookmarkSerializer,
         responses={
@@ -164,7 +164,7 @@ class LectureBookmarkDestroyAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        tags=["lectures"],
+        tags=["Lecture"],
         summary="강의 북마크를 삭제하는 API입니다.",
         responses={
             200: {"example": {"detail": "북마크를 취소하였습니다."}},
