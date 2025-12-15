@@ -85,7 +85,9 @@ class StudyGroupServiceTest(TestCase):
             "end_at": timezone.now() + timedelta(days=7),
         }
         group = create_study_group(self.leader, payload)
-        self.assertTrue(GroupMember.objects.filter(study_group_id=group, user_id=self.leader, is_leader=True).exists())
+        self.assertTrue(
+            GroupMember.objects.filter(study_group_id=group, user_id=self.leader.id, is_leader=True).exists()
+        )
 
         qs = get_study_group_list(status=None)
         self.assertTrue(qs.filter(id=group.id).exists())
