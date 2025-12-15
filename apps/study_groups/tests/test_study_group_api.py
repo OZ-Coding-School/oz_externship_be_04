@@ -224,6 +224,47 @@ class StudyGroupAPITest(APITestCase):
         self.assertEqual(response.data[0]["is_leader"], True)
         self.assertIn("member_count", response.data[0])
 
+    def test_list_study_groups_no_status_param(self) -> None:
+        """status 파라미터 없이도 목록이 내려온다."""
+        StudyGroup.objects.create(**self._make_payload("nostatus"))
+
+        response = self.client.get(self.base_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_study_group_serializer_end_at_validation(self) -> None:
+        """종료일 5일 미만이면 시리얼라이저가 400을 낸다."""
+        now = timezone.now()
+        serializer = StudyGroupSerializer(
+            data={
+                "name": "s1",
+                "introduction": "i",
+                "max_headcount": 3,
+                "profile_img_url": "https://x.com/g.png",
+                "start_at": now.isoformat(),
+                "end_at": (now + timedelta(days=2)).isoformat(),
+            }
+        )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("end_at", serializer.errors)
+
+    def test_study_group_serializer_past_start(self) -> None:
+        """시작일이 과거면 400"""
+        past = timezone.now() - timedelta(days=1)
+        future = timezone.now() + timedelta(days=6)
+        serializer = StudyGroupSerializer(
+            data={
+                "name": "s2",
+                "introduction": "i2",
+                "max_headcount": 3,
+                "profile_img_url": "https://x.com/g2.png",
+                "start_at": past.isoformat(),
+                "end_at": future.isoformat(),
+            }
+        )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("start_at", serializer.errors)
+
     def test_serializer_create_with_lectures(self) -> None:
         """시리얼라이저 create도 StudyLecture를 만든다."""
         lecture = CrawledLecture.objects.create(

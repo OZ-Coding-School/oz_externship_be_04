@@ -350,6 +350,28 @@ class StudyNoteAPITest(APITestCase):
         note.refresh_from_db()
         self.assertEqual(note.title, "new")
 
+    def test_view_get_forbidden_member(self) -> None:
+        """뷰 레벨에서 멤버가 아니면 403"""
+        factory = APIRequestFactory()
+        request = factory.get(f"/api/v1/study-groups/{self.study_group.id}/notes")
+        force_authenticate(request, user=self.other_user)
+        response = StudyNoteAPIView.as_view()(request, study_group_id=self.study_group.id)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_view_post_returns_fields(self) -> None:
+        """뷰 레벨 post가 응답 필드를 채운다."""
+        factory = APIRequestFactory()
+        payload = {"title": "view", "content": "viewc"}
+        request = factory.post(
+            f"/api/v1/study-groups/{self.study_group.id}/notes",
+            data=payload,
+            content_type="application/json",
+        )
+        force_authenticate(request, user=self.user)
+        response = StudyNoteAPIView.as_view()(request, study_group_id=self.study_group.id)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("ai_summary", response.data)
+
 
 class StudyNoteSerializerTest(APITestCase):
     def setUp(self) -> None:
