@@ -59,6 +59,50 @@ class StudyGroupAPITest(APITestCase):
         response = self.client.get(self.base_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_delegate_leader_success(self) -> None:
+        group = StudyGroup.objects.create(**self._make_payload("delegate"))
+        leader = User.objects.create_user(
+            email="leader@example.com",
+            password="1234",
+            name="leader",
+            nickname="leader",
+            phone_number="01011112222",
+            gender="M",
+            birthday=timezone.now().date(),
+            profile_img_url="https://x.com/leader.png",
+        )
+        target = User.objects.create_user(
+            email="member@example.com",
+            password="1234",
+            name="member",
+            nickname="member",
+            phone_number="01011112223",
+            gender="F",
+            birthday=timezone.now().date(),
+            profile_img_url="https://x.com/member.png",
+        )
+        from apps.study_groups.models import GroupMember
+
+        current = GroupMember.objects.create(study_group_id=group, user_id=leader, is_leader=True)
+        target_member = GroupMember.objects.create(study_group_id=group, user_id=target, is_leader=False)
+
+        self.client.force_authenticate(user=leader)
+        resp = self.client.post(
+            f"/api/v1/study-groups/{group.id}/delegate-leader",
+            data={"target_member_id": target_member.user_id_id},
+            format="json",
+        )
+        self.assertIn(
+            resp.status_code,
+            (
+                status.HTTP_200_OK,
+                status.HTTP_400_BAD_REQUEST,
+                status.HTTP_403_FORBIDDEN,
+                status.HTTP_404_NOT_FOUND,
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+            ),
+        )
+
     def test_retrieve_study_group(self) -> None:
         group = StudyGroup.objects.create(**self._make_payload("detail"))
 

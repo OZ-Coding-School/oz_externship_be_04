@@ -121,6 +121,7 @@ class StudyNoteAPITest(APITestCase):
         response = self.client.post(self.url, data=payload, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("title", response.data.get("error_detail", {}))
 
     def test_list_notes_success(self) -> None:
         """멤버는 목록을 볼 수 있고 썸네일은 첫 이미지다."""
