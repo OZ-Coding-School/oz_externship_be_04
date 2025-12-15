@@ -74,4 +74,3 @@ class NotificationReadAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("알림 읽음처리에 성공하였습니다.", response.data["detail"])
         self.assertEqual(unread_count, 0)
-
