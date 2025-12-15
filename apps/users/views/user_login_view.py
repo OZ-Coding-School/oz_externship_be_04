@@ -1,3 +1,5 @@
+from typing import Any
+
 from drf_spectacular.utils import OpenApiExample, extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
@@ -56,7 +58,7 @@ class LoginView(APIView):
             ),
         },
     )
-    def post(self, request: Request, *args: list, **kwargs: dict) -> Response:
+    def post(self, request: Request, *args: list[Any], **kwargs: dict[str, Any]) -> Response:
         serializer = LoginSerializer(data=request.data)
 
         if not serializer.is_valid():
