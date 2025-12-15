@@ -22,7 +22,7 @@ SORT_MAP = {
 
 def get_admin_application_queryset() -> QuerySet[Application]:
     return Application.objects.select_related("recruitment", "applicant").prefetch_related(
-        "recruitment__study_group__studylecture_set__lecture",
+        "recruitment__study_group__studylecture_study_groups__lecture",
         "recruitment__recruitment_tags__tag",
     )
 
@@ -106,10 +106,9 @@ class AdminApplicationDetailView(APIView):
         },
         tags=["Admin"],
     )
-    def get(self, request: Request, application_id: str) -> Response:
+    def get(self, request: Request, application_id: int) -> Response:
 
-        qs = get_admin_application_queryset()
-        application = qs.filter(id=application_id).first()
+        application = get_admin_application_queryset().filter(id=application_id).first()
 
         if not application:
             return Response(

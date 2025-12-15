@@ -58,7 +58,7 @@ class CrawledLectureListAPIView(APIView):
         return queryset
 
     @extend_schema(
-        tags=["lectures"],
+        tags=["Lecture"],
         summary="크롤링된 강의 목록을 조회하는 API입니다.",
         parameters=[
             OpenApiParameter(

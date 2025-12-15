@@ -70,7 +70,7 @@ class TestAdminApplicationSerializers(TestCase):
         ]
 
         study_group_mock = Mock()
-        study_group_mock.studylecture_set.select_related.return_value = select_related_mock
+        study_group_mock.studylecture_study_groups.select_related.return_value = select_related_mock
 
         tag1 = SimpleNamespace(id=1, name="Python")
         tag2 = SimpleNamespace(id=2, name="Django")
@@ -131,7 +131,7 @@ class TestAdminApplicationSerializers(TestCase):
         ]
 
         sg_mock = Mock()
-        sg_mock.studylecture_set.select_related.return_value = select_related_mock
+        sg_mock.studylecture_study_groups.select_related.return_value = select_related_mock
 
         tag1 = SimpleNamespace(id=1, name="Python")
         tag2 = SimpleNamespace(id=2, name="Django")

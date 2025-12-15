@@ -32,7 +32,7 @@ class RecruitmentInBookmarkSerializer(serializers.Serializer[Any]):
     def get_lectures(self, obj: Recruitment) -> List[Dict[str, Any]]:
         """강의 목록 반환"""
         study_group = obj.study_group
-        lectures = list(study_group.studylecture_set.all())
+        lectures = list(study_group.studylecture_study_groups.all())
         return [
             {
                 "id": sl.lecture.id,

@@ -11,8 +11,10 @@ class Review(TimeStampedModel):
         Two = 2, "2_OUT_OF_5_STARS"
         One = 1, "1_OUT_OF_5_STARS"
 
-    user = models.ForeignKey("users.User", on_delete=models.CASCADE)
-    study_group = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE)
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="review_users")
+    study_group = models.ForeignKey(
+        "study_groups.StudyGroup", on_delete=models.CASCADE, related_name="review_study_groups"
+    )
 
     star_rating = models.IntegerField(choices=StarRating.choices, null=False)
     content = models.CharField(max_length=300, null=False)
