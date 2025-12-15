@@ -49,25 +49,14 @@ class User(TimeStampedModel, PermissionsMixin, AbstractBaseUser):
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
-    lecture_bookmarks = models.ManyToManyField(
-        "lectures.CrawledLecture", through="lectures.LectureBookmark", related_name="lecture_bookmark"
+
+    lecture_bookmarks_middle_table = models.ManyToManyField(
+        "lectures.CrawledLecture", through="lectures.LectureBookmark", related_name="bookmark_by_users"
     )
-    prefer_categories = models.ManyToManyField(
-        "lectures.Category", through="UserPreferCategory", related_name="prefer_categories"
+    prefer_categories_middle_table = models.ManyToManyField(
+        "lectures.Category", through="lectures.UserPreferCategory", related_name="category_by_users"
     )
-    group_members = models.ManyToManyField(
-        "study_groups.StudyGroup", through="study_groups.GroupMember", related_name="group_members"
-    )
-    reviews = models.ManyToManyField("study_groups.Review", through="study_groups.Review", related_name="reviews")
-    study_notes = models.ManyToManyField(
-        "study_groups.StudyNote", through="study_groups.StudyNote", related_name="study_notes"
-    )
-    application = models.ManyToManyField(
-        "application.Application", through="application.Application", related_name="application"
-    )
-    recruitment_bookmarks = models.ManyToManyField(
-        "recruitment.Recruitment", through="recruitment.Recruitment", related_name="recruitment_bookmarks"
-    )
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
     objects = UserManager()
