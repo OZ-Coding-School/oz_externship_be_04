@@ -121,6 +121,5 @@ class StudyNoteDetailSerializer(serializers.ModelSerializer):
 
     def get_attachments(self, obj: StudyNote) -> list[dict]:
         return [
-            {"file_url": attachment.file_url, "file_name": attachment.file_name}
-            for attachment in obj.attachments.all()
+            {"file_url": attachment.file_url, "file_name": attachment.file_name} for attachment in obj.attachments.all()
         ]

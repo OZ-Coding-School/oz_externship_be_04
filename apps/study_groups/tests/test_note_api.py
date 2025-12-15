@@ -69,6 +69,21 @@ class StudyNoteAPITest(APITestCase):
         self.assertEqual(StudyNoteImage.objects.count(), 2)
         self.assertEqual(StudyNoteAttachment.objects.count(), 1)
 
+    def test_create_note_ignores_invalid_attachments(self) -> None:
+        """빈 첨부를 보내면 검증 실패로 400을 돌려준다."""
+        self.client.force_authenticate(user=self.user)
+        payload = {
+            "title": "첨부 없는 노트",
+            "content": "내용",
+            "attachments": [{"file_url": "", "file_name": ""}],
+        }
+
+        response = self.client.post(self.url, data=payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(StudyNote.objects.count(), 0)
+        self.assertIn("attachments", response.data.get("error_detail", {}))
+
     def test_create_note_forbidden_when_not_member(self) -> None:
         """멤버가 아니면 403"""
         self.client.force_authenticate(user=self.other_user)
@@ -165,6 +180,20 @@ class StudyNoteAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_detail_note_unauthenticated(self) -> None:
+        """로그인 없이 상세 조회 시 401"""
+        note = StudyNote.objects.create(
+            study_group=self.study_group,
+            author=self.user,
+            title="비로그인",
+            content="본문",
+        )
+        detail_url = f"/api/v1/study-groups/{self.study_group.id}/notes/{note.id}"
+
+        response = self.client.get(detail_url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_patch_note_success(self) -> None:
         """작성자는 노트를 수정할 수 있다."""
         self.client.force_authenticate(user=self.user)
@@ -205,3 +234,27 @@ class StudyNoteAPITest(APITestCase):
         response = self.client.patch(url, data={"title": "수정"}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_patch_note_clear_images_and_attachments(self) -> None:
+        """이미지/첨부를 빈 배열로 보내면 모두 삭제된다."""
+        self.client.force_authenticate(user=self.user)
+        note = StudyNote.objects.create(
+            study_group=self.study_group,
+            author=self.user,
+            title="초안",
+            content="내용",
+        )
+        StudyNoteImage.objects.create(study_note=note, img_url="https://example.com/old.png")
+        StudyNoteAttachment.objects.create(
+            study_note=note,
+            file_url="https://example.com/old.pdf",
+            file_name="old.pdf",
+        )
+        url = f"/api/v1/study-groups/{self.study_group.id}/notes/{note.id}"
+
+        response = self.client.patch(url, data={"images": [], "attachments": []}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        note.refresh_from_db()
+        self.assertEqual(note.images.count(), 0)
+        self.assertEqual(note.attachments.count(), 0)

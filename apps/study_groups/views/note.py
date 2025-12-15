@@ -131,9 +131,7 @@ class StudyNoteDetailAPIView(APIView):
                 file_url = item.get("file_url")
                 file_name = item.get("file_name")
                 if file_url and file_name:
-                    attachment_objs.append(
-                        StudyNoteAttachment(study_note=note, file_url=file_url, file_name=file_name)
-                    )
+                    attachment_objs.append(StudyNoteAttachment(study_note=note, file_url=file_url, file_name=file_name))
             if attachment_objs:
                 StudyNoteAttachment.objects.bulk_create(attachment_objs)
 
