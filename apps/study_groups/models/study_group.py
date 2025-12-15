@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.db import models
 
 from apps.core.models import TimeStampedModel
@@ -43,8 +45,13 @@ class StudyGroup(TimeStampedModel):
 
 # 그룹 멤버
 class GroupMember(TimeStampedModel):
-    study_group_id = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE, db_column="study_group_id")
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    study_group_id = models.ForeignKey(
+        "study_groups.StudyGroup",
+        on_delete=models.CASCADE,
+        db_column="study_group_id",
+        related_name="groupmember_study_groups",
+    )
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name="groupmember_users")
     is_leader = models.BooleanField(default=False)
 
     class Meta:
@@ -55,8 +62,18 @@ class GroupMember(TimeStampedModel):
 
 
 class StudyLecture(TimeStampedModel):
-    lecture = models.ForeignKey("lectures.CrawledLecture", on_delete=models.CASCADE, db_column="lecture_id")
-    study_group = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE, db_column="study_group_id")
+    lecture = models.ForeignKey(
+        "lectures.CrawledLecture",
+        on_delete=models.CASCADE,
+        db_column="lecture_id",
+        related_name="studylecture_lectures",
+    )
+    study_group = models.ForeignKey(
+        "study_groups.StudyGroup",
+        on_delete=models.CASCADE,
+        db_column="study_group_id",
+        related_name="studylecture_study_groups",
+    )
 
     class Meta:
         db_table = "study_lectures"

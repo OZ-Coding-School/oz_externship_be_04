@@ -103,7 +103,7 @@ class AdminRecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment])
 
     def get_lectures(self, obj: Recruitment) -> Any:
         study_group = obj.study_group
-        study_lectures = study_group.studylecture_set.select_related("lecture").all()
+        study_lectures = study_group.studylecture_study_groups.select_related("lecture").all()
 
         lecture_list = [sl.lecture for sl in study_lectures]
 

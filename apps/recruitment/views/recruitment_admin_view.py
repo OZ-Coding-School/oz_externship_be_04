@@ -33,7 +33,7 @@ def get_admin_recruitment_queryset() -> QuerySet[Recruitment]:
         )
         .select_related("study_group", "author")
         .prefetch_related(
-            "study_group__studylecture_set__lecture",
+            "study_group__studylecture_study_groups__lecture",
             "recruitment_tags__tag",
             "attachments",
             "images",

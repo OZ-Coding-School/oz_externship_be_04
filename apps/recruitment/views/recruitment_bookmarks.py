@@ -99,7 +99,7 @@ def get_bookmark_queryset(user: User, search: Optional[str] = None) -> QuerySet[
         .prefetch_related(
             "recruitment_id__images",
             "recruitment_id__recruitment_tags__tag",
-            "recruitment_id__study_group__studylecture_set__lecture",
+            "recruitment_id__study_group__studylecture_study_groups__lecture",
         )
         .annotate(bookmark_count=Count("recruitment_id__recruitment_bookmarks"))
     )

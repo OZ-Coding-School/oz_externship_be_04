@@ -50,7 +50,7 @@ class RecruitmentService:
             .prefetch_related(
                 "images",
                 "recruitment_tags__tag",
-                "study_group__studylecture_set__lecture",
+                "study_group__studylecture_study_groups__lecture",
             )
             .annotate(bookmark_count=Count("recruitment_bookmarks"))
         )

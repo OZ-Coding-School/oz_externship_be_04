@@ -128,7 +128,7 @@ class AdminRecruitmentDetailSerializer(TimestampSerializerMixin, serializers.Mod
 
     def get_lectures(self, obj: Recruitment) -> Any:
         study_group = obj.study_group
-        study_lectures = study_group.studylecture_set.all()
+        study_lectures = study_group.studylecture_study_groups.all()
         lecture_list = [sl.lecture for sl in study_lectures if sl.lecture is not None]
         return AdminRecruitmentLectureSerializer(lecture_list, many=True).data
 

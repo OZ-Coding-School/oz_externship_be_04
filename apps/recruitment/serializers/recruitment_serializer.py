@@ -48,7 +48,7 @@ class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
     def get_lectures(self, obj: Recruitment) -> List[Dict[str, Any]]:
         """목록용: 최소 정보만 반환 (study_group을 거쳐야 해서 SerializerMethodField 사용)"""
         study_group = obj.study_group
-        lectures: List[StudyLecture] = list(study_group.studylecture_set.select_related("lecture").all())
+        lectures: List[StudyLecture] = list(study_group.studylecture_study_groups.select_related("lecture").all())
         return [
             {
                 "id": sl.lecture.id,
@@ -100,7 +100,7 @@ class RecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
 
     def get_lectures(self, obj: Recruitment) -> List[Dict[str, Any]]:
         study_group = obj.study_group
-        lectures: List[StudyLecture] = list(study_group.studylecture_set.select_related("lecture").all())
+        lectures: List[StudyLecture] = list(study_group.studylecture_study_groups.select_related("lecture").all())
         crawled_lectures: List[CrawledLecture] = [sl.lecture for sl in lectures]
         return list(CrawledLectureSerializer(crawled_lectures, many=True).data)
 
