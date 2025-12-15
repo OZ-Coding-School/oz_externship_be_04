@@ -467,4 +467,4 @@ class AdminAccountActivateView(APIView):
     )
     def patch(self, request: Request, account_id: int) -> Response:
         activate_admin_account(account_id=account_id)
-        return Response({"detail": f"해당 게정이 활성화 되었습니다. - pk: {account_id}"})
+        return Response({"detail": f"해당 계정이 활성화 되었습니다. - pk: {account_id}"})
