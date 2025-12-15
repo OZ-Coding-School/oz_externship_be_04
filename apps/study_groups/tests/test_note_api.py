@@ -148,6 +148,12 @@ class StudyNoteAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_list_notes_unauthenticated(self) -> None:
+        """로그인 없이 목록 조회 시 401"""
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_list_notes_group_not_found(self) -> None:
         """없는 그룹이면 404"""
         self.client.force_authenticate(user=self.user)
@@ -228,6 +234,15 @@ class StudyNoteAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_detail_note_group_not_found(self) -> None:
+        """없는 그룹이면 404"""
+        self.client.force_authenticate(user=self.user)
+        url = "/api/v1/study-groups/9999/notes/1"
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_patch_note_success(self) -> None:
         """작성자는 노트를 수정할 수 있다."""
         self.client.force_authenticate(user=self.user)
@@ -303,6 +318,37 @@ class StudyNoteAPITest(APITestCase):
         response = self.client.patch(url, data={"title": "t"}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_patch_note_unauthenticated(self) -> None:
+        """로그인 없이 수정 시 401"""
+        note = StudyNote.objects.create(
+            study_group=self.study_group,
+            author=self.user,
+            title="unauth",
+            content="c",
+        )
+        url = f"/api/v1/study-groups/{self.study_group.id}/notes/{note.id}"
+
+        response = self.client.patch(url, data={"title": "x"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_patch_note_no_images_attachments(self) -> None:
+        """이미지/첨부 키 없이 제목만 수정"""
+        self.client.force_authenticate(user=self.user)
+        note = StudyNote.objects.create(
+            study_group=self.study_group,
+            author=self.user,
+            title="old",
+            content="old",
+        )
+        url = f"/api/v1/study-groups/{self.study_group.id}/notes/{note.id}"
+
+        response = self.client.patch(url, data={"title": "new"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        note.refresh_from_db()
+        self.assertEqual(note.title, "new")
 
 
 class StudyNoteSerializerTest(APITestCase):
