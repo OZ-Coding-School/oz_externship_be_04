@@ -4,6 +4,7 @@ from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 
+from apps import application, lectures, recruitment, study_groups
 from apps.core.models import TimeStampedModel
 
 if TYPE_CHECKING:
@@ -48,6 +49,14 @@ class User(TimeStampedModel, PermissionsMixin, AbstractBaseUser):
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+
+    lecture_bookmarks_middle_table = models.ManyToManyField(
+        "lectures.CrawledLecture", through="lectures.LectureBookmark", related_name="bookmark_by_users"
+    )
+    prefer_categories_middle_table = models.ManyToManyField(
+        "lectures.Category", through="lectures.UserPreferCategory", related_name="category_by_users"
+    )
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
     objects = UserManager()
