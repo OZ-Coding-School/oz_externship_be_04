@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from django.db import transaction
 from rest_framework import serializers
@@ -6,7 +6,7 @@ from rest_framework import serializers
 from apps.study_groups.models import StudyNote, StudyNoteAttachment, StudyNoteImage
 
 
-class StudyNoteCreateSerializer(serializers.Serializer):
+class StudyNoteCreateSerializer(serializers.Serializer[Dict[str, Any]]):
     """노트 작성 요청용 직렬화기"""
 
     title = serializers.CharField(max_length=255)
@@ -22,10 +22,10 @@ class StudyNoteCreateSerializer(serializers.Serializer):
         required=False,
     )
 
-    def create(self, validated_data: dict) -> StudyNote:
+    def create(self, validated_data: dict[str, Any]) -> StudyNote:  # type: ignore[override]
         # 리스트 데이터는 기본값이 없을 수 있으니 안전하게 꺼낸다.
         images: List[str] = validated_data.pop("images", [])
-        raw_attachments: List[dict] = validated_data.pop("attachments", [])
+        raw_attachments: List[dict[str, str]] = validated_data.pop("attachments", [])
         author = validated_data.pop("author")
         study_group = validated_data.pop("study_group")
 
@@ -47,7 +47,7 @@ class StudyNoteCreateSerializer(serializers.Serializer):
         image_objs = [StudyNoteImage(study_note=note, img_url=url) for url in images]
         StudyNoteImage.objects.bulk_create(image_objs)
 
-    def _create_attachments(self, note: StudyNote, attachments: List[dict]) -> None:
+    def _create_attachments(self, note: StudyNote, attachments: List[dict[str, str]]) -> None:
         if not attachments:
             return
         attachment_objs: List[StudyNoteAttachment] = []
@@ -67,7 +67,7 @@ class StudyNoteCreateSerializer(serializers.Serializer):
             StudyNoteAttachment.objects.bulk_create(attachment_objs)
 
 
-class StudyNoteListSerializer(serializers.ModelSerializer):
+class StudyNoteListSerializer(serializers.ModelSerializer[StudyNote]):
     """노트 목록 응답용 직렬화기"""
 
     author_nickname = serializers.CharField(source="author.nickname")
@@ -91,7 +91,7 @@ class StudyNoteListSerializer(serializers.ModelSerializer):
         return first_image.img_url if first_image else None
 
 
-class StudyNoteDetailSerializer(serializers.ModelSerializer):
+class StudyNoteDetailSerializer(serializers.ModelSerializer[StudyNote]):
     """노트 상세 응답용 직렬화기"""
 
     author_nickname = serializers.CharField(source="author.nickname")
@@ -119,7 +119,7 @@ class StudyNoteDetailSerializer(serializers.ModelSerializer):
     def get_images(self, obj: StudyNote) -> list[str]:
         return [image.img_url for image in obj.images.all()]
 
-    def get_attachments(self, obj: StudyNote) -> list[dict]:
+    def get_attachments(self, obj: StudyNote) -> list[dict[str, str]]:
         return [
             {"file_url": attachment.file_url, "file_name": attachment.file_name} for attachment in obj.attachments.all()
         ]

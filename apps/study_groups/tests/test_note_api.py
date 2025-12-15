@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import cast
 
 from django.utils import timezone
 from rest_framework import status
@@ -218,7 +219,9 @@ class StudyNoteAPITest(APITestCase):
         note.refresh_from_db()
         self.assertEqual(note.title, "수정 제목")
         self.assertEqual(note.images.count(), 1)
-        self.assertEqual(note.attachments.first().file_name, "new.pdf")
+        attachment = cast(StudyNoteAttachment, note.attachments.first())
+        self.assertIsNotNone(attachment)
+        self.assertEqual(attachment.file_name, "new.pdf")
 
     def test_patch_note_forbidden_when_not_author(self) -> None:
         """작성자가 아니면 수정 금지"""

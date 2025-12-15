@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Any
 
 from django.utils import timezone
 from rest_framework import status
@@ -24,7 +25,7 @@ class StudyGroupAPITest(APITestCase):
             is_active=True,
         )
 
-    def _make_payload(self, name: str = "python") -> dict:
+    def _make_payload(self, name: str = "python") -> dict[str, Any]:
         now = timezone.now()
         return {
             "name": name,

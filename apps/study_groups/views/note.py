@@ -1,7 +1,10 @@
+from typing import cast
+
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import permissions, status
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -39,9 +42,10 @@ class StudyNoteAPIView(APIView):
             404: OpenApiResponse(description="스터디 그룹 없음"),
         },
     )
-    def get(self, request, study_group_id: int) -> Response:
+    def get(self, request: Request, study_group_id: int) -> Response:
         study_group = get_object_or_404(StudyGroup, pk=study_group_id)
-        if not GroupMember.objects.filter(study_group_id=study_group, user_id=request.user).exists():
+        user_id = request.user.id or 0
+        if not GroupMember.objects.filter(study_group_id=study_group, user_id=user_id).exists():
             return Response({"detail": "이 스터디 그룹의 멤버만 조회할 수 있습니다."}, status=status.HTTP_403_FORBIDDEN)
 
         queryset = (
@@ -55,15 +59,16 @@ class StudyNoteAPIView(APIView):
         serializer = StudyNoteListSerializer(page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
-    def post(self, request, study_group_id: int) -> Response:
+    def post(self, request: Request, study_group_id: int) -> Response:
         study_group = get_object_or_404(StudyGroup, pk=study_group_id)
-        if not GroupMember.objects.filter(study_group_id=study_group, user_id=request.user).exists():
+        user_id = request.user.id or 0
+        if not GroupMember.objects.filter(study_group_id=study_group, user_id=user_id).exists():
             return Response({"detail": "이 스터디 그룹의 멤버만 작성할 수 있습니다."}, status=status.HTTP_403_FORBIDDEN)
 
         # 중복 검사나 복잡한 로직 없이 바로 저장
         serializer = StudyNoteCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        note = serializer.save(author=request.user, study_group=study_group)
+        note = cast(StudyNote, serializer.save(author=request.user, study_group=study_group))
 
         return Response(
             {
@@ -84,9 +89,10 @@ class StudyNoteDetailAPIView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, study_group_id: int, note_id: int) -> Response:
+    def get(self, request: Request, study_group_id: int, note_id: int) -> Response:
         study_group = get_object_or_404(StudyGroup, pk=study_group_id)
-        if not GroupMember.objects.filter(study_group_id=study_group, user_id=request.user).exists():
+        user_id = request.user.id or 0
+        if not GroupMember.objects.filter(study_group_id=study_group, user_id=user_id).exists():
             return Response({"detail": "이 스터디 그룹의 멤버만 조회할 수 있습니다."}, status=status.HTTP_403_FORBIDDEN)
 
         note = get_object_or_404(
@@ -97,7 +103,7 @@ class StudyNoteDetailAPIView(APIView):
         serializer = StudyNoteDetailSerializer(note)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def patch(self, request, study_group_id: int, note_id: int) -> Response:
+    def patch(self, request: Request, study_group_id: int, note_id: int) -> Response:
         study_group = get_object_or_404(StudyGroup, pk=study_group_id)
         note = get_object_or_404(
             StudyNote.objects.prefetch_related("images", "attachments").select_related("author"),
