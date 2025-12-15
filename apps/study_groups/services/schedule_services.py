@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional
-
+from datetime import datetime
 from django.db import transaction
 
 from apps.study_groups.models import (
@@ -41,7 +41,7 @@ class ScheduleService:
     # 스케줄 조회
 
     @staticmethod
-    def list_schedules(group_id, from_date=None, to_date=None) -> List[GroupSchedule]:
+    def list_schedules(group_id: int, from_date: Optional[datetime] = None, to_date: Optional[datetime] = None) -> List[GroupSchedule]:
         qs = GroupSchedule.objects.filter(study_group_id=group_id)
 
         if from_date:
