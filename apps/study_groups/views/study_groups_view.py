@@ -1,7 +1,6 @@
 from typing import Optional
 
 from django.contrib.auth.models import AnonymousUser
-from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -16,11 +15,19 @@ from apps.study_groups.serializers import (
     DelegateLeaderRequestSerializer,
     DetailResponseSerializer,
     ErrorDetailResponseSerializer,
-)
-from apps.study_groups.serializers.study_group import (
-    StudyGroupDetailSerializer,
     StudyGroupListSerializer,
     StudyGroupSerializer,
+)
+from apps.study_groups.serializers.study_group import StudyGroupDetailSerializer
+from apps.study_groups.services.study_group_service import (
+    create_study_group,
+    delegate_leader,
+    delete_study_group,
+    get_study_group_list,
+    kick_member,
+    leave_study_group,
+    retrieve_study_group,
+    update_study_group,
 )
 from apps.users.models import User as CustomUser
 
@@ -46,20 +53,11 @@ class StudyGroupCreateAPIView(APIView):
     def post(self, request: Request) -> Response:
         user = get_authenticated_user(request)
         if user is None:
-            return Response(
-                {"error_detail": "인증 정보가 올바르지 않습니다."},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+            return Response({"error_detail": "인증 정보가 올바르지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
         serializer = StudyGroupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        study_group = serializer.save()
-
-        GroupMember.objects.create(
-            study_group_id=study_group,
-            user_id=user,
-            is_leader=True,
-        )
+        study_group = create_study_group(user, serializer.validated_data)
         return Response(StudyGroupSerializer(study_group).data, status=status.HTTP_201_CREATED)
 
 
@@ -91,13 +89,7 @@ class StudyGroupListAPIView(APIView):
     )
     def get(self, request: Request) -> Response:
         status_filter = request.query_params.get("status")
-        # prefetch_related (일괄 조회)
-        queryset: QuerySet[StudyGroup] = StudyGroup.objects.prefetch_related(
-            "studylecture_study_groups", "groupmember_study_groups"  # lectures 정보
-        ).all()
-
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
+        queryset = get_study_group_list(status_filter)
         serializer = StudyGroupListSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data)
 
@@ -113,13 +105,7 @@ class StudyGroupRetrieveAPIView(APIView):
         tags=["StudyGroup"],
     )
     def get(self, request: Request, pk: int) -> Response:
-        study_group = get_object_or_404(
-            StudyGroup.objects.prefetch_related(
-                "studylecture_study_groups",
-                "groupmember_study_groups",
-            ),
-            pk=pk,
-        )
+        study_group = retrieve_study_group(pk)
         serializer = StudyGroupDetailSerializer(study_group, context={"request": request})
         return Response(serializer.data)
 
@@ -140,7 +126,7 @@ class StudyGroupUpdateAPIView(APIView):
         study_group = get_object_or_404(StudyGroup, pk=pk)
         serializer = StudyGroupSerializer(study_group, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        study_group = serializer.save()
+        study_group = update_study_group(study_group, serializer.validated_data)
         return Response(StudyGroupSerializer(study_group).data)
 
 
@@ -205,12 +191,7 @@ class DelegateLeaderAPIView(APIView):
         if target_member is None:
             return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
 
-        current_leader.is_leader = False
-        current_leader.save(update_fields=["is_leader"])
-
-        target_member.is_leader = True
-        target_member.save(update_fields=["is_leader"])
-
+        delegate_leader(current_leader, target_member)
         return Response({"detail": "리더 권한이 위임되었습니다."}, status=200)
 
 
@@ -238,10 +219,11 @@ class LeaveStudyGroupMeAPIView(APIView):
         if membership is None:
             return Response({"error_detail": "스터디 그룹을 찾을 수 없습니다."}, status=404)
 
-        if membership.is_leader:
-            return Response({"error_detail": "리더는 스터디 그룹을 나갈 수 없습니다."}, status=400)
+        try:
+            leave_study_group(membership)
+        except ValueError as e:
+            return Response({"error_detail": str(e)}, status=400)
 
-        membership.delete()
         return Response(status=200)
 
 
@@ -266,18 +248,17 @@ class KickStudyGroupMemberAPIView(APIView):
         if member is None:
             return Response({"error_detail": "인증 정보가 올바르지 않습니다."}, status=401)
 
-        current_membership = GroupMember.objects.filter(study_group_id=study_group_id, user_id=member.id).first()
-        if current_membership is None:
+        current_leader = GroupMember.objects.filter(study_group_id=study_group_id, user_id=member.id).first()
+        if not current_leader or not current_leader.is_leader:
             return Response({"error_detail": "리더만 멤버를 추방할 수 있습니다."}, status=403)
-        if not current_membership.is_leader:
-            return Response({"error_detail": "리더만 멤버를 추방할 수 있습니다."}, status=403)
-
-        target_membership = GroupMember.objects.filter(study_group_id=study_group_id, user_id=member_id).first()
-        if target_membership is None:
+        # 멤버십 -> 멤버 / is None -> not (bool)
+        target_member = GroupMember.objects.filter(study_group_id=study_group_id, user_id=member_id).first()
+        if not target_member:
             return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
 
-        if target_membership.is_leader:
-            return Response({"error_detail": "리더는 추방할 수 없습니다."}, status=400)
+        try:
+            kick_member(current_leader, target_member)
+        except ValueError as e:
+            return Response({"error_detail": str(e)}, status=400)
 
-        target_membership.delete()
         return Response(status=200)
