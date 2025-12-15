@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from django.db import IntegrityError
 from drf_spectacular.utils import extend_schema
@@ -112,15 +112,15 @@ class StudyGroupReviewCreateAPIView(StudyGroupReviewBaseAPIView):
         summary="스터디 그룹 리뷰 목록 조회",
         tags=["StudyGroups"],
     )
-    def get(self, request: Request, pk: int) -> Response:
+    def get(self, request: Request, group_id: int) -> Response:
         try:
-            study_group, error_response = self._auth_and_get_group_or_response(request, pk)
+            study_group, error_response = self._auth_and_get_group_or_response(request, group_id)
             if error_response:
                 return error_response
 
             # 해당 스터디 그룹의 리뷰 목록 조회
-            reviews = Review.objects.filter(study_group=study_group).order_by("-created_at")
-            serializer = ReviewSerializer(reviews, many=True)
+            reviews = list(Review.objects.filter(study_group=study_group).order_by("-created_at"))
+            serializer = ReviewSerializer(cast(Any, reviews), many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         except PermissionDenied:
@@ -164,6 +164,11 @@ class StudyGroupReviewUpdateAPIView(StudyGroupReviewBaseAPIView):
 
             # 데이터 검증
             serializer = ReviewUpdateSerializer(instance=review, data=request.data)
+            if not serializer.is_valid():
+                return Response(
+                    {"error_detail": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             # 수정 반영
             serializer.save()  # 내부에서 update 호출

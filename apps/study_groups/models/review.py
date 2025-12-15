@@ -10,7 +10,6 @@ class Review(TimeStampedModel):
         Three = 3, "3_OUT_OF_5_STARS"
         Two = 2, "2_OUT_OF_5_STARS"
         One = 1, "1_OUT_OF_5_STARS"
-        Zero = 0, "0_OUT_OF_5_STARS"
 
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
     study_group = models.ForeignKey("study_groups.StudyGroup", on_delete=models.CASCADE)
