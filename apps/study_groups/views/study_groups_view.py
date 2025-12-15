@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, cast
 
 from django.contrib.auth.models import AnonymousUser
 from django.shortcuts import get_object_or_404
@@ -29,6 +29,7 @@ from apps.study_groups.services.study_group_service import (
     retrieve_study_group,
     update_study_group,
 )
+from apps.users.models import User
 
 
 # 스터디 그룹 만들기
@@ -163,8 +164,7 @@ class DelegateLeaderAPIView(APIView):
         tags=["StudyGroup"],
     )
     def post(self, request: Request, study_group_id: int) -> Response:
-        user = request.user
-        assert user.pk is not None
+        user = cast(User, request.user)
         current_leader = GroupMember.objects.filter(
             study_group_id=study_group_id,
             user_id=user.pk,
@@ -206,8 +206,7 @@ class LeaveStudyGroupMeAPIView(APIView):
         tags=["StudyGroup"],
     )
     def delete(self, request: Request, study_group_id: int) -> Response:
-        user = request.user
-        assert user.pk is not None
+        user = cast(User, request.user)
         membership = GroupMember.objects.filter(study_group_id=study_group_id, user_id=user.id).first()
         if membership is None:
             return Response({"error_detail": "스터디 그룹을 찾을 수 없습니다."}, status=404)
@@ -237,8 +236,7 @@ class KickStudyGroupMemberAPIView(APIView):
         tags=["StudyGroup"],
     )
     def delete(self, request: Request, study_group_id: int, member_id: int) -> Response:
-        user = request.user
-        assert user.pk is not None
+        user = cast(User, request.user)
         current_leader = GroupMember.objects.filter(study_group_id=study_group_id, user_id=user.id).first()
         if not current_leader or not current_leader.is_leader:
             return Response({"error_detail": "리더만 멤버를 추방할 수 있습니다."}, status=403)
