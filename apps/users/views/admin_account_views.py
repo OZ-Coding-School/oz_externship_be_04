@@ -22,6 +22,7 @@ from apps.users.serializers.admin_serializers import (
     AdminAccountUpdateSerializer,
 )
 from apps.users.services.admin_services import (
+    activate_admin_account,
     delete_admin_account,
     get_admin_account_detail,
     get_admin_account_list,
@@ -60,6 +61,10 @@ AdminAccountRoleUpdateSuccessSerializer = inline_serializer(
     fields={
         "detail": serializers.CharField(help_text="권한 변경 성공 메시지"),
     },
+)
+
+AdminAccountActivateSuccessSerializer = inline_serializer(
+    name="AdminAccountActivateSuccess", fields={"detail": serializers.CharField(help_text="복구 성공 메시지")}
 )
 
 
@@ -420,3 +425,46 @@ class AdminAccountRoleUpdateSpec(APIView):
         update_admin_account_role(account_id=account_id, role=role)
 
         return Response({"detail": "권한이 변경되었습니다."})
+
+
+class AdminAccountActivateView(APIView):
+    "inactive인 회원 계정을 복구하는 APIView"
+
+    permission_classes = [StaffOrSuperUser]
+
+    @extend_schema(
+        tags=["Admin"],
+        summary="탈퇴 회원 복구",
+        description="스테프 및 관리자 권한을 가진 유저는 어드민 페이지 내에 탈퇴한 회원의 계정을 복구할 수 있습니다.",
+        responses={
+            200: AdminAccountActivateSuccessSerializer,
+            401: AdminAccountUpdateSimpleErrorSerializer,
+            403: AdminAccountUpdateSimpleErrorSerializer,
+            404: AdminAccountUpdateSimpleErrorSerializer,
+        },
+        examples=[
+            OpenApiExample(
+                name="Success Example",
+                value={"detail": "해당 계정이 활성화 되었습니다. - pk: 1"},
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                name="Unauthorized Example",
+                value={"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                status_codes=["401"],
+            ),
+            OpenApiExample(
+                name="Forbidden Example",
+                value={"error_detail": "권한이 없습니다."},
+                status_codes=["403"],
+            ),
+            OpenApiExample(
+                name="Not found Example",
+                value={"error_detail": "사용자 정보를 찾을 수 없습니다."},
+                status_codes=["404"],
+            ),
+        ],
+    )
+    def patch(self, request: Request, account_id: int) -> Response:
+        activate_admin_account(account_id=account_id)
+        return Response({"detail": f"해당 계정이 활성화 되었습니다. - pk: {account_id}"})

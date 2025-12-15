@@ -133,3 +133,22 @@ def update_admin_account_role(*, account_id: int, role: str) -> None:
         raise ValidationError({"detail": "role 파라미터는 admin, staff, user 중에서 하나여야 합니다."})
 
     user.save()
+
+
+def activate_admin_account(*, account_id: int) -> None:
+    user = User.objects.filter(id=account_id).first()
+    if user is None:
+        raise NotFound("사용자 정보를 찾을 수 없습니다.")
+
+    withdrawals_qs = user.withdrawals.all()
+    withdrawals_exist = withdrawals_qs.exists()
+
+    if not withdrawals_exist:
+        if user.is_active:
+            raise ValidationError({"error_detail": "활성화 상태의 회원은 복구할 수 없습니다."})
+
+        raise ValidationError({"error_detail": "탈퇴 요청이 존재하지 않아 복구할 수 없습니다"})
+
+    user.is_active = True
+    withdrawals_qs.delete()
+    user.save()

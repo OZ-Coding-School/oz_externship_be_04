@@ -1,10 +1,13 @@
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 
 from apps.core.models import TimeStampedModel
+
+if TYPE_CHECKING:
+    from .withdrawal import Withdrawal
 
 
 class UserManager(BaseUserManager["User"]):
@@ -49,6 +52,9 @@ class User(TimeStampedModel, PermissionsMixin, AbstractBaseUser):
     REQUIRED_FIELDS = []
     objects = UserManager()
 
+    if TYPE_CHECKING:
+        withdrawals: models.Manager["Withdrawal"]
+
     def __str__(self) -> str:
         return self.email
 
@@ -75,7 +81,7 @@ class User(TimeStampedModel, PermissionsMixin, AbstractBaseUser):
         if self.is_active:
             return "active"
         if self.withdrawals.exists():
-            return "withdrew"
+            return "inactive"
         return "inactive"
 
     class Meta:
