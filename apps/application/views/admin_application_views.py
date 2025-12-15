@@ -106,10 +106,9 @@ class AdminApplicationDetailView(APIView):
         },
         tags=["Admin"],
     )
-    def get(self, request: Request, application_id: str) -> Response:
+    def get(self, request: Request, application_id: int) -> Response:
 
-        qs = get_admin_application_queryset()
-        application = qs.filter(id=application_id).first()
+        application = get_admin_application_queryset().filter(id=application_id).first()
 
         if not application:
             return Response(

@@ -157,7 +157,7 @@ class MyApplicationDetailView(APIView):
             )
 
         serializer = ApplicantApplicationDetailSerializer(application)
-        return Response(serializer.data, status=200)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ApplicationCancelView(APIView):
