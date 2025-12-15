@@ -122,9 +122,10 @@ def build_user_vector(
 ) -> Optional[NDArray[np.float32]]:
     bookmark_ids = set(user.lecture_bookmarks.values_list("lecture_id", flat=True))
 
-    group_ids = GroupMember.objects.filter(user_id=user.id).values_list("study_group_id", flat=True)
     group_lecture_ids = set(
-        StudyLecture.objects.filter(study_group_id__in=group_ids).values_list("lecture_id", flat=True)
+        StudyLecture.objects.filter(
+            study_group__groupmember_study_groups__user_id=user
+        ).values_list("lecture_id", flat=True)
     )
 
     preferred_cats = user.preferred_categories.values_list("category_id", flat=True)
