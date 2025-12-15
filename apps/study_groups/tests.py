@@ -53,6 +53,7 @@ class StudyGroupCoverageTest(APITestCase):
             end_at=timezone.now() + timedelta(days=7),
             status="ONGOING",
         )
+        self.client.force_authenticate(user=self.user)
         resp = self.client.get("/api/v1/study-groups?status=ONGOING")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
@@ -69,6 +70,7 @@ class StudyGroupCoverageTest(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_group_detail_404(self) -> None:
+        self.client.force_authenticate(user=self.user)
         resp = self.client.get("/api/v1/study-groups/9999")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 

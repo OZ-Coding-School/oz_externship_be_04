@@ -362,7 +362,10 @@ class StudyNoteAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         note.refresh_from_db()
         self.assertEqual(note.images.count(), 1)
-        self.assertEqual(note.images.first().img_url, "https://example.com/new.png")
+        first_image = note.images.first()
+        self.assertIsNotNone(first_image)
+        if first_image:
+            self.assertEqual(first_image.img_url, "https://example.com/new.png")
 
     def test_view_get_forbidden_member(self) -> None:
         """뷰 레벨에서 멤버가 아니면 403"""
