@@ -3,7 +3,7 @@ from typing import cast
 
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIRequestFactory, APITestCase, force_authenticate
 
 from apps.study_groups.models import (
     GroupMember,
@@ -12,6 +12,12 @@ from apps.study_groups.models import (
     StudyNoteAttachment,
     StudyNoteImage,
 )
+from apps.study_groups.serializers import (
+    StudyNoteCreateSerializer,
+    StudyNoteDetailSerializer,
+    StudyNoteListSerializer,
+)
+from apps.study_groups.views import StudyNoteAPIView, StudyNoteDetailAPIView
 from apps.users.models import User
 
 
@@ -261,3 +267,117 @@ class StudyNoteAPITest(APITestCase):
         note.refresh_from_db()
         self.assertEqual(note.images.count(), 0)
         self.assertEqual(note.attachments.count(), 0)
+
+
+class StudyNoteSerializerTest(APITestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email="s1@example.com",
+            password="1234",
+            name="u1",
+            nickname="u1",
+            phone_number="01011112222",
+            gender="M",
+            birthday=datetime.now().date(),
+            profile_img_url="https://x.com/a.png",
+            is_active=True,
+        )
+        self.group = StudyGroup.objects.create(
+            name="g1",
+            introduction="i1",
+            max_headcount=3,
+            profile_img_url="https://x.com/g.png",
+            start_at=timezone.now(),
+            end_at=timezone.now() + timedelta(days=7),
+        )
+
+    def test_create_serializer_creates_related(self) -> None:
+        serializer = StudyNoteCreateSerializer(
+            data={
+                "title": "t1",
+                "content": "c1",
+                "images": ["https://x.com/i.png"],
+                "attachments": [{"file_url": "https://x.com/f.pdf", "file_name": "f.pdf"}],
+            }
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        serializer.save(author=self.user, study_group=self.group)
+
+        self.assertEqual(StudyNote.objects.count(), 1)
+        note = StudyNote.objects.first()
+        self.assertIsNotNone(note)
+        assert note is not None
+        self.assertEqual(note.images.count(), 1)
+        self.assertEqual(note.attachments.count(), 1)
+
+    def test_list_serializer_thumbnail_none(self) -> None:
+        note = StudyNote.objects.create(study_group=self.group, author=self.user, title="t1", content="c1")
+
+        serializer = StudyNoteListSerializer(instance=note)
+
+        self.assertIsNone(serializer.data["thumbnail"])
+
+    def test_detail_serializer_returns_attachments(self) -> None:
+        note = StudyNote.objects.create(study_group=self.group, author=self.user, title="t1", content="c1")
+        StudyNoteAttachment.objects.create(study_note=note, file_url="https://x.com/f.pdf", file_name="f.pdf")
+
+        serializer = StudyNoteDetailSerializer(instance=note)
+
+        self.assertEqual(serializer.data["attachments"][0]["file_name"], "f.pdf")
+
+
+class StudyNoteViewUnitTest(APITestCase):
+    def setUp(self) -> None:
+        self.factory = APIRequestFactory()
+        self.user = User.objects.create_user(
+            email="v1@example.com",
+            password="1234",
+            name="v1",
+            nickname="v1",
+            phone_number="01033334444",
+            gender="M",
+            birthday=datetime.now().date(),
+            profile_img_url="https://x.com/u.png",
+            is_active=True,
+        )
+        self.group = StudyGroup.objects.create(
+            name="vgroup",
+            introduction="i1",
+            max_headcount=3,
+            profile_img_url="https://x.com/g.png",
+            start_at=timezone.now(),
+            end_at=timezone.now() + timedelta(days=7),
+        )
+        GroupMember.objects.create(study_group_id=self.group, user_id=self.user, is_leader=True)
+
+    def test_view_get_list_executes(self) -> None:
+        request = self.factory.get(f"/api/v1/study-groups/{self.group.id}/notes")
+        force_authenticate(request, user=self.user)
+        response = StudyNoteAPIView.as_view()(request, study_group_id=self.group.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_view_post_executes(self) -> None:
+        payload = {"title": "t1", "content": "c1"}
+        request = self.factory.post(
+            f"/api/v1/study-groups/{self.group.id}/notes", data=payload, content_type="application/json"
+        )
+        force_authenticate(request, user=self.user)
+        response = StudyNoteAPIView.as_view()(request, study_group_id=self.group.id)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_view_detail_get_executes(self) -> None:
+        note = StudyNote.objects.create(study_group=self.group, author=self.user, title="t1", content="c1")
+        request = self.factory.get(f"/api/v1/study-groups/{self.group.id}/notes/{note.id}")
+        force_authenticate(request, user=self.user)
+        response = StudyNoteDetailAPIView.as_view()(request, study_group_id=self.group.id, note_id=note.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_view_detail_patch_executes(self) -> None:
+        note = StudyNote.objects.create(study_group=self.group, author=self.user, title="t1", content="c1")
+        payload = {"title": "t2", "content": "c2"}
+        request = self.factory.patch(
+            f"/api/v1/study-groups/{self.group.id}/notes/{note.id}", data=payload, content_type="application/json"
+        )
+        force_authenticate(request, user=self.user)
+        response = StudyNoteDetailAPIView.as_view()(request, study_group_id=self.group.id, note_id=note.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -7,6 +7,7 @@ from rest_framework.test import APITestCase
 
 from apps.lectures.models import CrawledLecture
 from apps.study_groups.models import StudyGroup, StudyLecture
+from apps.study_groups.serializers.study_group import StudyGroupSerializer
 from apps.users.models import User
 
 
@@ -196,3 +197,67 @@ class StudyGroupAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("lectures", response.data.get("error_detail", {}))
+
+    def test_serializer_create_with_lectures(self) -> None:
+        """시리얼라이저 create도 StudyLecture를 만든다."""
+        lecture = CrawledLecture.objects.create(
+            external_id=201,
+            title="c1",
+            instructor="i1",
+            average_rating=4.5,
+            total_class_time=10,
+            difficulty="EASY",
+            description="d",
+            platform="INFLEARN",
+            original_price=1000,
+            discount_price=900,
+            url_link="https://x.com/c1",
+            thumbnail_img_url="https://x.com/c1.png",
+        )
+        data = self._make_payload("serializer")
+        data["lectures"] = [lecture.id]
+        serializer = StudyGroupSerializer(data=data)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        serializer.save()
+
+        self.assertEqual(StudyLecture.objects.count(), 1)
+
+    def test_serializer_update_replaces_lectures(self) -> None:
+        """update 분기 커버: 기존 강의를 교체한다."""
+        lec1 = CrawledLecture.objects.create(
+            external_id=301,
+            title="c2",
+            instructor="i2",
+            average_rating=4.0,
+            total_class_time=9,
+            difficulty="EASY",
+            description="d",
+            platform="INFLEARN",
+            original_price=1000,
+            discount_price=900,
+            url_link="https://x.com/c2",
+            thumbnail_img_url="https://x.com/c2.png",
+        )
+        lec2 = CrawledLecture.objects.create(
+            external_id=302,
+            title="c3",
+            instructor="i3",
+            average_rating=4.0,
+            total_class_time=9,
+            difficulty="EASY",
+            description="d",
+            platform="INFLEARN",
+            original_price=1000,
+            discount_price=900,
+            url_link="https://x.com/c3",
+            thumbnail_img_url="https://x.com/c3.png",
+        )
+        group = StudyGroup.objects.create(**self._make_payload("update-serializer"))
+        StudyLecture.objects.create(study_group=group, lecture=lec1)
+
+        serializer = StudyGroupSerializer(instance=group, data={"lectures": [lec2.id]}, partial=True)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        serializer.save()
+
+        self.assertEqual(StudyLecture.objects.filter(study_group=group).count(), 1)
+        self.assertEqual(StudyLecture.objects.get(study_group=group).lecture_id, lec2.id)
