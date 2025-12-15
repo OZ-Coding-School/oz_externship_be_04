@@ -136,15 +136,14 @@ class StudyGroupDestroyAPIView(APIView):
     @extend_schema(
         summary="스터디 그룹 삭제",
         description="스터디 그룹을 삭제합니다.",
-        # 삭제 API이므로, 굳이 응답 주지 않아도 됨! -> 204: None으로 처리가 더 RESTFUL
         responses={204: None},
         tags=["StudyGroup"],
     )
     def delete(self, request: Request, pk: int) -> Response:
         study_group = get_object_or_404(StudyGroup, pk=pk)
         study_group.delete()
-        # 204 -> 삭제이므로 별도 디테일한 응답 필요x NO_CONTENT
-        return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response({"detail": "스터디 그룹이 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
 
 
 # 리더 위임
@@ -187,7 +186,7 @@ class DelegateLeaderAPIView(APIView):
             return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
 
         delegate_leader(current_leader, target_member)
-        return Response({"detail": "리더 권한이 위임되었습니다."}, status=200)
+        return Response({"detail": "리더 권한이 위임되었습니다."}, status=status.HTTP_200_OK)
 
 
 # 스터디 그룹 나가기
@@ -216,7 +215,7 @@ class LeaveStudyGroupMeAPIView(APIView):
         except ValueError as e:
             return Response({"error_detail": str(e)}, status=400)
 
-        return Response(status=200)
+        return Response({"detail": "스터디 그룹에서 나가기에 성공했습니다."}, status=status.HTTP_204_NO_CONTENT)
 
 
 # 멤버 추방
@@ -250,4 +249,6 @@ class KickStudyGroupMemberAPIView(APIView):
         except ValueError as e:
             return Response({"error_detail": str(e)}, status=400)
 
-        return Response(status=200)
+        return Response(
+            {"detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."}, status=status.HTTP_204_NO_CONTENT
+        )
