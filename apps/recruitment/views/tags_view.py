@@ -1,3 +1,4 @@
+from django.db.models import QuerySet
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import permissions, status
 from rest_framework.exceptions import ValidationError
@@ -6,8 +7,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.recruitment.models import Tag
 from apps.recruitment.serializers.tags import TagSerializer
-from apps.recruitment.services.tags_service import TagService
 
 
 class TagPagination(PageNumberPagination):
@@ -17,6 +18,14 @@ class TagPagination(PageNumberPagination):
 
 class TagListAPIView(APIView):
     permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self, keyword: str = "") -> QuerySet[Tag]:
+        qs = Tag.objects.all()
+
+        if keyword:
+            qs = qs.filter(name__icontains=keyword)
+
+        return qs.order_by("name")
 
     @extend_schema(
         tags=["Recruitment"],
@@ -43,7 +52,7 @@ class TagListAPIView(APIView):
     )
     def get(self, request: Request) -> Response:
         keyword = request.GET.get("keyword", "").strip()
-        queryset = TagService.get_tags(keyword=keyword)
+        queryset = self.get_queryset(keyword=keyword)
 
         paginator = TagPagination()
         page = paginator.paginate_queryset(queryset, request)
