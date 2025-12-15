@@ -1,6 +1,5 @@
 import uuid
-from typing import Any, Dict, Tuple
-
+from typing import Any, Dict, Tuple, Optional
 from django.db import transaction
 
 from apps.users.models.social_user import ProviderChoices, SocialUser
@@ -11,52 +10,53 @@ class SocialLoginService:
     @transaction.atomic
     def login_or_signup(self, provider: str, user_info: Dict[str, Any]) -> Tuple[User, bool]:
         provider_id: str = user_info["provider_id"]
-        email_input = user_info.get("email")  # Optional[str]
-        nickname_input = user_info.get("nickname")  # Optional[str]
-        profile_img_url_input = user_info.get("profile_img_url")  # Optional[str]
-        gender_input = user_info.get("gender")  # Optional[str]
-        phone_number_input = user_info.get("phone_number")  # Optional[str]
+
+        email_input: Optional[str] = user_info.get("email")
+        nickname_input: Optional[str] = user_info.get("nickname")
+        profile_img_url_input: Optional[str] = user_info.get("profile_img_url")
+        gender_input: Optional[str] = self._normalize_gender(user_info.get("gender"))
+        phone_number_input: Optional[str] = user_info.get("phone_number")
 
         if provider not in ProviderChoices.values:
             raise ValueError("유효하지 않은 소셜 로그인 제공자입니다.")
 
-        social_user = (
-            SocialUser.objects.filter(provider=provider, provider_id=provider_id).select_related("user").first()
+        social_user: Optional[SocialUser] = (
+            SocialUser.objects.filter(provider=provider, provider_id=provider_id)
+            .select_related("user")
+            .first()
         )
-
         if social_user:
             return social_user.user, False
 
-        # email 기반 기존 유저 연결
         if email_input:
-            existing_user = User.objects.filter(email=email_input).first()
+            existing_user: Optional[User] = User.objects.filter(email=email_input).first()
             if existing_user:
+
                 SocialUser.objects.create(
                     user=existing_user,
                     provider=provider,
                     provider_id=provider_id,
                 )
 
-                if nickname_input and existing_user.nickname != nickname_input:
-                    existing_user.nickname = nickname_input
+                if nickname_input:
+                    existing_user.nickname = self._safe_nickname(nickname_input)
 
                 if profile_img_url_input:
                     existing_user.profile_img_url = profile_img_url_input
 
-                # gender, phone_number도 조건 체크 후 할당
                 if gender_input is not None:
                     existing_user.gender = gender_input
+
                 if phone_number_input is not None:
                     existing_user.phone_number = phone_number_input
 
                 existing_user.save()
                 return existing_user, False
 
-        # 새 이메일 생성
-        email = email_input or f"{provider}_{provider_id}@auto.com"
-        nickname = nickname_input or self._generate_unique_nickname(provider)
+        email: str = email_input or f"{provider}_{provider_id}@auto.com"
+        base_nickname: str = nickname_input or f"{provider}_{uuid.uuid4().hex[:6]}"
+        nickname: str = self._safe_nickname(base_nickname)
 
-        # 기본 user data
         user_data: Dict[str, Any] = {
             "email": email,
             "nickname": nickname,
@@ -65,22 +65,39 @@ class SocialLoginService:
             "profile_img_url": profile_img_url_input or "",
         }
 
-        # Optional 필드는 있을 때만 넣기 → mypy 해결
         if gender_input is not None:
             user_data["gender"] = gender_input
 
         if phone_number_input is not None:
             user_data["phone_number"] = phone_number_input
 
-        new_user = User.objects.create(**user_data)
+        user: User = User.objects.create(**user_data)
 
         SocialUser.objects.create(
-            user=new_user,
+            user=user,
             provider=provider,
             provider_id=provider_id,
         )
 
-        return new_user, True
+        return user, True
 
-    def _generate_unique_nickname(self, provider: str) -> str:
-        return f"{provider}_{uuid.uuid4().hex[:8]}"
+    def _safe_nickname(self, base: str) -> str:
+        nickname: str = base
+        suffix: int = 1
+        while User.objects.filter(nickname=nickname).exists():
+            nickname = f"{base}_{suffix}"
+            suffix += 1
+        return nickname
+
+    def _normalize_gender(self, gender: Any) -> Optional[str]:
+        if gender is None:
+            return None
+
+        gender_str: str = str(gender).lower()
+
+        if gender_str in ("m", "male"):
+            return "M"
+        if gender_str in ("f", "female"):
+            return "F"
+
+        return None
