@@ -368,6 +368,21 @@ class StudyNoteAPITest(APITestCase):
         if first_image:
             self.assertEqual(first_image.img_url, "https://example.com/new.png")
 
+    def test_list_notes_pagination(self) -> None:
+        """pagination 객체가 동작한다."""
+        self.client.force_authenticate(user=self.user)
+        for i in range(7):
+            StudyNote.objects.create(
+                study_group=self.study_group,
+                author=self.user,
+                title=f"t{i}",
+                content="c",
+            )
+
+        resp = self.client.get(f"{self.url}?page_size=5")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data["count"], 7)
+
     def test_view_get_forbidden_member(self) -> None:
         """뷰 레벨에서 멤버가 아니면 403"""
         factory = APIRequestFactory()

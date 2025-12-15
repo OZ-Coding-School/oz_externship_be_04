@@ -5,7 +5,9 @@ from django.utils import timezone
 
 from apps.study_groups.models import GroupMember, StudyGroup
 from apps.study_groups.services.study_group_service import (
+    create_study_group,
     delegate_leader,
+    get_study_group_list,
     kick_member,
     leave_study_group,
 )
@@ -72,3 +74,18 @@ class StudyGroupServiceTest(TestCase):
     def test_kick_member_success(self) -> None:
         kick_member(self.leader_member, self.normal_member)
         self.assertFalse(GroupMember.objects.filter(id=self.normal_member.id).exists())
+
+    def test_create_and_list_study_group(self) -> None:
+        payload = {
+            "name": "svc-create",
+            "introduction": "i",
+            "max_headcount": 3,
+            "profile_img_url": "https://x.com/g.png",
+            "start_at": timezone.now(),
+            "end_at": timezone.now() + timedelta(days=7),
+        }
+        group = create_study_group(self.leader, payload)
+        self.assertTrue(GroupMember.objects.filter(study_group_id=group, user_id=self.leader, is_leader=True).exists())
+
+        qs = get_study_group_list(status=None)
+        self.assertTrue(qs.filter(id=group.id).exists())
