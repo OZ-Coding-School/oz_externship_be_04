@@ -1,6 +1,7 @@
 from typing import Any, Optional
 
 from django.db import transaction
+from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 
 from apps.study_groups.models import GroupMember, StudyGroup
@@ -15,7 +16,7 @@ def create_study_group(user: CustomUser, validated_data: dict[str, Any]) -> Stud
 
 
 # 스터디 그룹 목록 조회
-def get_study_group_list(status: Optional[str] = None) -> list[StudyGroup]:
+def get_study_group_list(status: Optional[str] = None) -> QuerySet[StudyGroup]: # list -> 쿼리셋으로 수정
     queryset = StudyGroup.objects.prefetch_related(
         "studylecture_study_groups",
         "groupmember_study_groups",
@@ -23,7 +24,7 @@ def get_study_group_list(status: Optional[str] = None) -> list[StudyGroup]:
     )
     if status:
         queryset = queryset.filter(status=status)
-    return list(queryset)
+    return queryset
 
 
 # 스터디 그룹 상세 조회

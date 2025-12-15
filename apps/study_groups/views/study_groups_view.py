@@ -89,8 +89,15 @@ class StudyGroupListAPIView(APIView):
     )
     def get(self, request: Request) -> Response:
         status_filter = request.query_params.get("status")
+        search = request.query_params.get("search")
         queryset = get_study_group_list(status_filter)
-        serializer = StudyGroupListSerializer(queryset, many=True, context={"request": request})
+        if search: # search None 대비
+            queryset = queryset.filter(name__icontains=search)
+
+        serializer = StudyGroupListSerializer(
+            queryset,
+            many=True,
+            context={"request": request})
         return Response(serializer.data)
 
 
