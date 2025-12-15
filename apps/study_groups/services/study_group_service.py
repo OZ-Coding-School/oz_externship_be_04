@@ -19,6 +19,7 @@ def get_study_group_list(status: Optional[str] = None) -> list[StudyGroup]:
     queryset = StudyGroup.objects.prefetch_related(
         "studylecture_study_groups",
         "groupmember_study_groups",
+        "review_study_groups"
     )
     if status:
         queryset = queryset.filter(status=status)
