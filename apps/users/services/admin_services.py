@@ -134,6 +134,7 @@ def update_admin_account_role(*, account_id: int, role: str) -> None:
 
     user.save()
 
+
 def activate_admin_account(*, account_id: int) -> None:
     user = User.objects.filter(id=account_id).first()
     if user is None:

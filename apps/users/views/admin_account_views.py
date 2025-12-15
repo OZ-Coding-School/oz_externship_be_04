@@ -22,12 +22,12 @@ from apps.users.serializers.admin_serializers import (
     AdminAccountUpdateSerializer,
 )
 from apps.users.services.admin_services import (
+    activate_admin_account,
     delete_admin_account,
     get_admin_account_detail,
     get_admin_account_list,
     update_admin_account,
     update_admin_account_role,
-    activate_admin_account,
 )
 from apps.users.utils.permissions import StaffOrSuperUser, SuperUserOnly
 
@@ -64,11 +64,9 @@ AdminAccountRoleUpdateSuccessSerializer = inline_serializer(
 )
 
 AdminAccountActivateSuccessSerializer = inline_serializer(
-    name="AdminAccountActivateSuccess",
-    fields={
-        "detail": serializers.CharField(help_text="복구 성공 메시지")
-    }
+    name="AdminAccountActivateSuccess", fields={"detail": serializers.CharField(help_text="복구 성공 메시지")}
 )
+
 
 class AdminAccountListSpec(APIView):
     """
@@ -428,8 +426,10 @@ class AdminAccountRoleUpdateSpec(APIView):
 
         return Response({"detail": "권한이 변경되었습니다."})
 
+
 class AdminAccountActivateView(APIView):
     "inactive인 회원 계정을 복구하는 APIView"
+
     permission_classes = [StaffOrSuperUser]
 
     @extend_schema(
