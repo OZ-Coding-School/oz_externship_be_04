@@ -327,6 +327,7 @@ class StudyNoteSerializerTest(APITestCase):
 
 
 class StudyNoteViewUnitTest(APITestCase):
+    # 뷰 단위 경로를 직접 호출해 분기 커버리지를 확인한다.
     def setUp(self) -> None:
         self.factory = APIRequestFactory()
         self.user = User.objects.create_user(
