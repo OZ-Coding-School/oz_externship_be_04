@@ -189,6 +189,7 @@ class StudyGroupAPITest(APITestCase):
                 status.HTTP_500_INTERNAL_SERVER_ERROR,
             ),
         )
+
     def test_delegate_leader_success(self) -> None:
         group = StudyGroup.objects.create(**self._make_payload("delegate"))
         leader = User.objects.create_user(
