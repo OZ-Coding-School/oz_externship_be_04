@@ -104,6 +104,15 @@ class StudyNoteAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_create_note_blank_fields(self) -> None:
+        """제목/내용이 공백이면 400"""
+        self.client.force_authenticate(user=self.user)
+        payload = {"title": "", "content": ""}
+
+        response = self.client.post(self.url, data=payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_list_notes_success(self) -> None:
         """멤버는 목록을 볼 수 있고 썸네일은 첫 이미지다."""
         self.client.force_authenticate(user=self.user)
@@ -268,6 +277,15 @@ class StudyNoteAPITest(APITestCase):
         self.assertEqual(note.images.count(), 0)
         self.assertEqual(note.attachments.count(), 0)
 
+    def test_patch_note_not_found(self) -> None:
+        """없는 노트 수정 시 404"""
+        self.client.force_authenticate(user=self.user)
+        url = f"/api/v1/study-groups/{self.study_group.id}/notes/9999"
+
+        response = self.client.patch(url, data={"title": "t"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
 
 class StudyNoteSerializerTest(APITestCase):
     def setUp(self) -> None:
@@ -324,6 +342,29 @@ class StudyNoteSerializerTest(APITestCase):
         serializer = StudyNoteDetailSerializer(instance=note)
 
         self.assertEqual(serializer.data["attachments"][0]["file_name"], "f.pdf")
+
+    def test_create_serializer_skips_invalid_attachment(self) -> None:
+        serializer = StudyNoteCreateSerializer(
+            data={
+                "title": "t2",
+                "content": "c2",
+                "attachments": [{"file_url": "https://x.com/only-url"}],
+            }
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        serializer.save(author=self.user, study_group=self.group)
+
+        note = StudyNote.objects.first()
+        assert note is not None
+        self.assertEqual(note.attachments.count(), 0)
+
+    def test_detail_serializer_images(self) -> None:
+        note = StudyNote.objects.create(study_group=self.group, author=self.user, title="t3", content="c3")
+        StudyNoteImage.objects.create(study_note=note, img_url="https://x.com/img.png")
+
+        serializer = StudyNoteDetailSerializer(instance=note)
+
+        self.assertEqual(serializer.data["images"][0], "https://x.com/img.png")
 
 
 class StudyNoteViewUnitTest(APITestCase):
