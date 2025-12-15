@@ -350,6 +350,20 @@ class StudyNoteAPITest(APITestCase):
         note.refresh_from_db()
         self.assertEqual(note.title, "new")
 
+    def test_patch_note_replace_images(self) -> None:
+        """patch 시 이미지 배열을 보내면 교체된다."""
+        self.client.force_authenticate(user=self.user)
+        note = StudyNote.objects.create(study_group=self.study_group, author=self.user, title="img", content="c")
+        StudyNoteImage.objects.create(study_note=note, img_url="https://example.com/old.png")
+        url = f"/api/v1/study-groups/{self.study_group.id}/notes/{note.id}"
+
+        response = self.client.patch(url, data={"images": ["https://example.com/new.png"]}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        note.refresh_from_db()
+        self.assertEqual(note.images.count(), 1)
+        self.assertEqual(note.images.first().img_url, "https://example.com/new.png")
+
     def test_view_get_forbidden_member(self) -> None:
         """뷰 레벨에서 멤버가 아니면 403"""
         factory = APIRequestFactory()
@@ -505,6 +519,22 @@ class StudyNoteSerializerTest(APITestCase):
         )
         self.assertFalse(serializer.is_valid())
         self.assertIn("images", serializer.errors)
+
+    def test_create_serializer_without_media(self) -> None:
+        """images/attachments를 생략해도 기본값으로 생성된다."""
+        serializer = StudyNoteCreateSerializer(
+            data={
+                "title": "plain",
+                "content": "text",
+            }
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        serializer.save(author=self.user, study_group=self.group)
+
+        note = StudyNote.objects.first()
+        assert note is not None
+        self.assertEqual(note.images.count(), 0)
+        self.assertEqual(note.attachments.count(), 0)
 
 
 class StudyNoteViewUnitTest(APITestCase):
