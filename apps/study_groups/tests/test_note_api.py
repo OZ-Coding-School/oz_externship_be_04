@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from django.utils import timezone
 from apps.study_groups.models import (
     GroupMember,
     StudyGroup,
@@ -43,8 +44,8 @@ class StudyNoteAPITest(APITestCase):
             introduction="intro",
             max_headcount=5,
             profile_img_url="https://example.com/group.png",
-            start_at=datetime.now(),
-            end_at=datetime.now() + timedelta(days=7),
+            start_at=timezone.now(),
+            end_at=timezone.now() + timedelta(days=7),
         )
         GroupMember.objects.create(study_group_id=self.study_group, user_id=self.user, is_leader=True)
         self.url = f"/api/v1/study-groups/{self.study_group.id}/notes"

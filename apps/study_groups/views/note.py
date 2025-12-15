@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import permissions, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -22,6 +23,15 @@ class StudyNoteAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = NotePagination
 
+    @extend_schema(
+        summary="스터디 노트 목록 조회",
+        responses={
+            200: OpenApiResponse(response=StudyNoteListSerializer(many=True)),
+            401: OpenApiResponse(description="인증 필요"),
+            403: OpenApiResponse(description="그룹 멤버만 조회 가능"),
+            404: OpenApiResponse(description="스터디 그룹 없음"),
+        },
+    )
     def get(self, request, study_group_id: int) -> Response:
         study_group = get_object_or_404(StudyGroup, pk=study_group_id)
         if not GroupMember.objects.filter(study_group_id=study_group, user_id=request.user).exists():
