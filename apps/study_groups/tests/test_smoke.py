@@ -8,7 +8,9 @@ from apps.study_groups.models import GroupMember, StudyGroup, StudyNote
 from apps.users.models import User
 
 
-class StudyGroupCoverageTest(APITestCase):
+class StudyGroupSmokeTest(APITestCase):
+    """기존 tests.py에 있던 기본 커버리지 테스트를 패키지로 이동."""
+
     def setUp(self) -> None:
         self.client = APIClient()
         self.user = User.objects.create_user(
