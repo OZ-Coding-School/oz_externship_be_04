@@ -372,6 +372,48 @@ class StudyNoteAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("ai_summary", response.data)
 
+    def test_view_detail_get_forbidden(self) -> None:
+        """멤버가 아니면 상세 403"""
+        factory = APIRequestFactory()
+        other_group = StudyGroup.objects.create(
+            name="forbid",
+            introduction="intro",
+            max_headcount=3,
+            profile_img_url="https://example.com/g.png",
+            start_at=timezone.now(),
+            end_at=timezone.now() + timedelta(days=7),
+        )
+        note = StudyNote.objects.create(study_group=other_group, author=self.other_user, title="n", content="c")
+        request = factory.get(f"/api/v1/study-groups/{other_group.id}/notes/{note.id}")
+        force_authenticate(request, user=self.user)
+        response = StudyNoteDetailAPIView.as_view()(request, study_group_id=other_group.id, note_id=note.id)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_view_detail_patch_replaces_attachments(self) -> None:
+        """patch가 첨부를 삭제 후 새로 만든다."""
+        factory = APIRequestFactory()
+        note = StudyNote.objects.create(study_group=self.study_group, author=self.user, title="t", content="c")
+        StudyNoteAttachment.objects.create(
+            study_note=note,
+            file_url="https://example.com/old.pdf",
+            file_name="old.pdf",
+        )
+        payload = {
+            "attachments": [{"file_url": "https://example.com/new.pdf", "file_name": "new.pdf"}],
+        }
+        request = factory.patch(
+            f"/api/v1/study-groups/{self.study_group.id}/notes/{note.id}",
+            data=payload,
+            content_type="application/json",
+        )
+        force_authenticate(request, user=self.user)
+        response = StudyNoteDetailAPIView.as_view()(request, study_group_id=self.study_group.id, note_id=note.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        note.refresh_from_db()
+        attachment = note.attachments.first()
+        assert attachment is not None
+        self.assertEqual(attachment.file_name, "new.pdf")
+
 
 class StudyNoteSerializerTest(APITestCase):
     def setUp(self) -> None:

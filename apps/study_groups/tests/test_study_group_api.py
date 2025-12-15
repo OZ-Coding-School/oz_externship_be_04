@@ -265,6 +265,53 @@ class StudyGroupAPITest(APITestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn("start_at", serializer.errors)
 
+    def test_study_group_serializer_create_with_lectures(self) -> None:
+        """create에서 lectures를 넣으면 StudyLecture를 만든다."""
+        payload = self._make_payload("serializer-create")
+        payload["lectures"] = []
+        serializer = StudyGroupSerializer(data=payload)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        group = serializer.save()
+        self.assertTrue(StudyGroup.objects.filter(id=group.id).exists())
+
+    def test_study_group_serializer_update_with_lectures(self) -> None:
+        """update에서 lectures가 오면 기존 매핑을 삭제 후 생성한다."""
+        group = StudyGroup.objects.create(**self._make_payload("upd-lect"))
+        first = CrawledLecture.objects.create(
+            external_id=301,
+            title="first",
+            instructor="i1",
+            average_rating=4.0,
+            total_class_time=5,
+            difficulty="EASY",
+            description="d",
+            platform="INFLEARN",
+            original_price=1000,
+            discount_price=900,
+            url_link="https://x.com/f",
+            thumbnail_img_url="https://x.com/f.png",
+        )
+        StudyLecture.objects.create(study_group=group, lecture=first)
+        second = CrawledLecture.objects.create(
+            external_id=302,
+            title="second",
+            instructor="i2",
+            average_rating=4.1,
+            total_class_time=6,
+            difficulty="EASY",
+            description="d2",
+            platform="INFLEARN",
+            original_price=2000,
+            discount_price=1800,
+            url_link="https://x.com/s",
+            thumbnail_img_url="https://x.com/s.png",
+        )
+        serializer = StudyGroupSerializer(instance=group, data={"lectures": [second.id]}, partial=True)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        serializer.save()
+        self.assertEqual(StudyLecture.objects.filter(study_group=group).count(), 1)
+        self.assertEqual(StudyLecture.objects.get(study_group=group).lecture_id, second.id)
+
     def test_serializer_create_with_lectures(self) -> None:
         """시리얼라이저 create도 StudyLecture를 만든다."""
         lecture = CrawledLecture.objects.create(
