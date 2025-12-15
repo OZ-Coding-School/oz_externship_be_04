@@ -17,9 +17,15 @@ class SyncResult(TypedDict):
 def sync_inflearn_db(final_results: List[Dict[str, Any]]) -> SyncResult:
     platform_name = "INFLEARN"
 
-    created_lectures = 0
-    updated_lectures = 0
-    created_reviews = 0
+    external_ids = [item["id"] for item in final_results]
+
+    lecture_map = {
+        lec.external_id: lec
+        for lec in CrawledLecture.objects.filter(
+            platform=platform_name,
+            external_id__in=external_ids,
+        )
+    }
 
     create_list = []
     update_list = []
@@ -45,7 +51,7 @@ def sync_inflearn_db(final_results: List[Dict[str, Any]]) -> SyncResult:
             "thumbnail_img_url": item.get("thumbnail_img_url", ""),
         }
 
-        obj = CrawledLecture.objects.filter(platform=platform_name, external_id=external_id).first()
+        obj = lecture_map.get(external_id)
 
         if obj:
             for key, value in defaults.items():
@@ -56,20 +62,17 @@ def sync_inflearn_db(final_results: List[Dict[str, Any]]) -> SyncResult:
 
     if create_list:
         CrawledLecture.objects.bulk_create(create_list, batch_size=500)
-        created_lectures = len(create_list)
 
     if update_list:
         CrawledLecture.objects.bulk_update(
             update_list,
             fields=[
-                "external_id",
                 "title",
                 "instructor",
                 "average_rating",
                 "total_class_time",
                 "difficulty",
                 "description",
-                "platform",
                 "original_price",
                 "discount_price",
                 "url_link",
@@ -77,15 +80,25 @@ def sync_inflearn_db(final_results: List[Dict[str, Any]]) -> SyncResult:
             ],
             batch_size=500,
         )
-        updated_lectures = len(update_list)
 
     CrawledLectureReview.objects.filter(lecture__platform=platform_name).delete()
+
+    lecture_map.update(
+        {
+            lec.external_id: lec
+            for lec in CrawledLecture.objects.filter(
+                platform=platform_name,
+                external_id__in=external_ids,
+            )
+        }
+    )
 
     review_objs = []
 
     for item in final_results:
-        external_id = item["id"]
-        lecture = CrawledLecture.objects.get(platform=platform_name, external_id=external_id)
+        lecture = lecture_map.get(item["id"])
+        if not lecture:
+            continue
 
         for r in item.get("reviews", []):
             content = r.get("content", "").strip()
@@ -103,10 +116,9 @@ def sync_inflearn_db(final_results: List[Dict[str, Any]]) -> SyncResult:
 
     if review_objs:
         CrawledLectureReview.objects.bulk_create(review_objs, batch_size=500)
-        created_reviews = len(review_objs)
 
     return {
-        "created_lectures": created_lectures,
-        "updated_lectures": updated_lectures,
-        "created_reviews": created_reviews,
+        "created_lectures": len(create_list),
+        "updated_lectures": len(update_list),
+        "created_reviews": len(review_objs),
     }
