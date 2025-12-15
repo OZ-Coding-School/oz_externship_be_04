@@ -29,14 +29,6 @@ from apps.study_groups.services.study_group_service import (
     retrieve_study_group,
     update_study_group,
 )
-from apps.users.models import User as CustomUser
-
-
-def get_authenticated_user(request: Request) -> Optional[CustomUser]:
-    user = request.user
-    if isinstance(user, AnonymousUser):
-        return None
-    return user
 
 
 # 스터디 그룹 만들기
@@ -51,9 +43,7 @@ class StudyGroupCreateAPIView(APIView):
         tags=["StudyGroup"],
     )
     def post(self, request: Request) -> Response:
-        user = get_authenticated_user(request)
-        if user is None:
-            return Response({"error_detail": "인증 정보가 올바르지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+        user = request.user
 
         serializer = StudyGroupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -94,13 +84,10 @@ class StudyGroupListAPIView(APIView):
         status_filter = request.query_params.get("status")
         search = request.query_params.get("search")
         queryset = get_study_group_list(status_filter)
-        if search: # search None 대비
+        if search:  # search None 대비
             queryset = queryset.filter(name__icontains=search)
 
-        serializer = StudyGroupListSerializer(
-            queryset,
-            many=True,
-            context={"request": request})
+        serializer = StudyGroupListSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data)
 
 
@@ -176,10 +163,8 @@ class DelegateLeaderAPIView(APIView):
         tags=["StudyGroup"],
     )
     def post(self, request: Request, study_group_id: int) -> Response:
-        user = get_authenticated_user(request)
-        if user is None:
-            return Response({"error_detail": "인증 정보가 올바르지 않습니다."}, status=401)
-
+        user = request.user
+        assert user.pk is not None
         current_leader = GroupMember.objects.filter(
             study_group_id=study_group_id,
             user_id=user.pk,
@@ -221,10 +206,8 @@ class LeaveStudyGroupMeAPIView(APIView):
         tags=["StudyGroup"],
     )
     def delete(self, request: Request, study_group_id: int) -> Response:
-        user = get_authenticated_user(request)
-        if user is None:
-            return Response({"error_detail": "인증 정보가 올바르지 않습니다."}, status=401)
-
+        user = request.user
+        assert user.pk is not None
         membership = GroupMember.objects.filter(study_group_id=study_group_id, user_id=user.id).first()
         if membership is None:
             return Response({"error_detail": "스터디 그룹을 찾을 수 없습니다."}, status=404)
@@ -254,11 +237,9 @@ class KickStudyGroupMemberAPIView(APIView):
         tags=["StudyGroup"],
     )
     def delete(self, request: Request, study_group_id: int, member_id: int) -> Response:
-        member = get_authenticated_user(request)
-        if member is None:
-            return Response({"error_detail": "인증 정보가 올바르지 않습니다."}, status=401)
-
-        current_leader = GroupMember.objects.filter(study_group_id=study_group_id, user_id=member.id).first()
+        user = request.user
+        assert user.pk is not None
+        current_leader = GroupMember.objects.filter(study_group_id=study_group_id, user_id=user.id).first()
         if not current_leader or not current_leader.is_leader:
             return Response({"error_detail": "리더만 멤버를 추방할 수 있습니다."}, status=403)
         # 멤버십 -> 멤버 / is None -> not (bool)
