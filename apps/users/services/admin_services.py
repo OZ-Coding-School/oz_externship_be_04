@@ -133,3 +133,13 @@ def update_admin_account_role(*, account_id: int, role: str) -> None:
         raise ValidationError({"detail": "role 파라미터는 admin, staff, user 중에서 하나여야 합니다."})
 
     user.save()
+
+def activate_admin_account(*, account_id: int) -> None:
+    user = User.objects.filter(id=account_id).first()
+    if user is None:
+        raise NotFound("사용자 정보를 찾을 수 없습니다.")
+
+    user.is_active = True
+    user.withdrawals.all().delete()
+
+    user.save()
