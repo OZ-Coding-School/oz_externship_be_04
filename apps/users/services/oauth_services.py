@@ -1,5 +1,6 @@
 import uuid
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
+
 from django.db import transaction
 
 from apps.users.models.social_user import ProviderChoices, SocialUser
@@ -21,9 +22,7 @@ class SocialLoginService:
             raise ValueError("유효하지 않은 소셜 로그인 제공자입니다.")
 
         social_user: Optional[SocialUser] = (
-            SocialUser.objects.filter(provider=provider, provider_id=provider_id)
-            .select_related("user")
-            .first()
+            SocialUser.objects.filter(provider=provider, provider_id=provider_id).select_related("user").first()
         )
         if social_user:
             return social_user.user, False

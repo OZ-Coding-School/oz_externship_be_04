@@ -1,10 +1,11 @@
-from django.test import TestCase, Client
+from django.test import Client, TestCase
 from django.urls import reverse
 
+from apps.users.models.social_user import ProviderChoices, SocialUser
 from apps.users.models.users import User
-from apps.users.models.social_user import SocialUser, ProviderChoices
 
 PROVIDER = ProviderChoices.KAKAO.value
+
 
 class SocialLoginAPITest(TestCase):
 
