@@ -16,11 +16,9 @@ def create_study_group(user: CustomUser, validated_data: dict[str, Any]) -> Stud
 
 
 # 스터디 그룹 목록 조회
-def get_study_group_list(status: Optional[str] = None) -> QuerySet[StudyGroup]: # list -> 쿼리셋으로 수정
+def get_study_group_list(status: Optional[str] = None) -> QuerySet[StudyGroup]:  # list -> 쿼리셋으로 수정
     queryset = StudyGroup.objects.prefetch_related(
-        "studylecture_study_groups",
-        "groupmember_study_groups",
-        "review_study_groups"
+        "studylecture_study_groups", "groupmember_study_groups", "review_study_groups"
     )
     if status:
         queryset = queryset.filter(status=status)
