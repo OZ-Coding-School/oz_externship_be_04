@@ -14,7 +14,7 @@ urlpatterns = [
         name="lecture-bookmark-list-create",
     ),
     path(
-        "/lecture-bookmarks/<int:bookmark_id>",
+        "/lecture-bookmarks/<int:lecture_id>",
         LectureBookmarkDestroyAPIView.as_view(),
         name="lecture-bookmark-destroy",
     ),
