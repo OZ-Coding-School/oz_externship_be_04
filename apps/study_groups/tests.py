@@ -71,3 +71,29 @@ class StudyGroupCoverageTest(APITestCase):
     def test_group_detail_404(self) -> None:
         resp = self.client.get("/api/v1/study-groups/9999")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_group_update_without_lectures(self) -> None:
+        """lectures를 안 보내면 기존 매핑을 유지한 채 필드만 수정된다."""
+        group = StudyGroup.objects.create(
+            name="upd1",
+            introduction="old",
+            max_headcount=3,
+            profile_img_url="https://x.com/g4.png",
+            start_at=timezone.now(),
+            end_at=timezone.now() + timedelta(days=7),
+        )
+        self.client.force_authenticate(user=self.user)
+        resp = self.client.patch(
+            f"/api/v1/study-groups/{group.id}/update",
+            data={"introduction": "new"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        group.refresh_from_db()
+        self.assertEqual(group.introduction, "new")
+
+    def test_note_list_pagination_param(self) -> None:
+        """page_size 파라미터가 있어도 목록이 응답된다."""
+        self.client.force_authenticate(user=self.user)
+        resp = self.client.get(f"/api/v1/study-groups/{self.group.id}/notes?page_size=5")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
