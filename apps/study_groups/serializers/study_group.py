@@ -189,7 +189,7 @@ class StudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
                 "title": sl.lecture.title,
                 "thumbnail_img_url": sl.lecture.thumbnail_img_url,
                 "instructor": sl.lecture.instructor,
-                "url_lint": sl.lecture.url_link,
+                "url_link": sl.lecture.url_link,
             }
             for sl in obj.studylecture_study_groups.all()
         ]
