@@ -1,5 +1,6 @@
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field, extend_schema_serializer
 from rest_framework import serializers
 
 from apps.application.models import Application
@@ -72,22 +73,23 @@ class AdminRecruitmentListSerializer(TimestampSerializerMixin, serializers.Model
         fields = [
             "id",
             "title",
-            "expected_headcount",
+            "tags",
             "close_at",
             "is_closed",
             "views_count",
             "bookmark_count",
-            "tags",
             "created_at",
             "updated_at",
         ]
         read_only_fields = fields
 
+    @extend_schema_field(AdminRecruitmentTagSerializer(many=True))
     def get_tags(self, obj: Recruitment) -> Any:
         tag_list = [rt.tag for rt in obj.recruitment_tags.all()]
         return AdminRecruitmentTagSerializer(tag_list, many=True).data
 
 
+@extend_schema_serializer(component_name="AdminRecruitmentDetailResponse")
 class AdminRecruitmentDetailSerializer(TimestampSerializerMixin, serializers.ModelSerializer[Recruitment]):
     """(관리자용) 구인공고 상세 조회"""
 
@@ -119,22 +121,27 @@ class AdminRecruitmentDetailSerializer(TimestampSerializerMixin, serializers.Mod
         ]
         read_only_fields = fields
 
+    @extend_schema_field(AdminRecruitmentTagSerializer(many=True))
     def get_tags(self, obj: Recruitment) -> Any:
         tag_list = [rt.tag for rt in obj.recruitment_tags.all()]
         return AdminRecruitmentTagSerializer(tag_list, many=True).data
 
+    @extend_schema_field(AdminRecruitmentAttachmentSerializer(many=True))
     def get_files(self, obj: Recruitment) -> Any:
         return AdminRecruitmentAttachmentSerializer(obj.attachments.all(), many=True).data
 
+    @extend_schema_field(AdminRecruitmentLectureSerializer(many=True))
     def get_lectures(self, obj: Recruitment) -> Any:
         study_group = obj.study_group
         study_lectures = study_group.studylecture_study_groups.all()
         lecture_list = [sl.lecture for sl in study_lectures if sl.lecture is not None]
         return AdminRecruitmentLectureSerializer(lecture_list, many=True).data
 
+    @extend_schema_field(AdminRecruitmentApplicationSummarySerializer(many=True))
     def get_applications(self, obj: Recruitment) -> Any:
         apps = obj.applications.all()
         return AdminRecruitmentApplicationSummarySerializer(apps, many=True, context=self.context).data
 
+    @extend_schema_field(serializers.IntegerField())
     def get_bookmark_count(self, obj: Recruitment) -> int:
         return getattr(obj, "bookmark_count", obj.recruitment_bookmarks.count())
