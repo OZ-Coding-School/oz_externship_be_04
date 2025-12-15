@@ -6,14 +6,28 @@ from apps.users.models.users import User
 
 class TestUserLoginAPI(APITestCase):
     def setUp(self) -> None:
-        self.url = "/api/v1/accounts/login/"
-        self.active_user = User.objects.create_user(
-            email="active@example.com", password="validpassword123", is_active=True
+        self.url = "/api/v1/accounts/login"
+        self.active_user = User.objects.create(
+            email="active@example.com",
+            is_active=True,
+            nickname="nickname1",
+            name="Active User",
+            gender="M",
+            phone_number="01011112222",
         )
+        self.active_user.set_password("validpassword123")
+        self.active_user.save()
         self.active_data = {"email": "active@example.com", "password": "validpassword123"}
-        self.inactive_user = User.objects.create_user(
-            email="inactive@example.com", password="inactivepassword123", is_active=False
+        self.inactive_user = User.objects.create(
+            email="inactive@example.com",
+            is_active=False,
+            nickname="nickname12",
+            name="Inactive User",
+            gender="F",
+            phone_number="01033334444",
         )
+        self.inactive_user.set_password("inactivepassword123")
+        self.inactive_user.save()
         self.inactive_data = {"email": "inactive@example.com", "password": "inactivepassword123"}
 
     def test_login_success(self) -> None:
