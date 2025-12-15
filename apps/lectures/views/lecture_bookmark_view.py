@@ -91,7 +91,7 @@ class LectureBookmarkListCreateAPIView(APIView):
         return mock_bookmarks
 
     @extend_schema(
-        tags=["lecture-bookmark"],
+        tags=["Lecture"],
         summary="강의 북마크 목록을 조회하는 API입니다.",
         parameters=[
             OpenApiParameter(
@@ -140,7 +140,7 @@ class LectureBookmarkListCreateAPIView(APIView):
         return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
-        tags=["lecture-bookmark"],
+        tags=["Lecture"],
         summary="강의 북마크를 등록/취소하는 API입니다.",
         request=LectureBookmarkSerializer,
         responses={
@@ -164,7 +164,7 @@ class LectureBookmarkDestroyAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        tags=["lecture-bookmark"],
+        tags=["Lecture"],
         summary="강의 북마크를 삭제하는 API입니다.",
         responses={
             200: {"example": {"detail": "북마크를 취소하였습니다."}},
@@ -173,12 +173,12 @@ class LectureBookmarkDestroyAPIView(APIView):
             500: {"example": {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."}},
         },
     )
-    def delete(self, request: Request, bookmark_id: int) -> Response:
+    def delete(self, request: Request, lecture_id: int) -> Response:
         user_id = request.user.id
         assert isinstance(user_id, int)
 
         bookmark = LectureBookmark.objects.filter(
-            pk=bookmark_id,
+            lecture_id=lecture_id,
             user_id=user_id,
         ).first()
 
