@@ -78,7 +78,7 @@ class ScheduleAPITest(APITestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(GroupSchedule.objects.count(), 1)
         self.assertEqual(ScheduleParticipants.objects.count(), 1)
         self.assertIn("detail", response.data)
@@ -119,6 +119,10 @@ class ScheduleAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["title"], "상세 테스트")
+        self.assertEqual(response.data["group_id"], self.group.id)
+        self.assertIn("created_at", response.data)
+        self.assertIn("updated_at", response.data)
+        self.assertIsInstance(response.data["participants"], list)
 
         # 스케줄 수정
 
@@ -137,19 +141,23 @@ class ScheduleAPITest(APITestCase):
         payload = {
             "title": "수정 후",
             "objective": "수정됨",
-            "session_date": timezone.now() + timedelta(days=2),
-            "start_time": time(13, 0),
-            "end_time": time(15, 0),
+            "session_date": "2026-11-20",
+            "start_time": "13:00:00",
+            "end_time": "15:00:00",
             "participants": [self.member1.id],
         }
 
-        response = self.client.put(url, payload, format="json")
+        response = self.client.patch(url, payload, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         schedule.refresh_from_db()
         self.assertEqual(schedule.title, "수정 후")
         self.assertEqual(ScheduleParticipants.objects.count(), 1)
         self.assertEqual(response.data["title"], "수정 후")
+        self.assertEqual(response.data["participants"][0]["id"], self.member1.id)
+        self.assertEqual(response.data["participants"][0]["nickname"], self.member1.user_id.nickname)
+        self.assertEqual(response.data["participants"][0]["is_leader"], True)
+        self.assertEqual(response.data["participants"][0]["profile_img_url"], self.member1.user_id.profile_img_url)
 
         # 스케줄 삭제
 

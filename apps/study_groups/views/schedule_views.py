@@ -1,3 +1,4 @@
+from django.utils.dateparse import parse_datetime
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import status
@@ -35,14 +36,14 @@ class ScheduleView(APIView):
             )
         ],
         responses={
-            201: OpenApiResponse(
+            200: OpenApiResponse(
                 response=OpenApiTypes.OBJECT,
                 description="생성 성공",
                 examples=[
                     OpenApiExample(
-                        name="201 응답 예시",
+                        name="200 응답 예시",
                         value={"detail": "스터디 스케줄 생성에 성공했습니다."},
-                        status_codes=["201"],
+                        status_codes=["200"],
                     )
                 ],
             ),
@@ -112,7 +113,7 @@ class ScheduleView(APIView):
         )
 
         serializer = GroupScheduleSerializer(schedule)
-        return Response({"detail": "스터디 스케줄 생성에 성공했습니다."}, status=status.HTTP_201_CREATED)
+        return Response({"detail": "스터디 스케줄 생성에 성공했습니다."}, status=status.HTTP_200_OK)
 
     # 스케줄 조회
     @extend_schema(
@@ -162,7 +163,16 @@ class ScheduleView(APIView):
         },
     )
     def get(self, request: Request, group_id: int) -> Response:
-        schedules = ScheduleService.list_schedules(group_id=group_id)
+        from_date_str = request.query_params.get("from_date")
+        from_date = parse_datetime(from_date_str) if from_date_str else None
+        to_date_str = request.query_params.get("to_date")
+        to_date = parse_datetime(to_date_str) if to_date_str else None
+
+        schedules = ScheduleService.list_schedules(
+            group_id=group_id,
+            from_date=from_date,
+            to_date=to_date,
+        )
         serializer = GroupScheduleSerializer(schedules, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -190,6 +200,8 @@ class ScheduleDetailView(APIView):
                             "session_date": "2025-11-20",
                             "start_time": "10:00",
                             "end_time": "11:00",
+                            "created_at": "2025-11-10T10:00:00",
+                            "updated_at": "2025-11-15T12:00:00",
                             "participants": [
                                 {
                                     "id": 1,
@@ -342,7 +354,7 @@ class ScheduleDetailView(APIView):
             )
         ],
     )
-    def put(self, request: Request, group_id: int, schedule_id: int) -> Response:
+    def patch(self, request: Request, group_id: int, schedule_id: int) -> Response:
         schedule = ScheduleService.retrieve_schedule(schedule_id=schedule_id)
         if schedule is None:
             return Response({"error_detail": "스터디 스케줄을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
@@ -354,6 +366,7 @@ class ScheduleDetailView(APIView):
             schedule,
             data=request.data,
             context={"study_group": schedule.study_group},
+            partial=True,
         )
         serializer.is_valid(raise_exception=True)
 

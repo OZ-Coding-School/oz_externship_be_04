@@ -41,12 +41,15 @@ class ScheduleService:
     # 스케줄 조회
 
     @staticmethod
-    def list_schedules(*, group_id: int) -> List[GroupSchedule]:
-        return list(
-            GroupSchedule.objects.filter(study_group_id=group_id)
-            .select_related("study_group")
-            .prefetch_related("participants__member")
-        )
+    def list_schedules(group_id, from_date=None, to_date=None) -> List[GroupSchedule]:
+        qs = GroupSchedule.objects.filter(study_group_id=group_id)
+
+        if from_date:
+            qs = qs.filter(session_date__gte=from_date)
+        if to_date:
+            qs = qs.filter(session_date__lte=to_date)
+
+        return list(qs.select_related("study_group").prefetch_related("participants__member__user_id"))
 
     # 스케줄 상세 조회
 
@@ -54,7 +57,7 @@ class ScheduleService:
     def retrieve_schedule(*, schedule_id: int) -> Optional[GroupSchedule]:
         return (
             GroupSchedule.objects.select_related("study_group")
-            .prefetch_related("participants__member")
+            .prefetch_related("participants__member__user_id")
             .filter(id=schedule_id)
             .first()
         )

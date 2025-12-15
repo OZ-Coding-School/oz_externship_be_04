@@ -23,10 +23,7 @@ class GroupScheduleAttrs(TypedDict):
 
 class GroupScheduleSerializer(serializers.Serializer[Any]):
     participants = serializers.PrimaryKeyRelatedField(
-        queryset=GroupMember.objects.all(),
-        many=True,
-        required=False,
-        write_only=True,
+        queryset=GroupMember.objects.all(), many=True, required=False, write_only=True
     )
 
     session_date = serializers.DateTimeField()
@@ -58,7 +55,7 @@ class GroupScheduleSerializer(serializers.Serializer[Any]):
             raise serializers.ValidationError({"detail": "session_date는 오늘보다 이전일 수 없습니다."})
         return value
 
-    def validate(self, attrs: GroupScheduleAttrs) -> GroupScheduleAttrs:
+    def validate(self, attrs) -> GroupScheduleAttrs:
         study_group = self.context.get("study_group")
         start_time = attrs.get("start_time")
         end_time = attrs.get("end_time")
@@ -90,11 +87,21 @@ class GroupScheduleSerializer(serializers.Serializer[Any]):
     def to_representation(self, instance: Any) -> dict[str, Any]:
         return {
             "id": instance.id,
-            "study_group": instance.study_group.id,
+            "group_id": instance.study_group.id,
             "title": instance.title,
             "objective": instance.objective,
             "session_date": instance.session_date.isoformat(),
             "start_time": instance.start_time.isoformat(),
             "end_time": instance.end_time.isoformat(),
-            "participants": [sp.member.id for sp in ScheduleParticipants.objects.filter(schedule=instance)],
+            "created_at": instance.created_at.isoformat(),
+            "updated_at": instance.updated_at.isoformat(),
+            "participants": [
+                {
+                    "id": sp.member.id,
+                    "nickname": sp.member.user_id.nickname,
+                    "is_leader": sp.member.is_leader,
+                    "profile_img_url": sp.member.user_id.profile_img_url,
+                }
+                for sp in ScheduleParticipants.objects.filter(schedule=instance)
+            ],
         }
