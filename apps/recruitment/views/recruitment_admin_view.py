@@ -1,5 +1,3 @@
-import uuid
-
 from django.db.models import Count, QuerySet
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
@@ -51,6 +49,7 @@ class AdminRecruitmentPagination(PageNumberPagination):
 
 class AdminRecruitmentListView(APIView):
     permission_classes = [IsAdminUser]
+    pagination_class = AdminRecruitmentPagination
 
     @extend_schema(
         operation_id="admin_Recruitment_list",
@@ -134,13 +133,8 @@ class AdminRecruitmentDetailView(APIView):
         },
         tags=["Admin"],
     )
-    def get(self, request: Request, recruitment_uuid: str) -> Response:
-        try:
-            recruitment_uuid_obj = uuid.UUID(recruitment_uuid)
-        except ValueError:
-            return Response({"error_detail": "잘못된 UUID 형식입니다."}, status=400)
-
-        recruitment = get_admin_recruitment_queryset().filter(uuid=recruitment_uuid_obj).first()
+    def get(self, request: Request, recruitment_id: int) -> Response:
+        recruitment = get_admin_recruitment_queryset().filter(id=recruitment_id).first()
 
         if not recruitment:
             return Response({"error_detail": "해당 구인공고를 찾을 수 없습니다."}, status=404)
@@ -166,12 +160,7 @@ class AdminRecruitmentDetailView(APIView):
             },
         },
     )
-    def delete(self, request: Request, recruitment_uuid: str) -> Response:
-        try:
-            recruitment_uuid_obj = uuid.UUID(recruitment_uuid)
-        except ValueError:
-            return Response({"error_detail": "잘못된 UUID 형식입니다."}, status=400)
-
-        recruitment = get_object_or_404(Recruitment, uuid=recruitment_uuid_obj)
+    def delete(self, request: Request, recruitment_id: int) -> Response:
+        recruitment = get_object_or_404(Recruitment, id=recruitment_id)
         recruitment.delete()
         return Response({"detail": "구인공고가 삭제되었습니다."}, status=status.HTTP_200_OK)

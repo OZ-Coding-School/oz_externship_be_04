@@ -8,7 +8,7 @@ from apps.recruitment.views.recruitment_admin_view import (
 urlpatterns = [
     path("admin/recruitments", AdminRecruitmentListView.as_view(), name="admin-recruitment-list"),
     path(
-        "admin/recruitments/<str:recruitment_uuid>",
+        "admin/recruitments/<int:recruitment_id>",
         AdminRecruitmentDetailView.as_view(),
         name="admin-recruitment-detail",
     ),
