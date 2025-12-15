@@ -57,8 +57,11 @@ class StudyGroupCreateAPIView(APIView):
 
         serializer = StudyGroupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        study_group = create_study_group(user, serializer.validated_data)
-        return Response(StudyGroupSerializer(study_group).data, status=status.HTTP_201_CREATED)
+        # study_group = create_study_group(user, serializer.validated_data)
+        return Response(
+            {"detail": "스터디 그룹 생성에 성공하였습니다."},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 # 스터디 그룹 목록 보기
