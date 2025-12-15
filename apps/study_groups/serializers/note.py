@@ -89,3 +89,38 @@ class StudyNoteListSerializer(serializers.ModelSerializer):
     def get_thumbnail(self, obj: StudyNote) -> Optional[str]:
         first_image = obj.images.first()
         return first_image.img_url if first_image else None
+
+
+class StudyNoteDetailSerializer(serializers.ModelSerializer):
+    """노트 상세 응답용 직렬화기"""
+
+    author_nickname = serializers.CharField(source="author.nickname")
+    author_profile_img = serializers.CharField(source="author.profile_img_url")
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+    updated_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+    images = serializers.SerializerMethodField()
+    attachments = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StudyNote
+        fields = [
+            "id",
+            "title",
+            "author_nickname",
+            "author_profile_img",
+            "content",
+            "ai_summary",
+            "images",
+            "attachments",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_images(self, obj: StudyNote) -> list[str]:
+        return [image.img_url for image in obj.images.all()]
+
+    def get_attachments(self, obj: StudyNote) -> list[dict]:
+        return [
+            {"file_url": attachment.file_url, "file_name": attachment.file_name}
+            for attachment in obj.attachments.all()
+        ]

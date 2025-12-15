@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from django.utils import timezone
 from apps.study_groups.models import (
     GroupMember,
     StudyGroup,
@@ -116,3 +116,92 @@ class StudyNoteAPITest(APITestCase):
         response = self.client.get(missing_url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_detail_note_success(self) -> None:
+        """멤버는 상세를 볼 수 있고 이미지/첨부가 내려온다."""
+        self.client.force_authenticate(user=self.user)
+        note = StudyNote.objects.create(
+            study_group=self.study_group,
+            author=self.user,
+            title="노트 상세",
+            content="상세 본문",
+            ai_summary="요약",
+        )
+        StudyNoteImage.objects.create(study_note=note, img_url="https://example.com/img1.png")
+        StudyNoteAttachment.objects.create(
+            study_note=note,
+            file_url="https://example.com/file1.pdf",
+            file_name="file1.pdf",
+        )
+
+        detail_url = f"/api/v1/study-groups/{self.study_group.id}/notes/{note.id}"
+        response = self.client.get(detail_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["title"], "노트 상세")
+        self.assertEqual(response.data["images"][0], "https://example.com/img1.png")
+        self.assertEqual(response.data["attachments"][0]["file_name"], "file1.pdf")
+
+    def test_detail_note_forbidden_when_not_member(self) -> None:
+        """멤버 아니면 상세 403"""
+        other_group = StudyGroup.objects.create(
+            name="java",
+            introduction="intro",
+            max_headcount=3,
+            profile_img_url="https://example.com/group2.png",
+            start_at=timezone.now(),
+            end_at=timezone.now() + timedelta(days=5),
+        )
+        other_note = StudyNote.objects.create(
+            study_group=other_group,
+            author=self.other_user,
+            title="다른 그룹 노트",
+            content="내용",
+        )
+
+        self.client.force_authenticate(user=self.user)
+        detail_url = f"/api/v1/study-groups/{other_group.id}/notes/{other_note.id}"
+        response = self.client.get(detail_url)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_patch_note_success(self) -> None:
+        """작성자는 노트를 수정할 수 있다."""
+        self.client.force_authenticate(user=self.user)
+        note = StudyNote.objects.create(
+            study_group=self.study_group,
+            author=self.user,
+            title="초안",
+            content="초안 내용",
+            ai_summary="요약",
+        )
+        url = f"/api/v1/study-groups/{self.study_group.id}/notes/{note.id}"
+        payload = {
+            "title": "수정 제목",
+            "content": "수정 내용",
+            "images": ["https://example.com/new.png"],
+            "attachments": [{"file_url": "https://example.com/new.pdf", "file_name": "new.pdf"}],
+        }
+
+        response = self.client.patch(url, data=payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        note.refresh_from_db()
+        self.assertEqual(note.title, "수정 제목")
+        self.assertEqual(note.images.count(), 1)
+        self.assertEqual(note.attachments.first().file_name, "new.pdf")
+
+    def test_patch_note_forbidden_when_not_author(self) -> None:
+        """작성자가 아니면 수정 금지"""
+        note = StudyNote.objects.create(
+            study_group=self.study_group,
+            author=self.other_user,
+            title="다른 사람 노트",
+            content="내용",
+        )
+        url = f"/api/v1/study-groups/{self.study_group.id}/notes/{note.id}"
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.patch(url, data={"title": "수정"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
