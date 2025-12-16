@@ -26,12 +26,14 @@ class TestAdminApplicationSerializers(TestCase):
 
     def test_admin_applicant_detail_serializer(self) -> None:
         """지원자 상세 직렬화 테스트"""
+        mock_image = Mock()
+        mock_image.url = "/media/users/profiles/backgr.PNG"
         mock_user = Mock(
             id=1,
             nickname="홍길동",
             email="hong@test.com",
             gender="M",
-            profile_img_url="users/profiles/backgr.PNG",
+            profile_img_url=mock_image,
         )
 
         serializer = AdminApplicantDetailSerializer(mock_user)
@@ -41,7 +43,7 @@ class TestAdminApplicationSerializers(TestCase):
         self.assertEqual(data["nickname"], "홍길동")
         self.assertEqual(data["email"], "hong@test.com")
         self.assertEqual(data["gender"], "M")
-        self.assertEqual(data["profile_img_url"], "users/profiles/backgr.PNG")
+        self.assertEqual(data["profile_img_url"], "/media/users/profiles/backgr.PNG")
 
     def test_admin_recruitment_summary_serializer(self) -> None:
         """공고 요약 직렬화 테스트"""
@@ -149,12 +151,14 @@ class TestAdminApplicationSerializers(TestCase):
         mock_recruitment.recruitment_tags.all.return_value = [rt1, rt2]
 
         # applicant mock
+        mock_image = Mock()
+        mock_image.url = "/media/users/profiles/backgr.PNG"
         mock_applicant = Mock(
             id=1,
             nickname="홍길동",
             email="hong@example.com",
             gender="M",
-            profile_img_url="users/profiles/backgr.PNG",
+            profile_img_url=mock_image,
         )
 
         # application mock
