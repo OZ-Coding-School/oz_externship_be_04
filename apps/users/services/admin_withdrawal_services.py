@@ -44,7 +44,7 @@ def get_admin_withdrawal_list(
         if reason_param in allowed_reasons:
             qs = qs.filter(reason=reason_param)
 
-    if sort_param == "lastest":
+    if sort_param == "latest":
         qs = qs.order_by("-withdrawn_at", "-id")
     elif sort_param == "oldest":
         qs = qs.order_by("withdrawn_at", "id")

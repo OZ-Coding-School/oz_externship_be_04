@@ -29,7 +29,7 @@ class AdminWithdrawalList(APIView):
     @extend_schema(
         tags=["Admin"],
         summary="어드민 페이지 회원 탈퇴 목록 조회",
-        description="스테프 및 관리자 권한을 가진 유저는 어드민 페이지 회원 탈퇴 목록을 조회할 수 있습니다.",
+        description="스태프 및 관리자 권한을 가진 유저는 어드민 페이지 회원 탈퇴 목록을 조회할 수 있습니다.",
         parameters=[
             OpenApiParameter(
                 name="page",
@@ -60,7 +60,7 @@ class AdminWithdrawalList(APIView):
                 name="sort",
                 type=OpenApiTypes.STR,
                 location="query",
-                description="정렬 기준(lastest: 최신순, oldest: 오래된 순)",
+                description="정렬 기준(latest: 최신순, oldest: 오래된 순)",
                 enum=["lastest", "oldest"],
             ),
             OpenApiParameter(
@@ -68,12 +68,12 @@ class AdminWithdrawalList(APIView):
                 type=OpenApiTypes.STR,
                 location="query",
                 description="탈퇴 사유별 필터링",
-                enum=WithdrawalReason.choices,
+                enum=[choice[0] for choice in WithdrawalReason],
             ),
         ],
         responses={
             200: AdminWithdrawalListItemSerializer,
-            400: OpenApiTypes.OBJECT,
+            401: OpenApiTypes.OBJECT,
             403: OpenApiTypes.OBJECT,
         },
         examples=[
@@ -104,7 +104,7 @@ class AdminWithdrawalList(APIView):
             ),
             OpenApiExample(
                 name="Forbidden Example",
-                value={"error_detail": "권한이 없습니."},
+                value={"error_detail": "권한이 없습니다."},
                 status_codes=["403"],
             ),
         ],
