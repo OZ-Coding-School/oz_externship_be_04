@@ -53,15 +53,15 @@ def send_study_group_notification(notification_id: int, group_id: int) -> None:
                 "id": notification.id,
                 "type": notification.type,
                 "content": notification.content,
-                "back_ulr_link": notification.back_url_link,
-                "create_at": notification.created_at,
+                "back_url_link": notification.back_url_link,
+                "created_at": notification.created_at,
                 "is_read": notification.is_read,
             }
             await notification_service.publish_group_notification(
                 group_id=group_id, notification_data=notification_data
             )
         except Exception as e:
-            logging.error(f"스터디 그룹 알림 발송 오류:{e}")
+            logger.error(f"스터디 그룹 알림 발송 오류:{e}")
 
     try:
         event_loop = asyncio.get_event_loop()
@@ -81,7 +81,7 @@ async def send_tomorrow_schedule_notification() -> None:
     try:
         tomorrow = date.today() + timedelta(days=1)
 
-        participanes = ScheduleParticipants.objects.filter(schedule__session_date__date=tomorrow).select_related(
+        participants = ScheduleParticipants.objects.filter(schedule__session_date__date=tomorrow).select_related(
             "schedule", "schedule__study_group", "member__user"
         )
 
@@ -92,7 +92,7 @@ async def send_tomorrow_schedule_notification() -> None:
                 type=Notification.NotificationType.STUDY_JOIN,
                 back_url_link="",
             )
-            for participant in participanes
+            for participant in participants
         ]
 
         created_notifications = Notification.objects.bulk_create(notifications)
@@ -110,20 +110,20 @@ async def send_today_schedule_notification() -> None:
     try:
         today = date.today()
 
-        participans = ScheduleParticipants.objects.filter(schedule__session_date__date=today).select_related(
+        participants = ScheduleParticipants.objects.filter(schedule__session_date__date=today).select_related(
             "schedule", "schedule__study_group", "member__user"
         )
         notifications = [
             Notification(
                 user_id=participant.member.user_id.id,
-                content=f"rmadlf {participant.schedule.start_time.strftime('%H:%M')}부터"
+                content=f"금일 {participant.schedule.start_time.strftime('%H:%M')}부터"
                 f"{participant.schedule.end_time.strftime('%H:%M')}까지"
                 f"{participant.schedule.study_group.name}에서 {participant.schedule.title}이"
-                f"에정되어 있습니다! 잊지말고 참여해주세요!",
+                f"예정되어 있습니다! 잊지말고 참여해주세요!",
                 type=Notification.NotificationType.TODAY_SCHEDULE,
                 back_url_link="",
             )
-            for participant in participans
+            for participant in participants
         ]
 
         created_notifications = Notification.objects.bulk_create(notifications)

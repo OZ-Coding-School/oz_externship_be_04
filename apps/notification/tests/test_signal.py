@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 from django.test import TestCase
 
 from apps.application.models import Application, ApplicationStatus
-from apps.notification.models import Notification, notification
+from apps.notification.models import Notification
 from apps.recruitment.models import Recruitment
 from apps.study_groups.models import GroupMember, StudyGroup, StudyNote
 from apps.users.models.users import GenderChoices, User
@@ -22,7 +22,7 @@ class SignalTestCase(TestCase):
             birthday=date(1995, 1, 11),
         )
         self.applicant = User.objects.create(
-            email="applicant_{unique_id}@test.com",
+            email="applicant@test.com",
             nickname="applicant",
             name="applicant",
             password="password123",
@@ -151,7 +151,7 @@ class SignalTestCase(TestCase):
 
         expected_content = f"{self.study_group.name}에 {self.applicant.nickname}님이 참여했습니다. 환영해주세요!"
         self.assertEqual(notification.content, expected_content)
-        self.assertIn(str(self.study_group.id), notification.back_url_link)  # ✨ .id를 사용합니다.
+        self.assertIn(str(self.study_group.id), notification.back_url_link)
 
         assert notification.back_url_link is not None
 
@@ -173,7 +173,7 @@ class SignalTestCase(TestCase):
         expected_content = f"오늘은 {self.study_group.name}의 종료일이에요! 스터디 후기를 기록해주세요!"
         self.assertEqual(notification1.content, expected_content)
         assert notification1.back_url_link is not None
-        self.assertIn("", notification1.back_url_link)
+        self.assertIn(str(self.study_group.id), notification1.back_url_link)
 
         notification2 = notification.get(user=self.applicant)
         self.assertEqual(notification2.content, expected_content)
