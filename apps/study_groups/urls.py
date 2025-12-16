@@ -1,5 +1,9 @@
 from django.urls import path
 
+from .views.review_view import (
+    StudyGroupReviewCreateAPIView,
+    StudyGroupReviewUpdateAPIView,
+)
 from .views.study_groups_view import (
     DelegateLeaderAPIView,
     KickStudyGroupMemberAPIView,
@@ -13,6 +17,13 @@ from .views.study_groups_view import (
 
 urlpatterns = [
     path("/study-groups", StudyGroupListAPIView.as_view(), name="study-group-list"),
+    path("/study-groups/create", StudyGroupCreateAPIView.as_view(), name="study-group-create"),
+    path("/study-groups/<int:group_id>/reviews", StudyGroupReviewCreateAPIView.as_view(), name="study-group-review"),
+    path(
+        "/study-groups/<int:group_id>/reviews/<int:review_id>",
+        StudyGroupReviewUpdateAPIView.as_view(),
+        name="study-group-review-update",
+    ),
     path("/study-groups", StudyGroupCreateAPIView.as_view(), name="study-group-create"),
     path("/study-groups/<int:group_id>", StudyGroupRetrieveAPIView.as_view(), name="study-group-detail"),
     path("/study-groups/<int:group_id>", StudyGroupUpdateAPIView.as_view(), name="study-group-update"),
