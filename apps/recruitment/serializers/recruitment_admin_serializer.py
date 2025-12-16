@@ -31,13 +31,11 @@ class AdminRecruitmentTagSerializer(serializers.ModelSerializer[Tag]):
         read_only_fields = fields
 
 
-@extend_schema_serializer(component_name="lectures")
-class AdminRecruitmentLectureSerializer(serializers.Serializer[Any]):
-    id = serializers.IntegerField()
-    title = serializers.CharField()
-    instructor = serializers.CharField()
-    thumbnail_img_url = serializers.CharField()
-    url_link = serializers.CharField()
+class AdminRecruitmentLectureDetailSerializer(serializers.ModelSerializer[CrawledLecture]):
+    class Meta:
+        model = CrawledLecture
+        fields = ["id", "title", "instructor", "thumbnail_img_url", "url_link"]
+        read_only_fields = ["id", "title", "instructor", "thumbnail_img_url", "url_link"]
 
 
 class AdminRecruitmentAttachmentSerializer(serializers.ModelSerializer[RecruitmentAttachment]):
@@ -132,12 +130,12 @@ class AdminRecruitmentDetailSerializer(TimestampSerializerMixin, serializers.Mod
     def get_files(self, obj: Recruitment) -> Any:
         return AdminRecruitmentAttachmentSerializer(obj.attachments.all(), many=True).data
 
-    @extend_schema_field(AdminRecruitmentLectureSerializer(many=True))
+    @extend_schema_field(AdminRecruitmentLectureDetailSerializer(many=True))
     def get_lectures(self, obj: Recruitment) -> Any:
         study_group = obj.study_group
         study_lectures = study_group.studylecture_study_groups.all()
         lecture_list = [sl.lecture for sl in study_lectures if sl.lecture is not None]
-        return AdminRecruitmentLectureSerializer(lecture_list, many=True).data
+        return AdminRecruitmentLectureDetailSerializer(lecture_list, many=True).data
 
     @extend_schema_field(AdminRecruitmentApplicationSummarySerializer(many=True))
     def get_applications(self, obj: Recruitment) -> Any:
