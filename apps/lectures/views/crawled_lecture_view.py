@@ -124,6 +124,23 @@ class CrawledLectureListAPIView(APIView):
         return paginator.get_paginated_response(serializer.data)
 
 
+@extend_schema(
+    tags=["Lecture"],
+    summary="사용자 맞춤 강의를 추천하는 API입니다.",
+    parameters=[
+        OpenApiParameter(
+            name="max_count",
+            type=OpenApiTypes.INT,
+            location="query",
+            description="추천 받을 강의 개수를 입력합니다. (기본 3)",
+            required=False,
+        ),
+    ],
+    responses={
+        200: CrawledLectureSerializer(many=True, read_only=True),
+        500: {"example": {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."}},
+    },
+)
 class CrawledLectureRecommendAPIView(APIView):
     serializer_class = CrawledLectureSerializer
     permission_classes = [IsAuthenticated]
