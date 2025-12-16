@@ -1,11 +1,3 @@
-"""
-apps/notification/tests/test_task.py
-
-Django + Celery + asyncio 기반 알림 태스크 기본 기능 테스트
-task 코드는 수정하지 않고 mock으로만 테스트
-"""
-
-import asyncio
 from datetime import date, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
