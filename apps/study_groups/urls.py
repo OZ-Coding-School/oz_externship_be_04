@@ -12,8 +12,8 @@ from .views.study_groups_view import (
     StudyGroupRetrieveUpdateDestroyAPIView,
 )
 from .views.schedule_views import (
-    ScheduleDetailView,
     ScheduleView,
+    ScheduleDetailView,
 )
 from .views.study_note import (
     StudyNoteDetailView,
