@@ -7,7 +7,11 @@ from .views.review_view import (
 )
 =======
 from .views import StudyNoteAPIView, StudyNoteDetailAPIView
+<<<<<<< HEAD
 >>>>>>> 52d1f99 (노트 작성/목록 API와 테스트 추가)
+=======
+from .views.review_view import StudyGroupReviewCreateAPIView, StudyGroupReviewUpdateAPIView
+>>>>>>> bfdf286 (pr 피드백 반영)
 from .views.study_groups_view import (
     DelegateLeaderAPIView,
     KickStudyGroupMemberAPIView,
@@ -44,6 +48,16 @@ urlpatterns = [
         name="delegate-leader",
     ),
 >>>>>>> 52d1f99 (노트 작성/목록 API와 테스트 추가)
+    path(
+        "/study-groups/<int:group_id>/reviews",
+        StudyGroupReviewCreateAPIView.as_view(),
+        name="study-group-review",
+    ),
+    path(
+        "/study-groups/<int:group_id>/reviews/<int:review_id>",
+        StudyGroupReviewUpdateAPIView.as_view(),
+        name="study-group-review-update",
+    ),
     path(
         "/study-groups/<int:group_id>/members/<int:member_id>",
         KickStudyGroupMemberAPIView.as_view(),
