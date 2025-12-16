@@ -31,11 +31,13 @@ class AdminRecruitmentTagSerializer(serializers.ModelSerializer[Tag]):
         read_only_fields = fields
 
 
-class AdminRecruitmentLectureSerializer(serializers.ModelSerializer[CrawledLecture]):
-    class Meta:
-        model = CrawledLecture
-        fields = ["id", "title", "instructor", "thumbnail_img_url", "url_link"]
-        read_only_fields = ["id", "title", "instructor", "thumbnail_img_url", "url_link"]
+@extend_schema_serializer(component_name="lectures")
+class AdminRecruitmentLectureSerializer(serializers.Serializer[Any]):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    instructor = serializers.CharField()
+    thumbnail_img_url = serializers.CharField()
+    url_link = serializers.CharField()
 
 
 class AdminRecruitmentAttachmentSerializer(serializers.ModelSerializer[RecruitmentAttachment]):
