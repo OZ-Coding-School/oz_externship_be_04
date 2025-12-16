@@ -14,10 +14,7 @@ def get_admin_withdrawal_list(
     sort_param: Optional[str],
     reason_param: Optional[str],
 ) -> OffsetPage[Withdrawal]:
-
     qs = Withdrawal.objects.select_related("user").all()
-
-    qs = qs.order_by("id")
 
     if search:
         search_filter = Q()
@@ -48,6 +45,8 @@ def get_admin_withdrawal_list(
         qs = qs.order_by("-withdrawn_at", "-id")
     elif sort_param == "oldest":
         qs = qs.order_by("withdrawn_at", "id")
+    else:
+        qs = qs.order_by("id")
 
     page: OffsetPage[Withdrawal] = offset_paginate_queryset(qs, pageable)
     return page
