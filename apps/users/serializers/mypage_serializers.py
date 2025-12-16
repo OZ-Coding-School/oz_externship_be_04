@@ -57,6 +57,13 @@ class MyPageSerializer(serializers.ModelSerializer[Any]):
             base_url = S3Uploader.get_s3_base_url()
             data["profile_img_url"] = f"{base_url}{img_url}"
 
+        request = self.context.get("request")
+        if request.method == "GET":  # type: ignore
+            data.pop("updated_at", None)
+        elif request.method == "PATCH":  # type: ignore
+            data.pop("phone_number", None)
+            data.pop("created_at", None)
+
         return data
 
 
