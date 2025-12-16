@@ -2,6 +2,7 @@ import re
 from typing import Any
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from rest_framework import serializers
 
 User = get_user_model()
@@ -69,3 +70,11 @@ class UserSerializer(serializers.ModelSerializer[Any]):
 
         instance.save()
         return instance
+
+    def validate(self, data: dict[str, Any]) -> Any:
+        email = data.get("email")
+        if email:
+            get_verified_email = cache.get(f"verified:email:{email}")
+            if not get_verified_email:
+                raise serializers.ValidationError({"email": ["이메일 인증을 완료해야 가입하실 수 있습니다."]})
+        return data

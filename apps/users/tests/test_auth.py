@@ -1,3 +1,5 @@
+from unittest.mock import patch  # mocking 전용 import
+
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
@@ -20,8 +22,16 @@ class test_user_register(APITestCase):
             "gender": "M",
             "birthday": "1990-01-01",
         }
+        # 이메일 인증 PASS 임시 mocking code
+        self.patcher = patch("django.core.cache.cache.get")
+        self.mock_cache_get = self.patcher.start()
+        self.mock_cache_get.return_value = "true"
+        # -------------------------------
 
     def tearDown(self) -> None:
+        # 이메일 인증 PASS 임시 mocking code
+        self.patcher.stop()
+        # -------------------------------
         User.objects.all().delete()
 
     def test_success_register(self) -> None:
