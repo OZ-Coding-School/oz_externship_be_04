@@ -26,13 +26,6 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
             await self.close(4000)
             return
 
-        try:
-            self.group_uuid = await self.get_group_uuid(self.group_id)
-            self.room_group_name = f"chat_{self.group_uuid}"
-        except Exception:
-            await self.close(4004)
-            return
-
         # 인증
         user = await self.authenticate()
         if user is None:
