@@ -3,12 +3,14 @@ from typing import Any
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from apps.core.S3 import S3Uploader
 from apps.users.services.mypage_services import NicknameCheckConflict
 
 User = get_user_model()
 
 
 class MyPageSerializer(serializers.ModelSerializer[Any]):
+    profile_img_url = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     role = serializers.CharField(read_only=True)
     birthday = serializers.DateField(input_formats=["%Y%m%d", "%Y-%m-%d"])
 
@@ -38,18 +40,22 @@ class MyPageSerializer(serializers.ModelSerializer[Any]):
             raise NicknameCheckConflict()
         return value
 
+    def validate_profile_img_url(self, value: str) -> str:
+        if not value:
+            return value
+
+        url = "uploads/users/profiles/"
+        if not value.startswith(url):
+            raise serializers.ValidationError(f"잘못된 경로 입니다. {url}'로 시작해야 합니다.")
+        return value
+
     def to_representation(self, instance: Any) -> dict[str, Any]:
         data = super().to_representation(instance)
 
-        if not data.get("profile_img_url"):
-            data["profile_img_url"] = "https://example.com/profile/user1.png"
-
-        request = self.context.get("request")
-        if request.method == "GET":  # type: ignore
-            data.pop("updated_at", None)
-        elif request.method == "PATCH":  # type: ignore
-            data.pop("phone_number", None)
-            data.pop("created_at", None)
+        img_url = data.get("profile_img_url")
+        if img_url:
+            base_url = S3Uploader.get_s3_base_url()
+            data["profile_img_url"] = f"{base_url}{img_url}"
 
         return data
 
