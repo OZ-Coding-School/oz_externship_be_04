@@ -16,32 +16,26 @@ class AdminWithdrawalListItemSerializer(serializers.Serializer[Any]):
     reason = serializers.ChoiceField(choices=WithdrawalReason.choices)
     withdrawn_at = serializers.DateTimeField()
 
-    def get_user(self, obj: Withdrawal) -> Optional[User]:
-        user = obj.user
-        if user is None:
-            return None
-        return user
-
     def get_email(self, obj: Withdrawal) -> Optional[str]:
-        user = self.get_user(obj)
-        if not user:
+        user: Optional[User] = obj.user
+        if user is None:
             return None
         return user.email
 
     def get_name(self, obj: Withdrawal) -> Optional[str]:
-        user = self.get_user(obj)
-        if not user:
+        user: Optional[User] = obj.user
+        if user is None:
             return None
         return user.name
 
     def get_role(self, obj: Withdrawal) -> Optional[str]:
-        user = self.get_user(obj)
-        if not user:
+        user: Optional[User] = obj.user
+        if user is None:
             return None
         return user.role
 
     def get_birthday(self, obj: Withdrawal) -> Optional[str]:
-        user = self.get_user(obj)
-        if not user or user.birthday is None:
+        user: Optional[User] = obj.user
+        if user is None or user.birthday is None:
             return None
         return user.birthday.isoformat()
