@@ -6,16 +6,26 @@ from .views.review_view import (
     StudyGroupReviewCreateAPIView,
     StudyGroupReviewUpdateAPIView,
 )
+
 =======
 from .views import StudyNoteAPIView, StudyNoteDetailAPIView
+
 <<<<<<< HEAD
 >>>>>>> 52d1f99 (노트 작성/목록 API와 테스트 추가)
 =======
-from .views.review_view import StudyGroupReviewCreateAPIView, StudyGroupReviewUpdateAPIView
+from .views.review_view import (
+    StudyGroupReviewCreateAPIView,
+    StudyGroupReviewUpdateAPIView,
+)
+
 >>>>>>> bfdf286 (pr 피드백 반영)
 =======
 from .views import StudyNoteAPIView, StudyNoteDetailAPIView
-from .views.review_view import StudyGroupReviewCreateAPIView, StudyGroupReviewUpdateAPIView
+from .views.review_view import (
+    StudyGroupReviewCreateAPIView,
+    StudyGroupReviewUpdateAPIView,
+)
+
 >>>>>>> 9a16835 (urls 복구)
 from .views.study_groups_view import (
     DelegateLeaderAPIView,
