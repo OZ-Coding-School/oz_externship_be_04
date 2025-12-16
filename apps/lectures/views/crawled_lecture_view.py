@@ -4,8 +4,9 @@ from django.conf import settings
 from django.db.models import Q, QuerySet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_field
+from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,6 +16,8 @@ from apps.lectures.models import CrawledLecture
 from apps.lectures.serializers.crawled_lecture_serializer import (
     CrawledLectureSerializer,
 )
+from apps.lectures.services.recommendation.content_based import recommend_lectures
+from apps.users.models import User
 
 
 class CrawledLecturePagination(PageNumberPagination):
@@ -119,3 +122,42 @@ class CrawledLectureListAPIView(APIView):
 
         serializer = self.serializer_class(page, many=True)
         return paginator.get_paginated_response(serializer.data)
+
+
+@extend_schema(
+    tags=["Lecture"],
+    summary="사용자 맞춤 강의를 추천하는 API입니다.",
+    parameters=[
+        OpenApiParameter(
+            name="max_count",
+            type=OpenApiTypes.INT,
+            location="query",
+            description="추천 받을 강의 개수를 입력합니다. (기본 3)",
+            required=False,
+        ),
+    ],
+    responses={
+        200: CrawledLectureSerializer(many=True, read_only=True),
+        500: {"example": {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."}},
+    },
+)
+class CrawledLectureRecommendAPIView(APIView):
+    serializer_class = CrawledLectureSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        user = cast(User, request.user)
+
+        max_count = request.query_params.get("max_count", 3)
+
+        try:
+            max_count = max(1, int(max_count))
+        except (ValueError, TypeError):
+            return Response(
+                {"error_detail": "max_count는 1 이상의 정수 형식이어야 합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        recommended_lectures, text = recommend_lectures(user, max_count)
+        serializer = CrawledLectureSerializer(recommended_lectures, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
