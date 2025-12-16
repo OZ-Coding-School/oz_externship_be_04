@@ -186,13 +186,33 @@ def recommend_lectures(user: User, top_n: int = 3) -> Tuple[List[CrawledLecture]
 
     user_vec = get_user_embedding_vector(user, lecture_vectors, lecture_ids)
 
-    if user_vec is not None:
+    enrolled_ids = set(
+        StudyLecture.objects.filter(study_group__groupmember_study_groups__user_id=user.id).values_list(
+            "lecture_id", flat=True
+        )
+    )
+
+    if user_vec is not None and len(set(lecture_ids) - enrolled_ids) > 0:
         sims = lecture_vectors @ user_vec
-        top_idx = np.argsort(sims)[::-1][:top_n]
-        recommended = [lectures[i] for i in top_idx]
+        sorted_idx = np.argsort(sims)[::-1]
+
+        recommended: List[CrawledLecture] = []
+        for idx in sorted_idx:
+            lec = lectures[idx]
+            if lec.id in enrolled_ids:
+                continue
+
+            recommended.append(lec)
+            if len(recommended) == top_n:
+                break
+
         return recommended, "personalized"
     else:
         import random
 
-        recommended = random.sample(lectures, min(top_n, len(lectures)))
+        candidates = [lec for lec in lectures if lec.id not in enrolled_ids]
+        if not candidates:
+            candidates = lectures
+
+        recommended = random.sample(candidates, min(top_n, len(candidates)))
         return recommended, "random"
