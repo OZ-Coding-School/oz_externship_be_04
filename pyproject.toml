@@ -80,6 +80,7 @@ omit = [
     "*/wsgi.py",
     "*/asgi.py",
     "*testcase.py",
+    "*/_remote_module_non_scriptable.py"
 ]
 
 [tool.coverage.report]
