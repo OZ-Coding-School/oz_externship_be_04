@@ -120,15 +120,15 @@ def build_user_vector(
     lecture_vectors: NDArray[np.float32],
     lecture_ids: List[int],
 ) -> Optional[NDArray[np.float32]]:
-    bookmark_ids = set(user.lecture_bookmarks.values_list("lecture_id", flat=True))
+    bookmark_ids = set(user.lecture_bookmarks_middle_table.values_list("id", flat=True))
 
     group_lecture_ids = set(
-        StudyLecture.objects.filter(
-            study_group__groupmember_study_groups__user_id=user
-        ).values_list("lecture_id", flat=True)
+        StudyLecture.objects.filter(study_group__groupmember_study_groups__user_id=user.id).values_list(
+            "lecture_id", flat=True
+        )
     )
 
-    preferred_cats = user.preferred_categories.values_list("category_id", flat=True)
+    preferred_cats = user.prefer_categories_middle_table.values_list("id", flat=True)
     category_lecture_ids = set(
         CrawledLecture.objects.filter(categories__id__in=preferred_cats).values_list("id", flat=True)
     )
