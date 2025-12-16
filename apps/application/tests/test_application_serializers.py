@@ -21,9 +21,7 @@ class TestApplicationSerializersUnit(TestCase):
         self.assertEqual(data["title"], "테스트 공고")
 
     def test_applicant_summary_serializer(self) -> None:
-        mock_image = Mock()
-        mock_image.url = "/media/users/profiles/backgr.PNG"
-        mock_user = Mock(id=1, nickname="홍길동", gender="M", profile_img_url=mock_image)
+        mock_user = Mock(id=1, nickname="홍길동", gender="M", profile_img_url="/img.png")
 
         serializer = ApplicantSummarySerializer(mock_user)
         data = serializer.data
@@ -31,7 +29,7 @@ class TestApplicationSerializersUnit(TestCase):
         self.assertEqual(data["id"], 1)
         self.assertEqual(data["nickname"], "홍길동")
         self.assertEqual(data["gender"], "M")
-        self.assertEqual(data["profile_img_url"], "/media/users/profiles/backgr.PNG")
+        self.assertEqual(data["profile_img_url"], "/img.png")
 
     def test_recruitment_summary_serializer(self) -> None:
         """Recruitment Summary 테스트"""
