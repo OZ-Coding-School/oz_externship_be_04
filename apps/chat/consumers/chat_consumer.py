@@ -1,6 +1,5 @@
 import json
 from typing import Any, Dict, List, Optional
-from uuid import UUID
 
 from channels.db import database_sync_to_async  # type: ignore
 from channels.generic.websocket import AsyncWebsocketConsumer  # type: ignore
@@ -15,13 +14,13 @@ from apps.users.models import User
 class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
     user: User
     group_id: int
-    group_uuid: UUID
     room_group_name: str
 
     async def connect(self) -> None:
         try:
             raw_id = self.scope["url_route"]["kwargs"].get("group_id")
             self.group_id = int(raw_id)
+            self.room_group_name = f"chat_{self.group_id}"
         except Exception:
             await self.close(4000)
             return
