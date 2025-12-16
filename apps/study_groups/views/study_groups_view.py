@@ -1,6 +1,4 @@
-from typing import Optional, cast
-
-from django.contrib.auth.models import AnonymousUser
+from typing import cast
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -22,7 +20,6 @@ from apps.study_groups.serializers.study_group import StudyGroupDetailSerializer
 from apps.study_groups.services.study_group_service import (
     create_study_group,
     delegate_leader,
-    delete_study_group,
     get_study_group_list,
     kick_member,
     leave_study_group,
@@ -48,7 +45,7 @@ class StudyGroupCreateAPIView(APIView):
 
         serializer = StudyGroupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        # study_group = create_study_group(user, serializer.validated_data)
+        create_study_group(user, serializer.validated_data)
         return Response(
             {"detail": "스터디 그룹 생성에 성공하였습니다."},
             status=status.HTTP_201_CREATED,
@@ -171,7 +168,7 @@ class DelegateLeaderAPIView(APIView):
         ).first()
 
         if current_leader is None:
-            return Response({"error_detail": "권한이 없습니다."}, status=403)
+            return Response({"error_detail": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = DelegateLeaderRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -183,7 +180,7 @@ class DelegateLeaderAPIView(APIView):
         ).first()
 
         if target_member is None:
-            return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
+            return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
         delegate_leader(current_leader, target_member)
         return Response({"detail": "리더 권한이 위임되었습니다."}, status=status.HTTP_200_OK)
@@ -208,12 +205,12 @@ class LeaveStudyGroupMeAPIView(APIView):
         user = cast(User, request.user)
         membership = GroupMember.objects.filter(study_group_id=study_group_id, user_id=user.id).first()
         if membership is None:
-            return Response({"error_detail": "스터디 그룹을 찾을 수 없습니다."}, status=404)
+            return Response({"error_detail": "스터디 그룹을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             leave_study_group(membership)
         except ValueError as e:
-            return Response({"error_detail": str(e)}, status=400)
+            return Response({"error_detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"detail": "스터디 그룹에서 나가기에 성공했습니다."}, status=status.HTTP_204_NO_CONTENT)
 
@@ -238,16 +235,16 @@ class KickStudyGroupMemberAPIView(APIView):
         user = cast(User, request.user)
         current_leader = GroupMember.objects.filter(study_group_id=study_group_id, user_id=user.id).first()
         if not current_leader or not current_leader.is_leader:
-            return Response({"error_detail": "리더만 멤버를 추방할 수 있습니다."}, status=403)
+            return Response({"error_detail": "리더만 멤버를 추방할 수 있습니다."}, status=status.HTTP_403_FORBIDDEN)
         # 멤버십 -> 멤버 / is None -> not (bool)
         target_member = GroupMember.objects.filter(study_group_id=study_group_id, user_id=member_id).first()
         if not target_member:
-            return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
+            return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             kick_member(current_leader, target_member)
         except ValueError as e:
-            return Response({"error_detail": str(e)}, status=400)
+            return Response({"error_detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
             {"detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."}, status=status.HTTP_204_NO_CONTENT

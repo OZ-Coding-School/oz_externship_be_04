@@ -30,11 +30,10 @@ class StudyNoteCreateSerializer(serializers.Serializer[Dict[str, Any]]):
         study_group = validated_data.pop("study_group")
 
         with transaction.atomic():
-            # 기본 요약은 임시 텍스트로 채운다.
             note = StudyNote.objects.create(
                 author=author,
                 study_group=study_group,
-                ai_summary="TODO: AI 요약",
+                ai_summary="요약 준비 중",
                 **validated_data,
             )
             self._create_images(note, images)
