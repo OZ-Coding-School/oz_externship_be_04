@@ -1,230 +1,211 @@
 import asyncio
-import json
-import time
-from typing import Any, Dict, List, Mapping, Sequence, Union, cast
-from urllib.parse import quote
+from datetime import datetime
+from typing import Any, Dict, List, Optional, cast
 
 import httpx
-from httpx import Limits
 
 from apps.core.logger.logging import get_logger
 
-Params = Mapping[str, str | int | float | bool | None | Sequence[str | int | float | bool | None]]
 logger = get_logger(__name__)
-logger.info("인프런 전체강의 크롤링 시작")
+JsonDict = Dict[str, Any]
 
 
 class InflearnCrawler:
-    COURSE_LIST_API = "https://course-api.inflearn.com/client/api/v1/course/search"
-    REVIEW_API = "https://ucc-api.inflearn.com/client/api/v1/reviews/course/{course_id}"
+    LIST_API = "https://course-api.inflearn.com/client/api/v2/courses/search"
+    META_API = "https://course-api.inflearn.com/client/api/v1/course/{cid}/meta?lang=ko"
+    PAYMENT_API = "https://course-api.inflearn.com/client/api/v1/courses/{cid}/payment-info?lang=ko"
+    REVIEW_API = "https://ucc-api.inflearn.com/client/api/v1/reviews/course/{cid}"
 
-    page_size: int = 100
-    max_concurrent: int = 10
-    review_concurrent = 10
-
-    review_params: Params = {
+    PAGE_SIZE = 40
+    REVIEW_PARAMS = {
         "pageNumber": 1,
         "pageSize": 4,
         "sort": "RECENT",
         "lang": "ko",
     }
 
-    async def get_all_courses(self) -> List[Dict[str, Any]]:
-        logger.info("get all courses")
+    PARAMS_BASE = {
+        "keyword": "",
+        "categories": "",
+        "isBot": "false",
+        "isDiscounted": "false",
+        "isEarlybirdDiscounted": "false",
+        "pageSize": PAGE_SIZE,
+        "sort": "POPULAR",
+        "types": "ONLINE,OFFLINE",
+        "lang": "ko",
+        "uri": "https://www.inflearn.com/",
+        "referrerUri": "https://www.inflearn.com/",
+    }
 
-        async with httpx.AsyncClient(
-            timeout=20.0, http2=True, limits=Limits(max_connections=200, max_keepalive_connections=200)
-        ) as client:
-            total_pages = await self._get_total_pages(client)
-            logger.info(f"총 페이지 수: {total_pages}")
+    auto_category_id = 1
 
-            if total_pages == 0:
-                logger.warning("total_pages == 0")
+    def normalize_level(self, code: str) -> str:
+        code = code.upper()
+        if "BEGINNER" in code or "BASIC" in code:
+            return "EASY"
+        if "INTERMEDIATE" in code:
+            return "NORMAL"
+        if "ADVANCED" in code or "HIGH" in code:
+            return "HARD"
+        return ""
+
+    def next_category(self, name: str) -> Dict[str, Any]:
+        return {"name": name}
+
+    async def _get(
+        self, client: httpx.AsyncClient, url: str, params: Optional[Dict[str, Any]] = None
+    ) -> Optional[JsonDict]:
+        try:
+            resp = await client.get(url, params=params)
+            if resp.status_code == 200:
+                return cast(JsonDict, resp.json())
+        except Exception:
+            return None
+        return None
+
+    async def _fetch_list_page(self, client: httpx.AsyncClient, page: int) -> Optional[JsonDict]:
+        params = {**self.PARAMS_BASE, "pageNumber": page}
+        return await self._get(client, self.LIST_API, params)
+
+    async def _fetch_meta(self, client: httpx.AsyncClient, cid: int) -> Optional[JsonDict]:
+        return await self._get(client, self.META_API.format(cid=cid))
+
+    async def _fetch_payment(self, client: httpx.AsyncClient, cid: int) -> Optional[JsonDict]:
+        return await self._get(client, self.PAYMENT_API.format(cid=cid))
+
+    async def _fetch_reviews(self, client: httpx.AsyncClient, cid: int) -> List[JsonDict]:
+        data = await self._get(client, self.REVIEW_API.format(cid=cid), self.REVIEW_PARAMS)
+        out: List[JsonDict] = []
+        if not data or "data" not in data:
+            return out
+        items = data["data"].get("items", [])
+        for i, r in enumerate(items, start=1):
+            rating = r.get("star")
+            content = r.get("body")
+            if not rating or not content or content.strip() == "":
+                continue
+            out.append(
+                {
+                    "id": f"{cid}_{i}",
+                    "rating": rating,
+                    "content": content,
+                    "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }
+            )
+        return out
+
+    def extract_tags(self, meta: Optional[JsonDict]) -> List[str]:
+        if not meta or "data" not in meta:
+            return []
+        data = meta["data"]
+        tags_set = set()
+
+        tags = data.get("tags")
+        if isinstance(tags, list):
+            for tg in tags:
+                name = tg.get("name")
+                if name:
+                    tags_set.add(name)
+
+        tag_groups = data.get("tagGroups")
+        if isinstance(tag_groups, list):
+            for group in tag_groups:
+                tg_list = group.get("tags")
+                if isinstance(tg_list, list):
+                    for tg in tg_list:
+                        name = tg.get("name")
+                        if name:
+                            tags_set.add(name)
+
+        return list(tags_set)
+
+    async def _gather_details(self, client: httpx.AsyncClient, cid: int, slug: str, base: JsonDict) -> JsonDict:
+        meta = await self._fetch_meta(client, cid)
+        payment = await self._fetch_payment(client, cid)
+        reviews = await self._fetch_reviews(client, cid)
+
+        instructor = ""
+        difficulty = ""
+
+        tag_names = self.extract_tags(meta)
+        categories: List[Dict[str, Any]] = []
+
+        if tag_names:
+            for name in tag_names:
+                categories.append(self.next_category(name))
+        else:
+            if payment and payment.get("data"):
+                pdata = payment["data"]
+                cat = pdata.get("category")
+                if cat:
+                    main = cat.get("main")
+                    sub = cat.get("sub")
+
+                    if main and main.get("title"):
+                        categories.append(self.next_category(main["title"]))
+
+                    if sub and sub.get("title"):
+                        categories.append(self.next_category(sub["title"]))
+
+        if payment and payment.get("data"):
+            pdata = payment["data"]
+
+            ins = pdata.get("instructors")
+            if ins:
+                instructor = ins[0].get("name", "")
+
+            levels = pdata.get("levels")
+            if levels:
+                for lvl in levels:
+                    if lvl.get("isActive"):
+                        difficulty = self.normalize_level(str(lvl.get("code", "")))
+
+        payinfo = payment["data"].get("paymentInfo") if payment and payment.get("data") else None
+        original_price = payinfo.get("regularPrice") if payinfo else 0
+        discounted_price = payinfo.get("payPrice") if payinfo else 0
+
+        return {
+            "id": cid,
+            "title": base["title"],
+            "instructor": instructor,
+            "total_class_time": base["total_class_time"],
+            "original_price": original_price,
+            "discounted_price": discounted_price,
+            "difficulty": difficulty,
+            "thumbnail_img_url": base["thumbnail_img_url"],
+            "average_rating": base["average_rating"],
+            "platform": "INFLEARN",
+            "url_link": f"https://www.inflearn.com/course/{slug}",
+            "categories": categories,
+            "reviews": reviews,
+        }
+
+    async def get_all_courses(self) -> List[JsonDict]:
+        async with httpx.AsyncClient(http2=True, timeout=30) as client:
+            first = await self._fetch_list_page(client, 1)
+            if not first or "data" not in first:
                 return []
 
-            all_raw_items = await self._get_all_course_items(client, total_pages)
-            logger.info(f" 총{len(all_raw_items)}개 수집")
+            total = first["data"]["totalPage"]
+            fetched_pages = await asyncio.gather(*[self._fetch_list_page(client, p) for p in range(2, total + 1)])
 
-            course_dict: Dict[int, Dict[str, Any]] = {}
-            for item in all_raw_items:
-                course_id = item.get("course", {}).get("id")
-                if course_id:
-                    course_dict[course_id] = item
+            pages = [first] + [pg for pg in fetched_pages if pg is not None]
+            items: List[tuple[int, str, JsonDict]] = []
 
-            review_dict = await self._get_reviews_for_all(client, list(course_dict.keys()))
-            logger.info("리뷰 완료")
+            for pg in pages:
+                for item in pg["data"].get("items", []):
+                    info = item.get("course") or {}
+                    cid = info.get("id")
+                    slug = info.get("slug")
+                    if not cid or not slug:
+                        continue
+                    base = {
+                        "title": info.get("title"),
+                        "thumbnail_img_url": info.get("thumbnailUrl"),
+                        "total_class_time": info.get("runtimeSecond", 0) // 60,
+                        "average_rating": round(float(info.get("star") or 0), 2),
+                    }
+                    items.append((cid, slug, base))
 
-            final_results = self._combine(course_dict, review_dict)
-            logger.info(f"강의 데이터 생성: {len(final_results)}개")
-            return final_results
-
-    async def _get_total_pages(self, client: httpx.AsyncClient) -> int:
-        params: Params = cast(
-            Params,
-            {
-                "pageNumber": 1,
-                "pageSize": self.page_size,
-                "sort": "POPULAR",
-                "lang": "ko",
-            },
-        )
-
-        try:
-            res = await client.get(self.COURSE_LIST_API, params=params)
-            res.raise_for_status()
-            data = res.json()
-            return cast(int, data.get("data", {}).get("totalPage", 1))
-        except Exception as e:
-            logger.error(f"총 페이지 계산 실패 params={params}", exc_info=True)
-            return 0
-
-    async def _get_all_course_items(self, client: httpx.AsyncClient, total_pages: int) -> List[Dict[str, Any]]:
-
-        base_params: Params = cast(
-            Params,
-            {
-                "pageSize": self.page_size,
-                "sort": "POPULAR",
-                "lang": "ko",
-            },
-        )
-
-        tasks: List[asyncio.Task[List[Dict[str, Any]]]] = []
-
-        for page_num in range(1, total_pages + 1):
-            logger.info(f"페이지 요청중: {page_num}/{total_pages}")
-
-            params: Params = cast(
-                Params,
-                {**base_params, "pageNumber": page_num},
-            )
-            tasks.append(asyncio.create_task(self._fetch_course_page(client, params)))
-
-        collected: List[Dict[str, Any]] = []
-
-        for i in range(0, len(tasks), self.max_concurrent):
-            batch = tasks[i : i + self.max_concurrent]
-            results = await asyncio.gather(*batch, return_exceptions=True)
-
-            for items in results:
-                if isinstance(items, Exception):
-                    logger.error("페이지 수집 중 오류", exc_info=True)
-                elif isinstance(items, list):
-                    collected.extend(items)
-        return collected
-
-    async def _fetch_course_page(self, client: httpx.AsyncClient, params: Params) -> List[Dict[str, Any]]:
-        try:
-            res = await client.get(self.COURSE_LIST_API, params=params)
-            res.raise_for_status()
-            return cast(List[Dict[str, Any]], res.json().get("data", {}).get("items", []))
-        except Exception:
-            logger.error(f"강의 페이지 요청 불가 params={params}", exc_info=True)
-            return []
-
-    async def _get_reviews_for_all(
-        self, client: httpx.AsyncClient, course_ids: List[int]
-    ) -> Dict[int, List[Dict[str, Any]]]:
-        logger.info(f"리뷰 수집 시작 (총 {len(course_ids)}개")
-        tasks: List[asyncio.Task[Dict[str, Any]]] = []
-
-        for cid in course_ids:
-            tasks.append(asyncio.create_task(self._fetch_single_course_reviews(client, cid)))
-
-        review_dict: Dict[int, List[Dict[str, Any]]] = {}
-
-        for i in range(0, len(tasks), self.max_concurrent):
-            batch = tasks[i : i + self.max_concurrent]
-            results = await asyncio.gather(*batch, return_exceptions=True)
-            for item in results:
-                if isinstance(item, dict) and item.get("course_id"):
-                    review_dict[item["course_id"]] = item["reviews"]
-
-        return review_dict
-
-    async def _fetch_single_course_reviews(self, client: httpx.AsyncClient, course_id: int) -> Dict[str, Any]:
-        try:
-            url = self.REVIEW_API.format(course_id=course_id)
-            res = await client.get(url, params=self.review_params)
-            res.raise_for_status()
-
-            items = res.json().get("data", {}).get("items", [])
-            rv_list = []
-
-            for rv in items:
-                rv_list.append({"rating": rv.get("star", 0), "content": rv.get("body", "")})
-
-            return {"course_id": course_id, "reviews": rv_list}
-        except Exception:
-            logger.error(f"리뷰 요청 실패: {course_id}", exc_info=True)
-            return {"course_id": course_id, "reviews": []}
-
-    def _combine(
-        self,
-        course_dict: Dict[int, Dict[str, Any]],
-        review_dict: Dict[int, List[Dict[str, Any]]],
-    ) -> List[Dict[str, Any]]:
-
-        final_list = []
-
-        for cid, raw in course_dict.items():
-            info = raw.get("course", {})
-
-            DIFFICULTY_MAP = {
-                "BEGINNER": ("EASY", "초급"),
-                "INTERMEDIATE": ("NORMAL", "중급"),
-                "ADVANCED": ("HARD", "어려움"),
-            }
-
-            difficulty_raw = info.get("difficulty")
-            difficulty_enum, difficulty_label = DIFFICULTY_MAP.get(difficulty_raw, ("NORMAL", "중급"))
-
-            try:
-                merged = {
-                    "id": cid,
-                    "title": info.get("title"),
-                    "instructor": raw.get("course", {}).get("instructor", {}).get("name"),
-                    "total_class_time": info.get("runtimeSecond", 0) // 60,
-                    "original_price": info.get("price", {}).get("base", 0),
-                    "discounted_price": info.get("price", {}).get("discounted", 0),
-                    "difficulty": difficulty_enum,
-                    "difficulty_label": difficulty_label,
-                    "thumbnail_img_url": quote(info.get("thumbnailUrl"), safe=":/"),
-                    "average_rating": float(info.get("star") or 0),
-                    "platform": "INFLEARN",
-                    "url_link": f"https://www.inflearn.com/course/{info.get('slug')}",
-                    "categories": [
-                        {"id": int(c.get("id", 0)), "name": str(c.get("title"))}
-                        for c in info.get("metadata", {}).get("categories", [])
-                    ],
-                    "reviews": [
-                        {
-                            "id": f"{cid}_{idx + 1}",
-                            "rating": rv.get("rating"),
-                            "content": rv.get("content"),
-                        }
-                        for idx, rv in enumerate(review_dict.get(cid, []))
-                    ],
-                }
-
-                final_list.append(merged)
-
-            except Exception:
-                logger.error(f"병합 오류: course_id={cid}", exc_info=True)
-
-        return final_list
-
-
-async def main() -> None:
-    start = time.time()
-    crawler = InflearnCrawler()
-    data = await crawler.get_all_courses()
-    end = time.time()
-
-    logger.info(f"총 강의 수: {len(data)}개")
-    logger.info(f"총 실행 시간: {end - start:.1f}초")
-    print(json.dumps(data[:4], indent=4, ensure_ascii=False))
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+            return await asyncio.gather(*[self._gather_details(client, cid, slug, base) for cid, slug, base in items])

@@ -87,3 +87,12 @@ omit = [
 [tool.coverage.report]
 fail_under = 80
 show_missing = true
+
+#celery mypy 경고  error: Skipping analyzing "celery.schedules": module is installed, but missing library stubs or py.typed marker  [import-untyped]
+[[tool.mypy.overrides]]
+module = "celery"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "celery.schedules"
+ignore_missing_imports = true
