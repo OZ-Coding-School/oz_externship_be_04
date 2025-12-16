@@ -12,6 +12,8 @@ from apps.notification.infra.task import (
     send_tomorrow_schedule_notification,
 )
 from apps.notification.models import Notification
+from apps.study_groups.models.study_group import GroupMember, StudyGroup
+from apps.users.models import User
 
 
 @override_settings(
@@ -23,7 +25,6 @@ class SendToPubSubTaskTest(TestCase):
 
     def setUp(self) -> None:
         """테스트 데이터 준비"""
-        from apps.users.models import User
 
         self.user = User.objects.create_user(
             email="test@example.com",
@@ -76,7 +77,6 @@ class SendStudyGroupNotificationTaskTest(TestCase):
 
     def setUp(self) -> None:
         """테스트 데이터 준비"""
-        from apps.users.models import User
 
         self.user = User.objects.create_user(
             email="group@example.com",
@@ -121,8 +121,6 @@ class SendTomorrowScheduleNotificationTaskTest(TestCase):
     ) -> None:
         """알림 생성 및 send_to_pubsub.delay 호출 확인"""
         # Arrange - sync_to_async로 DB 작업 래핑
-        from apps.study_groups.models.study_group import GroupMember, StudyGroup
-        from apps.users.models import User
 
         user = await sync_to_async(User.objects.create_user)(
             email="tomorrow@example.com",
@@ -188,8 +186,6 @@ class SendTodayScheduleNotificationTaskTest(TestCase):
     ) -> None:
         """알림 생성 및 send_to_pubsub.delay 호출 확인"""
         # Arrange - sync_to_async로 DB 작업 래핑
-        from apps.study_groups.models.study_group import GroupMember, StudyGroup
-        from apps.users.models import User
 
         user = await sync_to_async(User.objects.create_user)(
             email="today@example.com",
@@ -253,8 +249,6 @@ class SendTodayScheduleNotificationTaskTest(TestCase):
     ) -> None:
         """알림 content에 시간 정보 포함 확인"""
         # Arrange - sync_to_async로 DB 작업 래핑
-        from apps.study_groups.models.study_group import StudyGroup
-        from apps.users.models import User
 
         user = await sync_to_async(User.objects.create_user)(
             email="time@example.com",
