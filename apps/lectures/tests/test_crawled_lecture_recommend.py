@@ -220,3 +220,71 @@ class RecommendLecturesTest(TestCase):
         user_vec = build_user_vector(self.user, lecture_vectors, lecture_ids)
 
         self.assertIsNone(user_vec)
+
+    @patch("apps.lectures.services.recommendation.content_based.cache.get")
+    @patch("apps.lectures.services.recommendation.content_based.cache.set")
+    def test_get_lecture_embedding_vector_from_cache(
+        self, mock_cache_set: MagicMock, mock_cache_get: MagicMock
+    ) -> None:
+        vec = np.zeros(384, dtype=np.float32)
+        vec[:3] = [0.1, 0.2, 0.3]
+        mock_cache_get.return_value = vec.tobytes()
+
+        from apps.lectures.services.recommendation import content_based as cb
+
+        result = cb.get_lecture_embedding_vector(self.lec1)
+        assert result is not None
+        np.testing.assert_allclose(result, vec)
+        mock_cache_get.assert_called_once()
+        mock_cache_set.assert_not_called()
+
+    @patch("apps.lectures.services.recommendation.content_based.cache.get")
+    @patch("apps.lectures.services.recommendation.content_based.cache.set")
+    def test_get_user_embedding_vector_from_cache(self, mock_cache_set: MagicMock, mock_cache_get: MagicMock) -> None:
+        vec = np.zeros(384, dtype=np.float32)
+        vec[:3] = [0.5, 0.6, 0.7]
+        mock_cache_get.return_value = vec.tobytes()
+
+        from apps.lectures.services.recommendation import content_based as cb
+
+        result = cb.get_user_embedding_vector(self.user, np.vstack([vec]), [self.lec1.id])
+        assert result is not None
+        np.testing.assert_allclose(result, vec)
+        mock_cache_get.assert_called_once()
+        mock_cache_set.assert_not_called()
+
+    @patch("apps.lectures.services.recommendation.content_based.cache.get")
+    @patch("apps.lectures.services.recommendation.content_based.cache.set")
+    @patch("apps.lectures.services.recommendation.content_based.build_lecture_embedding_vector")
+    def test_get_lecture_embedding_vector_cache_miss(
+        self, mock_build_vec: MagicMock, mock_cache_set: MagicMock, mock_cache_get: MagicMock
+    ) -> None:
+        mock_cache_get.return_value = None
+        vec = np.zeros(384, dtype=np.float32)
+        vec[:3] = [0.1, 0.2, 0.3]
+        mock_build_vec.return_value = vec
+
+        from apps.lectures.services.recommendation import content_based as cb
+
+        result = cb.get_lecture_embedding_vector(self.lec1)
+        assert result is not None
+        np.testing.assert_allclose(result, vec)
+        mock_cache_set.assert_called_once()
+
+    @patch("apps.lectures.services.recommendation.content_based.cache.get")
+    @patch("apps.lectures.services.recommendation.content_based.cache.set")
+    @patch("apps.lectures.services.recommendation.content_based.build_user_vector")
+    def test_get_user_embedding_vector_cache_miss(
+        self, mock_build_user_vec: MagicMock, mock_cache_set: MagicMock, mock_cache_get: MagicMock
+    ) -> None:
+        mock_cache_get.return_value = None
+        user_vec = np.zeros(384, dtype=np.float32)
+        user_vec[:3] = [0.5, 0.6, 0.7]
+        mock_build_user_vec.return_value = user_vec
+
+        from apps.lectures.services.recommendation import content_based as cb
+
+        result = cb.get_user_embedding_vector(self.user, np.vstack([user_vec]), [self.lec1.id])
+        assert result is not None
+        np.testing.assert_allclose(result, user_vec)
+        mock_cache_set.assert_called_once()
