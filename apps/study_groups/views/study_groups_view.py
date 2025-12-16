@@ -42,7 +42,7 @@ class StudyGroupCreateAPIView(APIView):
         tags=["StudyGroup"],
     )
     def post(self, request: Request) -> Response:
-        user = request.user
+        user = cast(User, request.user)
 
         serializer = StudyGroupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -100,8 +100,8 @@ class StudyGroupRetrieveAPIView(APIView):
         responses={200: StudyGroupDetailSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
         tags=["StudyGroup"],
     )
-    def get(self, request: Request, pk: int) -> Response:
-        study_group = retrieve_study_group(pk)
+    def get(self, request: Request, group_id: int) -> Response:
+        study_group = retrieve_study_group(group_id)
         serializer = StudyGroupDetailSerializer(study_group, context={"request": request})
         return Response(serializer.data)
 
@@ -118,8 +118,8 @@ class StudyGroupUpdateAPIView(APIView):
         responses={200: StudyGroupSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
         tags=["StudyGroup"],
     )
-    def patch(self, request: Request, pk: int) -> Response:
-        study_group = get_object_or_404(StudyGroup, pk=pk)
+    def patch(self, request: Request, group_id: int) -> Response:
+        study_group = get_object_or_404(StudyGroup, pk=group_id)
         serializer = StudyGroupSerializer(study_group, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         study_group = update_study_group(study_group, serializer.validated_data)
@@ -137,8 +137,8 @@ class StudyGroupDestroyAPIView(APIView):
         responses={204: None},
         tags=["StudyGroup"],
     )
-    def delete(self, request: Request, pk: int) -> Response:
-        study_group = get_object_or_404(StudyGroup, pk=pk)
+    def delete(self, request: Request, group_id: int) -> Response:
+        study_group = get_object_or_404(StudyGroup, pk=group_id)
         study_group.delete()
 
         return Response({"detail": "스터디 그룹이 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)

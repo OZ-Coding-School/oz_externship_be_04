@@ -4,14 +4,25 @@ from django.db import transaction
 from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 
-from apps.study_groups.models import GroupMember, StudyGroup
+from apps.study_groups.models import GroupMember, StudyGroup, StudyLecture
 from apps.users.models import User as CustomUser
 
 
 # 스터디 그룹 생성
 def create_study_group(user: CustomUser, validated_data: dict[str, Any]) -> StudyGroup:
+    lectures = validated_data.pop("lectures", [])
     study_group = StudyGroup.objects.create(**validated_data)
     GroupMember.objects.create(study_group_id=study_group, user_id=user, is_leader=True)
+    if lectures:
+        StudyLecture.objects.bulk_create(
+            [
+                StudyLecture(
+                    study_group_id=study_group.id,
+                    lecture_id=lecture_id,
+                )
+                for lecture_id in lectures
+            ]
+        )
     return study_group
 
 
