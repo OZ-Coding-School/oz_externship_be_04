@@ -6,6 +6,7 @@ from apps.users.views.admin_account_views import (
     AdminAccountListSpec,
     AdminAccountRoleUpdateSpec,
 )
+from apps.users.views.admin_withdrawal_views import AdminWithdrawalList
 
 urlpatterns = [
     path(
@@ -27,5 +28,10 @@ urlpatterns = [
         "/admin/account/<int:account_id>/activate",
         AdminAccountActivateView.as_view(),
         name="admin_account_activate",
+    ),
+    path(
+        "api/v1/admin/withdrawals",
+        AdminWithdrawalList.as_view(),
+        name="admin_withdrawal_list",
     ),
 ]
