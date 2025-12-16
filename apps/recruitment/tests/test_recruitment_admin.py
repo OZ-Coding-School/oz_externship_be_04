@@ -193,7 +193,7 @@ class AdminRecruitmentAPITestCase(APITestCase):
 
         # URL 초기화
         self.list_url = "/api/v1/admin/recruitments"
-        self.detail_url_1 = f"/api/v1/admin/recruitments/{self.recruitment_1.uuid}"
+        self.detail_url_1 = f"/api/v1/admin/recruitments/{self.recruitment_1.id}"
 
         # 1. 구인 공고 목록 조회 API 테스트 (필터링 및 정렬)
 
@@ -330,25 +330,13 @@ class AdminRecruitmentAPITestCase(APITestCase):
         self.assertEqual(len(data["applications"]), 2)
 
     def test_retrieve_nonexistent_recruitment(self) -> None:
-        """존재하지 않는 UUID로 조회 시 404를 반환합니다."""
-        non_existent_uuid = uuid.uuid4()
-        detail_url = f"/api/v1/admin/recruitments/{non_existent_uuid}"
+        """존재하지 않는 구인공고 ID로 조회 시 404를 반환합니다."""
+        non_existent_id = 9999  # 존재하지 않는 정수 ID
+        detail_url = f"/api/v1/admin/recruitments/{non_existent_id}"
         response = self.client.get(detail_url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn("해당 구인공고를 찾을 수 없습니다.", response.data["error_detail"])
-
-    def test_retrieve_with_invalid_uuid_format(self) -> None:
-        """잘못된 UUID 형식으로 조회 시 400을 반환합니다."""
-        invalid_uuid = "invalid-uuid-format"
-        # self.detail_url_1의 경로를 기반으로 잘못된 UUID 형식 URL을 구성
-        base_url_path = self.detail_url_1.rsplit("/", 1)[0]
-        detail_url = f"{base_url_path}/{invalid_uuid}"
-
-        response = self.client.get(detail_url)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("잘못된 UUID 형식입니다.", response.data["error_detail"])
 
         # 3. 구인 공고 삭제 API 테스트
 
@@ -356,7 +344,7 @@ class AdminRecruitmentAPITestCase(APITestCase):
         """관리자는 구인공고를 삭제할 수 있습니다. 삭제 후 관련 지원 내역도 삭제됩니다."""
 
         # 다른 테스트와의 격리를 위해 삭제 URL을 테스트 내부에 생성.
-        delete_url = f"/api/v1/admin/recruitments/{self.recruitment_1.uuid}"
+        delete_url = f"/api/v1/admin/recruitments/{self.recruitment_1.id}"
 
         # 삭제 전 존재 여부 확인
         self.assertTrue(Recruitment.objects.filter(id=self.recruitment_1.id).exists())
@@ -371,7 +359,7 @@ class AdminRecruitmentAPITestCase(APITestCase):
 
     def test_delete_nonexistent_recruitment(self) -> None:
         """존재하지 않는 구인공고를 삭제 시 404 반환"""
-        non_existent_uuid: str = str(uuid.uuid4())
-        delete_url = f"/api/v1/admin/recruitments/{non_existent_uuid}"
+        non_existent_id = 9999  # 존재하지 않는 정수 ID
+        delete_url = f"/api/v1/admin/recruitments/{non_existent_id}"
         response = self.client.delete(delete_url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

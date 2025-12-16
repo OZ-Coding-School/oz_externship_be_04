@@ -18,6 +18,7 @@ class TagPagination(PageNumberPagination):
 
 class TagListAPIView(APIView):
     permission_classes = [permissions.AllowAny]
+    pagination_class = TagPagination
 
     def get_queryset(self, keyword: str = "") -> QuerySet[Tag]:
         qs = Tag.objects.all()
