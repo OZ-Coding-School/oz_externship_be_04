@@ -61,7 +61,7 @@ class AdminWithdrawalList(APIView):
                 type=OpenApiTypes.STR,
                 location="query",
                 description="정렬 기준(latest: 최신순, oldest: 오래된 순)",
-                enum=["lastest", "oldest"],
+                enum=["latest", "oldest"],
             ),
             OpenApiParameter(
                 name="reason",
