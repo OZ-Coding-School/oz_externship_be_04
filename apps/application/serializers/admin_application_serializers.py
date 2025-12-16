@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.application.models import Application
@@ -101,6 +102,7 @@ class AdminRecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment])
         ]
         read_only_fields = ["id", "title", "expected_headcount", "close_at", "lectures", "tags"]
 
+    @extend_schema_field(AdminRecruitmentLectureSerializer(many=True))
     def get_lectures(self, obj: Recruitment) -> Any:
         study_group = obj.study_group
         study_lectures = study_group.studylecture_study_groups.select_related("lecture").all()
@@ -113,6 +115,7 @@ class AdminRecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment])
 
         return AdminRecruitmentLectureSerializer(lecture_list, many=True).data
 
+    @extend_schema_field(AdminRecruitmentTagSerializer(many=True))
     def get_tags(self, obj: Recruitment) -> Any:
         recruitment_tags = obj.recruitment_tags.all()
         tags = [rt.tag for rt in recruitment_tags]
