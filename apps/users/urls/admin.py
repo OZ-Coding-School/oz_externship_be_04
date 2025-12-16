@@ -7,6 +7,10 @@ from apps.users.views.admin_account_views import (
     AdminAccountRoleUpdateSpec,
 )
 
+from apps.users.views.admin_withdrawal_views import (
+    AdminWithdrawalList,
+)
+
 urlpatterns = [
     path(
         "/admin/account",
@@ -28,4 +32,9 @@ urlpatterns = [
         AdminAccountActivateView.as_view(),
         name="admin_account_activate",
     ),
+    path(
+        "/admin/withdrawal",
+        AdminWithdrawalList.as_view(),
+        name="admin_withdrawal_list",
+    )
 ]
