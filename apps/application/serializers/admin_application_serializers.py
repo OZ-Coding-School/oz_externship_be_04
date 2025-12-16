@@ -66,7 +66,7 @@ class AdminRecruitmentSummarySerializer(serializers.ModelSerializer[Recruitment]
         read_only_fields = ["id", "uuid", "title"]
 
 
-class AdminRecruitmentLectureSerializer(serializers.ModelSerializer[CrawledLecture]):
+class AdminRecruitmentLectureSummarySerializer(serializers.ModelSerializer[CrawledLecture]):
     """(Admin) 상세 조회용 강의 정보"""
 
     class Meta:
@@ -102,7 +102,7 @@ class AdminRecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment])
         ]
         read_only_fields = ["id", "title", "expected_headcount", "close_at", "lectures", "tags"]
 
-    @extend_schema_field(AdminRecruitmentLectureSerializer(many=True))
+    @extend_schema_field(AdminRecruitmentLectureSummarySerializer(many=True))
     def get_lectures(self, obj: Recruitment) -> Any:
         study_group = obj.study_group
         study_lectures = study_group.studylecture_study_groups.select_related("lecture").all()
@@ -110,10 +110,10 @@ class AdminRecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment])
         lecture_list = [sl.lecture for sl in study_lectures]
 
         from apps.application.serializers.admin_application_serializers import (
-            AdminRecruitmentLectureSerializer,
+            AdminRecruitmentLectureSummarySerializer,
         )
 
-        return AdminRecruitmentLectureSerializer(lecture_list, many=True).data
+        return AdminRecruitmentLectureSummarySerializer(lecture_list, many=True).data
 
     @extend_schema_field(AdminRecruitmentTagSerializer(many=True))
     def get_tags(self, obj: Recruitment) -> Any:
