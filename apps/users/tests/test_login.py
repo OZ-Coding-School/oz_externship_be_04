@@ -35,6 +35,41 @@ class TestUserLoginAPI(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access_token", response.data)
+        # 리프레시 토큰 쿠키 확인
+        self.assertIn("refresh_token", response.cookies)
+
+    def test_token_refresh_success(self) -> None:
+        """토큰 재발급 성공 테스트"""
+        # 먼저 로그인
+        login_response = self.client.post(self.url, self.active_data, format="json")
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+
+        # 쿠키가 설정된 상태에서 토큰 재발급
+        refresh_url = "/api/v1/accounts/token/refresh"
+        response = self.client.post(refresh_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access_token", response.data)
+
+    def test_token_refresh_no_cookie(self) -> None:
+        """리프레시 토큰 쿠키 없이 재발급 시도"""
+        refresh_url = "/api/v1/accounts/token/refresh"
+        response = self.client.post(refresh_url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data["error_detail"], "리프레시 토큰이 없습니다.")
+
+    def test_logout_success(self) -> None:
+        """로그아웃 성공 테스트"""
+        # 먼저 로그인
+        self.client.post(self.url, self.active_data, format="json")
+
+        # 로그아웃
+        logout_url = "/api/v1/accounts/logout"
+        response = self.client.post(logout_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["message"], "로그아웃 되었습니다.")
 
     def test_login_fail_invalid_password(self) -> None:
         invalid_data = {"email": "active@example.com", "password": "wrongpassword"}

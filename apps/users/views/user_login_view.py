@@ -71,4 +71,13 @@ class LoginView(APIView):
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
 
-        return Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        response = Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        response.set_cookie(
+            key="refresh_token",
+            value=str(refresh),
+            httponly=True,
+            secure=False,  # 개발환경에서는 False, 배포시 True
+            samesite="Lax",
+            max_age=7 * 24 * 60 * 60,  # 7일
+        )
+        return response
