@@ -3,10 +3,13 @@ from typing import Any, Dict, List, Optional
 
 from channels.db import database_sync_to_async  # type: ignore
 from channels.generic.websocket import AsyncWebsocketConsumer  # type: ignore
-from django_redis import get_redis_connection  # type: ignore
 from rest_framework_simplejwt.tokens import AccessToken
 
-from apps.chat.models import ChatMessage, LastReadMessage
+from apps.chat.models import ChatMessage
+from apps.chat.services.history_service import HistoryService
+from apps.chat.services.message_service import MessageService
+from apps.chat.services.presence_service import PresenceService
+from apps.chat.services.read_service import ReadService
 from apps.study_groups.models import GroupMember, StudyGroup
 from apps.users.models import User
 
@@ -30,7 +33,6 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
         if user is None:
             await self.close(4001)
             return
-
         self.user = user
 
         # 멤버 검증
@@ -39,78 +41,76 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
             await self.close(4003)
             return
 
-        try:
-            await self.channel_layer.group_add(self.room_group_name, self.channel_name)
-            await self.accept()
-        except Exception:
-            await self.close(4500)
-            return
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+        await self.accept()
 
-        # 온라인 유저 등록
+        # 온라인 등록
         try:
-            redis = get_redis_connection("default")
-            redis.sadd(f"chat_online:{self.group_id}", self.user.id)
+            await PresenceService.add(self.group_id, self.user.id)  # type: ignore
         except Exception:
             pass
 
-        # presence
-        try:
-            members = await self.get_group_members()
-            await self.safe_send(
-                {
-                    "type": "presence",
-                    "members": members,
-                }
-            )
-        except Exception:
-            pass
+        # presence (Service 사용)
+        members = await self.get_presence()
+        await self.safe_send(
+            {
+                "type": "presence",
+                "members": members,
+            }
+        )
 
-        # 입장 broadcast
+        # user_join broadcast
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 "type": "user_join",
-                "user": {"id": self.user.id, "nickname": self.user.nickname},
+                "user": {
+                    "id": self.user.id,
+                    "nickname": self.user.nickname,
+                },
             },
         )
 
-        # 메시지 히스토리
-        history = await self.get_recent_messages(limit=100)
-        await self.safe_send({"type": "history", "messages": history})
+        # history
+        history = await self.get_history(limit=100)
+        await self.safe_send(
+            {
+                "type": "history",
+                "messages": history,
+            }
+        )
 
         # 읽음 처리
-        await self.mark_all_read(self.user.id, self.group_id)
+        await self.mark_all_read_service()
 
     async def disconnect(self, code: int) -> None:
         user: Optional[User] = getattr(self, "user", None)
 
-        # 온라인 제거
-        if user is not None:
+        if user:
             try:
-                redis = get_redis_connection("default")
-                redis.srem(f"chat_online:{self.group_id}", user.id)
+                await PresenceService.remove(self.group_id, user.id)  # type: ignore
             except Exception:
                 pass
 
-        # 그룹 제거
-        try:
-            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        except Exception:
-            pass
-
-        # 퇴장 broadcast
-        if user is not None:
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     "type": "user_leave",
-                    "user": {"id": user.id, "nickname": user.nickname},
+                    "user": {
+                        "id": user.id,
+                        "nickname": user.nickname,
+                    },
                 },
             )
 
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name,
+        )
+
     async def receive(self, text_data: str) -> None:
         try:
-            data: Dict[str, Any] = json.loads(text_data)
+            data = json.loads(text_data)
         except Exception:
             return
 
@@ -118,11 +118,7 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
         if not isinstance(content, str) or not content.strip():
             return
 
-        user: Optional[User] = getattr(self, "user", None)
-        if user is None:
-            return
-
-        msg = await self.save_message(content)
+        msg = await self.create_message(content)
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -131,25 +127,25 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
                 "message": {
                     "id": msg.id,
                     "content": msg.content,
-                    "sender": {"id": user.id, "nickname": user.nickname},
+                    "sender": {
+                        "id": self.user.id,
+                        "nickname": self.user.nickname,
+                    },
                     "created_at": msg.created_at.isoformat(),
                 },
             },
         )
 
-        await self.update_last_read(msg)
+        await self.update_last_read_service(msg)
 
     async def chat_message(self, event: Dict[str, Any]) -> None:
-        message = event.get("message")
-        if not message:
-            return
-        await self.safe_send({"type": "message", **message})
+        await self.safe_send({"type": "message", **event["message"]})
 
     async def user_join(self, event: Dict[str, Any]) -> None:
-        await self.safe_send({"type": "user_join", "user": event.get("user")})
+        await self.safe_send({"type": "user_join", "user": event["user"]})
 
     async def user_leave(self, event: Dict[str, Any]) -> None:
-        await self.safe_send({"type": "user_leave", "user": event.get("user")})
+        await self.safe_send({"type": "user_leave", "user": event["user"]})
 
     async def safe_send(self, payload: Dict[str, Any]) -> None:
         try:
@@ -157,7 +153,7 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
         except Exception:
             pass
 
-    @database_sync_to_async  # type: ignore[misc]
+    @database_sync_to_async  # type: ignore
     def authenticate(self) -> Optional[User]:
         try:
             qs = self.scope["query_string"].decode()
@@ -171,77 +167,44 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
         except Exception:
             return None
 
-    @database_sync_to_async  # type: ignore[misc]
+    @database_sync_to_async  # type: ignore
     def check_member(self) -> bool:
-        return GroupMember.objects.filter(study_group_id=self.group_id, user_id=self.user.id).exists()
+        return GroupMember.objects.filter(
+            study_group_id=self.group_id,
+            user_id=self.user.id,
+        ).exists()
 
     @database_sync_to_async  # type: ignore[misc]
-    def get_group_members(self) -> List[Dict[str, Any]]:
-        members = GroupMember.objects.filter(study_group_id=self.group_id)
+    def get_presence(self) -> list[dict[str, Any]]:
+        return PresenceService.get_members(self.group_id)
 
-        redis = get_redis_connection("default")
-        online_ids = {int(uid) for uid in redis.smembers(f"chat_online:{self.group_id}")}
-
-        result = []
-        for m in members:
-            user = m.user_id
-            result.append(
-                {
-                    "id": user.id,
-                    "nickname": user.nickname,
-                    "is_online": user.id in online_ids,
-                    "is_host": m.is_leader,
-                }
-            )
-
-        return result
-
-    @database_sync_to_async  # type: ignore[misc]
-    def save_message(self, content: str) -> ChatMessage:
+    @database_sync_to_async  # type: ignore
+    def create_message(self, content: str) -> ChatMessage:
         group = StudyGroup.objects.get(id=self.group_id)
-        return ChatMessage.objects.create(
+        return MessageService.create_message(
             study_group=group,
-            sender=self.user,
+            user=self.user,
             content=content,
         )
 
-    @database_sync_to_async  # type: ignore[misc]
-    def update_last_read(self, msg: ChatMessage) -> None:
-        LastReadMessage.objects.update_or_create(
-            study_group_id=self.group_id,
+    @database_sync_to_async  # type: ignore
+    def get_history(self, limit: int) -> list[dict[str, Any]]:
+        return HistoryService.get_recent_messages(
+            group_id=self.group_id,
+            limit=limit,
+        )
+
+    @database_sync_to_async  # type: ignore
+    def update_last_read_service(self, msg: ChatMessage) -> None:
+        ReadService.update_last_read(
             user_id=self.user.id,
-            defaults={"message": msg},
+            group_id=self.group_id,
+            message=msg,
         )
 
-    @database_sync_to_async  # type: ignore[misc]
-    def get_recent_messages(self, limit: int) -> List[Dict[str, Any]]:
-        msgs = (
-            ChatMessage.objects.filter(study_group_id=self.group_id)
-            .exclude(sender__isnull=True)
-            .select_related("sender")
-            .order_by("-id")[:limit]
+    @database_sync_to_async  # type: ignore
+    def mark_all_read_service(self) -> None:
+        ReadService.mark_all_read(
+            user_id=self.user.id,
+            group_id=self.group_id,
         )
-
-        return [
-            {
-                "id": m.id,
-                "content": m.content,
-                "sender": {
-                    "id": m.sender_id,
-                    "nickname": m.sender.nickname,
-                },
-                "created_at": m.created_at.isoformat(),
-            }
-            for m in reversed(msgs)
-            if m.sender
-        ]
-
-    @database_sync_to_async  # type: ignore[misc]
-    def mark_all_read(self, user_id: int, group_id: int) -> None:
-        last_msg = ChatMessage.objects.filter(study_group_id=group_id).last()
-        if last_msg:
-            LastReadMessage.objects.update_or_create(
-                user_id=user_id,
-                study_group_id=group_id,
-                defaults={"message": last_msg},
-            )
