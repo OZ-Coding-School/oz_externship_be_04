@@ -5,19 +5,19 @@ from typing import List, Optional, Tuple
 import numpy as np
 from django.core.cache import cache
 from dotenv import load_dotenv
+from light_embed import TextEmbedding  # type: ignore
 from numpy._typing import NDArray
-from sentence_transformers import SentenceTransformer
 
 from apps.core.logger.logging import get_logger
 from apps.lectures.models import CrawledLecture
-from apps.study_groups.models import GroupMember, StudyLecture
+from apps.study_groups.models import StudyLecture
 from apps.users.models import User
 
 load_dotenv()
 
 logger = get_logger(__name__)
 
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+embedding_model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
 
 STOPWORDS = {"강의", "수업", "소개", "배우기", "공부", "사용법"}
 
