@@ -7,8 +7,8 @@ from apps.users.views.admin_account_views import (
     AdminAccountRoleUpdateSpec,
 )
 from apps.users.views.admin_withdrawal_views import (
-    AdminWithdrawalList,
     AdminWithdrawalDetail,
+    AdminWithdrawalList,
 )
 
 urlpatterns = [
