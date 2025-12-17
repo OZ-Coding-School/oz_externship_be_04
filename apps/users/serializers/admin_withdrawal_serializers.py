@@ -56,6 +56,7 @@ class AdminWithdrawalUserDetailsSerializer(serializers.ModelSerializer[User]):
             "created_at",
         ]
 
+
 class AdminWithdrawalDetailSerializer(serializers.ModelSerializer[Withdrawal]):
     user = AdminWithdrawalUserDetailsSerializer(read_only=True)
 
