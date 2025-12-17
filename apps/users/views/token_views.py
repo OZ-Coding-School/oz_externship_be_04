@@ -72,7 +72,7 @@ class LogoutView(APIView):
         responses={
             200: inline_serializer(
                 name="LogoutSuccess",
-                fields={"message": serializers.CharField()},
+                fields={"detail": serializers.CharField()},
             ),
         },
         examples=[
@@ -80,11 +80,11 @@ class LogoutView(APIView):
                 name="200 OK",
                 response_only=True,
                 status_codes=["200"],
-                value={"message": "로그아웃 되었습니다."},
+                value={"detail": "로그아웃 되었습니다."},
             ),
         ],
     )
     def post(self, request: Request, *args: list[Any], **kwargs: dict[str, Any]) -> Response:
-        response = Response({"message": "로그아웃 되었습니다."}, status=status.HTTP_200_OK)
+        response = Response({"detail": "로그아웃 되었습니다."}, status=status.HTTP_200_OK)
         response.delete_cookie("refresh_token")
         return response
