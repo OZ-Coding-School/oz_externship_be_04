@@ -5,7 +5,9 @@ from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
     extend_schema,
+    inline_serializer,
 )
+from rest_framework import serializers
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -13,16 +15,27 @@ from rest_framework.views import APIView
 
 from apps.core.pagination import Pageable
 from apps.users.serializers.admin_withdrawal_serializers import (
+    AdminWithdrawalDetailSerializer,
     AdminWithdrawalListItemSerializer,
 )
 from apps.users.services.admin_withdrawal_services import (
+    get_admin_withdrawal_detail,
     get_admin_withdrawal_list,
 )
 from apps.users.utils.permissions import StaffOrSuperUser
 from apps.users.utils.reason_choices import WithdrawalReason
 
+AdminWithdrawalSimpleErrorSerializer = inline_serializer(
+    name="AdminWithdrawalSimpleError",
+    fields={"error_detail": serializers.CharField()},
+)
+
 
 class AdminWithdrawalList(APIView):
+    """
+    어드민 페이지 회원 탈퇴 내역 목록 조회 APIView
+    """
+
     permission_classes = [StaffOrSuperUser]
     pagination_class = PageNumberPagination
 
@@ -73,8 +86,8 @@ class AdminWithdrawalList(APIView):
         ],
         responses={
             200: AdminWithdrawalListItemSerializer,
-            401: OpenApiTypes.OBJECT,
-            403: OpenApiTypes.OBJECT,
+            401: AdminWithdrawalSimpleErrorSerializer,
+            403: AdminWithdrawalSimpleErrorSerializer,
         },
         examples=[
             OpenApiExample(
@@ -151,3 +164,66 @@ class AdminWithdrawalList(APIView):
         }
 
         return Response(response_data)
+
+
+class AdminWithdrawalDetail(APIView):
+    """
+    어드민 페이지 회원 탈퇴 내역 상세 조회 API View
+    """
+
+    permission_classes = [StaffOrSuperUser]
+
+    @extend_schema(
+        tags=["Admin"],
+        summary="어드민 페이지 회원 탈퇴 상세 내역 조회",
+        description="스태프 및 관리자 권한을 가진 유저는 어드민 페이지 내에서 회원 탈퇴 상세 정보를 조회할 수 있습니다.",
+        responses={
+            200: AdminWithdrawalDetailSerializer,
+            401: AdminWithdrawalSimpleErrorSerializer,
+            403: AdminWithdrawalSimpleErrorSerializer,
+            404: AdminWithdrawalSimpleErrorSerializer,
+        },
+        examples=[
+            OpenApiExample(
+                name="Success Example",
+                value={
+                    "id": 1,
+                    "user": {
+                        "id": 1,
+                        "email": "user@example.com",
+                        "nickname": "test",
+                        "name": "홍길동",
+                        "gender": "M",
+                        "role": "user",
+                        "status": "active",
+                        "profile_img_url": "https://example.com/images/profiles/image.png",
+                        "created_at": "2025-10-30T14:01:57.505250+09:00",
+                    },
+                    "reason": "NO_LONGER_NEEDED",
+                    "reason_detail": "이제 안써요.",
+                    "due_date": "2025-11-01",
+                    "withdrawn_at": "2025-11-01T01:01:30+09:00",
+                },
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                name="Unauthorized Example",
+                value={"error_detail": "자격 인증 데이터가 제공되지 않았습니다."},
+                status_codes=["401"],
+            ),
+            OpenApiExample(
+                name="Forbidden Example",
+                value={"error_detail": "권한이 없습니다."},
+                status_codes=["403"],
+            ),
+            OpenApiExample(
+                name="Not Found Example",
+                value={"error_detail": "회원탈퇴 정보를 찾을 수 없습니다."},
+                status_codes=["404"],
+            ),
+        ],
+    )
+    def get(self, request: Request, withdrawal_id: int, *args: Any, **kwargs: Any) -> Response:
+        withdrawal = get_admin_withdrawal_detail(withdrawal_id=withdrawal_id)
+        serializer = AdminWithdrawalDetailSerializer(withdrawal)
+        return Response(serializer.data)
