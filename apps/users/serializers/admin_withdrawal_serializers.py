@@ -39,3 +39,33 @@ class AdminWithdrawalListItemSerializer(serializers.Serializer[Any]):
         if user is None or user.birthday is None:
             return None
         return user.birthday.isoformat()
+
+
+class AdminWithdrawalUserDetailsSerializer(serializers.ModelSerializer[User]):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "nickname",
+            "name",
+            "gender",
+            "role",
+            "status",
+            "profile_img_url",
+            "created_at",
+        ]
+
+class AdminWithdrawalDetailSerializer(serializers.ModelSerializer[Withdrawal]):
+    user = AdminWithdrawalUserDetailsSerializer(read_only=True)
+
+    class Meta:
+        model = Withdrawal
+        fields = [
+            "id",
+            "user",
+            "reason",
+            "reason_detail",
+            "due_date",
+            "withdrawn_at",
+        ]
