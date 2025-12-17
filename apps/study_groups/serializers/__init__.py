@@ -5,7 +5,6 @@ from .study_group import (
     StudyGroupListSerializer,
     StudyGroupSerializer,
 )
-from .study_group import StudyGroupSerializer
 from .study_note import (
     StudyNoteDetailSerializer,
     StudyNoteListSerializer,

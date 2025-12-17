@@ -218,4 +218,5 @@ class S3Uploader:
             "headers": {"Content-Type": content_type},
         }
 
+
 s3_uploader = S3Uploader()
