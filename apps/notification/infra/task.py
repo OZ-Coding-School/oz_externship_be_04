@@ -11,7 +11,7 @@ from apps.study_groups.models.schedule import ScheduleParticipants
 logger = logging.getLogger(__name__)
 
 
-@shared_task(async_=True)  # type: ignore[misc]
+@shared_task  # type: ignore[misc]
 def send_to_pubsub(notification_id: int) -> None:
     async def _async_task() -> None:
         try:
