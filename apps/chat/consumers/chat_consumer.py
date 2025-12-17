@@ -153,7 +153,7 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
 
     async def safe_send(self, payload: Dict[str, Any]) -> None:
         try:
-            await self.send(text_data=json.dumps(payload))
+            await self.send(text_data=json.dumps(payload, ensure_ascii=False))
         except Exception:
             pass
 
@@ -177,19 +177,19 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
 
     @database_sync_to_async  # type: ignore[misc]
     def get_group_members(self) -> List[Dict[str, Any]]:
-        members = GroupMember.objects.filter(study_group_id=self.group_id).select_related("user")
+        members = GroupMember.objects.filter(study_group_id=self.group_id)
 
         redis = get_redis_connection("default")
-        online_set = redis.smembers(f"chat_online:{self.group_id}")
-        online_ids = {int(uid) for uid in online_set}
+        online_ids = {int(uid) for uid in redis.smembers(f"chat_online:{self.group_id}")}
 
         result = []
         for m in members:
+            user = m.user_id
             result.append(
                 {
-                    "id": m.user.id,  # type: ignore[attr-defined]
-                    "nickname": m.user.nickname,  # type: ignore[attr-defined]
-                    "is_online": m.user.id in online_ids,  # type: ignore[attr-defined]
+                    "id": user.id,
+                    "nickname": user.nickname,
+                    "is_online": user.id in online_ids,
                     "is_host": m.is_leader,
                 }
             )
