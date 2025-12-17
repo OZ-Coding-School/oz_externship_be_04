@@ -33,7 +33,6 @@ class StudyGroupTests(TestCase):
     def _dt(self, value: str) -> datetime:
         return make_aware(datetime.fromisoformat(value))
 
-
     def test_create_study_group(self) -> None:
         lecture1 = CrawledLecture.objects.create(
             title="강의1",
@@ -91,7 +90,6 @@ class StudyGroupTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
 
-
     def test_leave_study_group(self) -> None:
         group = StudyGroup.objects.create(
             name="스터디",
@@ -116,7 +114,6 @@ class StudyGroupTests(TestCase):
                 user_id=self.user.id,
             ).exists()
         )
-
 
     def test_kick_member_forbidden(self) -> None:
         member = UserModel.objects.create(
@@ -147,7 +144,6 @@ class StudyGroupTests(TestCase):
         response = self.client.delete(url)
 
         self.assertEqual(response.status_code, 403)
-
 
     def test_kick_member_success(self) -> None:
         member = UserModel.objects.create(
