@@ -46,37 +46,8 @@ class StudyNoteDetailSerializer(serializers.ModelSerializer["StudyNote"]):
         fields = ["id", "title", "author", "content", "ai_summary", "files", "created_at", "updated_at"]
 
 
-class StudyNoteCreateSerializer(serializers.Serializer):  # type: ignore[type-arg]
-    """노트 작성 (명세서: images는 list[str], files는 list[{file_name, file_url}])"""
-
-    title: Any = serializers.CharField(max_length=255)
-    content: Any = serializers.CharField()
-    images: Any = serializers.ListField(child=serializers.URLField(), required=False, default=list)
-    files: Any = serializers.ListField(
-        child=serializers.DictField(child=serializers.CharField()), required=False, default=list
-    )
-
-    def validate_content(self, value: str) -> str:
-        """내용 검증"""
-        if not value or not value.strip():
-            raise ValidationError("내용은 공백일 수 없습니다.")
-        return value
-
-    def validate_files(self, value: list[dict[str, str]]) -> list[dict[str, str]]:
-        """파일 검증"""
-        for file in value:
-            if "file_name" not in file or "file_url" not in file:
-                raise ValidationError("file_name과 file_url은 필수입니다.")
-        return value
-
-
-class StudyNoteUpdateSerializer(serializers.Serializer):  # type: ignore[type-arg]
-    """노트 수정"""
-
-    title: Any = serializers.CharField(max_length=255, required=False)
-    content: Any = serializers.CharField(required=False)
-    images: Any = serializers.ListField(child=serializers.URLField(), required=False)
-    files: Any = serializers.ListField(child=serializers.DictField(child=serializers.CharField()), required=False)
+class BaseStudyNoteSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """스터디 노트 공통 검증 로직"""
 
     def validate_content(self, value: str) -> str:
         """내용 검증"""
@@ -90,6 +61,26 @@ class StudyNoteUpdateSerializer(serializers.Serializer):  # type: ignore[type-ar
             if "file_name" not in file or "file_url" not in file:
                 raise ValidationError("file_name과 file_url은 필수입니다.")
         return value
+
+
+class StudyNoteCreateSerializer(BaseStudyNoteSerializer):
+    """노트 작성 (명세서: images는 list[str], files는 list[{file_name, file_url}])"""
+
+    title: Any = serializers.CharField(max_length=255)
+    content: Any = serializers.CharField()
+    images: Any = serializers.ListField(child=serializers.URLField(), required=False, default=list)
+    files: Any = serializers.ListField(
+        child=serializers.DictField(child=serializers.CharField()), required=False, default=list
+    )
+
+
+class StudyNoteUpdateSerializer(BaseStudyNoteSerializer):
+    """노트 수정"""
+
+    title: Any = serializers.CharField(max_length=255, required=False)
+    content: Any = serializers.CharField(required=False)
+    images: Any = serializers.ListField(child=serializers.URLField(), required=False)
+    files: Any = serializers.ListField(child=serializers.DictField(child=serializers.CharField()), required=False)
 
 
 class StudyNoteUpdateResponseSerializer(serializers.ModelSerializer["StudyNote"]):

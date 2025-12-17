@@ -11,7 +11,10 @@ from .views.study_groups_view import (
     StudyGroupListCreateAPIView,
     StudyGroupRetrieveUpdateDestroyAPIView,
 )
-from .views.study_note import StudyNoteDetailView, StudyNoteListCreateView
+from .views.study_note import (
+    StudyNoteDetailView,
+    StudyNoteListCreateView,
+)
 
 urlpatterns = [
     # StudyGroup
