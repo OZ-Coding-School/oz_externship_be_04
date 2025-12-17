@@ -1,12 +1,14 @@
 from datetime import datetime
 from typing import Any
 
+from django.contrib.auth.models import AnonymousUser
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
 from apps.lectures.models import CrawledLecture
-from apps.study_groups.models import StudyGroup, StudyLecture
+from apps.study_groups.models import GroupMember, StudyGroup, StudyLecture
+from apps.users.models.users import User
 
 
 # 스터디그룹
@@ -34,17 +36,11 @@ class StudyGroupSerializer(serializers.ModelSerializer[StudyGroup]):
         read_only_fields = ["id", "status"]
 
     def validate_start_at(self, value: datetime) -> datetime:
-        ### datetime() vs. timezone.now()
-        # https://jongseoung.tistory.com/257
-        # 학습 후 택1하여 유지 or 수정할 것
         if value.date() < timezone.now().date():
             raise serializers.ValidationError("스터디 시작일은 오늘 이후여야 합니다.")
         return value
 
     def validate_end_at(self, value: datetime) -> datetime:
-        ### datetime() vs. timezone.now()
-        # https://jongseoung.tistory.com/257
-        # timezone.fromisoformat은 존재하지 x -> datetime.fromisoformat 사용
         start_at = self.initial_data.get("start_at")
         if start_at:
             start_date = datetime.fromisoformat(start_at).date()
@@ -56,21 +52,16 @@ class StudyGroupSerializer(serializers.ModelSerializer[StudyGroup]):
         if len(value) > 5:
             raise serializers.ValidationError("강의는 최대 5개까지 선택 가능합니다.")
 
-        ### 해당 ID가 CrawledLecture 모델에 실제로 존재하는지에 대한 DB 유효성 검증 로직
         existing_ids = set(CrawledLecture.objects.filter(id__in=value).values_list("id", flat=True))
-
         missing_ids = set(value) - existing_ids
         if missing_ids:
             raise serializers.ValidationError(f"존재하지 않는 강의 ID가 포함되어 있습니다: {sorted(missing_ids)}")
-        ###
         return value
 
     def create(self, validated_data: dict[str, Any]) -> StudyGroup:
         lectures_data = validated_data.pop("lectures", [])
         study_group = StudyGroup.objects.create(**validated_data)
 
-        ### for문 -> bulk_create로 DB 최적화하기
-        ### https://gardeny.tistory.com/15
         if lectures_data:
             lectures = [
                 StudyLecture(
@@ -80,6 +71,16 @@ class StudyGroupSerializer(serializers.ModelSerializer[StudyGroup]):
                 for lecture_id in lectures_data
             ]
             StudyLecture.objects.bulk_create(lectures)
+
+        request_user = self.context["request"].user
+        if isinstance(request_user, AnonymousUser):
+            raise serializers.ValidationError("로그인이 필요합니다.")
+
+        GroupMember.objects.create(
+            study_group_id=study_group,
+            user_id=request_user,
+            is_leader=True,
+        )
         return study_group
 
     def update(self, instance: StudyGroup, validated_data: dict[str, Any]) -> StudyGroup:
@@ -89,11 +90,9 @@ class StudyGroupSerializer(serializers.ModelSerializer[StudyGroup]):
             setattr(instance, attr, value)
         instance.save()
 
-        ### bulk_create
         if lectures_data is not None:
-            with transaction.atomic():  # 주의: transaction 추가하여 원자성 보장
+            with transaction.atomic():
                 StudyLecture.objects.filter(study_group_id=instance.id).delete()
-
                 if lectures_data:
                     lectures = [
                         StudyLecture(
@@ -139,18 +138,18 @@ class StudyGroupListSerializer(serializers.ModelSerializer[StudyGroup]):
 
     def get_is_leader(self, obj: StudyGroup) -> bool:
         user = self.context["request"].user
-        if not user.is_authenticated:
+        if not getattr(user, "is_authenticated", False):
             return False
         return obj.groupmember_study_groups.filter(user_id=user.id, is_leader=True).exists()
 
     def get_reviews(self, obj: StudyGroup) -> list[dict[str, Any]]:
-        user = self.context["request"].user  # 요청유저 = user 변수 지정
-        rvws = obj.review_study_groups.all()  # review의 스터디그룹 FK 역참조명?? 임시로 set 사용
-
+        user = self.context["request"].user
+        user_id = user.id if getattr(user, "is_authenticated", False) else None
+        rvws = obj.review_study_groups.all()
         return [
             {
                 "id": rvw.id,
-                "is_mine": (rvw.user_id == user.id) if user.is_authenticated else False,
+                "is_mine": (rvw.user_id == user_id) if user_id is not None else False,
                 "star_rating": rvw.star_rating,
                 "content": rvw.content,
             }
@@ -199,13 +198,13 @@ class StudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
         return [{"nickname": m.user_id.nickname, "is_leader": m.is_leader} for m in members]
 
 
-class DelegateLeaderRequestSerializer(serializers.Serializer[Any]):
+class DelegateLeaderRequestSerializer(serializers.Serializer):  # type: ignore
     target_member_id = serializers.IntegerField()
 
 
-class DetailResponseSerializer(serializers.Serializer[Any]):
+class DetailResponseSerializer(serializers.Serializer):  # type: ignore
     detail = serializers.CharField()
 
 
-class ErrorDetailResponseSerializer(serializers.Serializer[Any]):
+class ErrorDetailResponseSerializer(serializers.Serializer):  # type: ignore
     error_detail = serializers.CharField()
