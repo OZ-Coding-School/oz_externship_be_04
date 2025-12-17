@@ -22,11 +22,11 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=0, minute=0),
     },
     "send_tomorrow_schedule_notifications": {
-        "task": "apps.notification.infra.task.send_tomorrow_schedule_notifications",
+        "task": "send_tomorrow_schedule_notifications",
         "schedule": crontab(hour=0, minute=1),
     },
     "send_today_schedule_notifications": {
-        "task": "apps.notification.infra.task.send_today_schedule_notifications",
+        "task": "send_today_schedule_notifications",
         "schedule": crontab(hour=0, minute=1),
     },
 }
