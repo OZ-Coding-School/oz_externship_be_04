@@ -17,8 +17,8 @@ app.autodiscover_tasks()
 app.conf.timezone = "Asia/Seoul"
 
 app.conf.beat_schedule = {
-    "sync_inflearn_every_midnight": {
-        "task": "lectures.sync_inflearn_task",
+    "crawl_and_embed_every_midnight": {
+        "task": "lectures.crawl_then_embed",
         "schedule": crontab(hour=0, minute=0),
     },
     "send_tomorrow_schedule_notifications": {
