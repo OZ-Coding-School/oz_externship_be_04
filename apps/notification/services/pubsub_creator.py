@@ -29,7 +29,7 @@ class RedisPubSubService:
             message = json.dumps(data, ensure_ascii=False, default=str)
             # 아스키 하지말고 날짜 또는 숫자도 str 취급해서 덤프해라
         except Exception as e:
-            logger.exception(f"데이터 JSON으로 직렬화 실패 ㅠㅠ {e}")
+            logger.exception(f"데이터 JSON으로 직렬화 실패 {e}")
             raise
         try:
             await self.redis_client.publish(channel, message)
