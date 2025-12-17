@@ -13,7 +13,7 @@ class AdminWithdrawalBaseTestCase(APITestCase):
             email="normal@test.com",
             password="testpass123",
             name="일반유저",
-            nickname="normal_user",
+            nickname="normal",
             phone_number="01000000001",
             gender="M",
         )
@@ -22,7 +22,7 @@ class AdminWithdrawalBaseTestCase(APITestCase):
             email="staff@test.com",
             password="testpass123",
             name="스태프유저",
-            nickname="staff_user",
+            nickname="staff",
             phone_number="01000000002",
             gender="F",
         )
@@ -33,7 +33,7 @@ class AdminWithdrawalBaseTestCase(APITestCase):
             email="admin@test.com",
             password="testpass123",
             name="관리자유저",
-            nickname="admin_user",
+            nickname="admin",
             phone_number="01000000003",
             gender="M",
         )
