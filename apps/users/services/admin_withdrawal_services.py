@@ -1,7 +1,6 @@
 from typing import Any, Optional, cast
 
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import NotFound
 
 from apps.core.pagination import OffsetPage, Pageable, offset_paginate_queryset
@@ -55,9 +54,9 @@ def get_admin_withdrawal_list(
 
 
 def get_admin_withdrawal_detail(withdrawal_id: int) -> Withdrawal:
-    withdrawal = get_object_or_404(Withdrawal, pk=withdrawal_id)
+    withdrawal = Withdrawal.objects.select_related("user").filter(pk=withdrawal_id, user__isnull=False).first()
 
-    if withdrawal.user is None:
+    if withdrawal is None:
         raise NotFound(detail={"error_detail": "회원탈퇴 정보를 찾을 수 없습니다."})
 
     return withdrawal
