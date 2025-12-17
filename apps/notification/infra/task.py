@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import date, timedelta
 
-from celery import shared_task  # type: ignore
+from celery import shared_task
 
 from apps.notification.models import Notification
 from apps.notification.services.pubsub_creator import notification_service
