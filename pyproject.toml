@@ -28,9 +28,8 @@ dependencies = [
     "channels-redis (>=4.3.0,<5.0.0)",
     "psycopg2-binary (>=2.9.11,<3.0.0)",
     "httpx[http2] (>=0.28.1,<0.29.0)",
-    "sentence-transformers (>=5.1.2,<6.0.0)",
-    "hf-xet (>=1.2.0,<2.0.0)",
     "daphne (>=4.2.1,<5.0.0)",
+    "light-embed (>=1.0.8,<2.0.0)",
 ]
 
 [tool.poetry.group.dev.dependencies]
@@ -49,7 +48,6 @@ scipy-stubs = "^1.16.2.4"
 boto3-stubs = {extras = ["s3"], version = "^1.40.64"}
 botocore-stubs = "^1.40.65"
 moto = "^5.1.16"
-scikit-learn-stubs = "^0.0.3"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
