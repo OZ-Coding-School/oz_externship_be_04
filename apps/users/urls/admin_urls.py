@@ -10,7 +10,7 @@ from apps.users.views.admin_withdrawal_views import (
     AdminWithdrawalDetail,
     AdminWithdrawalList,
 )
-from apps.users.views.admin_signup_trends import AdminSignupTrendView
+from apps.users.views.admin_signup_trends_views import AdminSignupTrendView
 
 urlpatterns = [
     path(

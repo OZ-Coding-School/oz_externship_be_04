@@ -16,7 +16,7 @@ from rest_framework.views import APIView
 from apps.users.serializers.admin_analytics_serializers import (
     AdminSignupTrendSerializer,
 )
-from apps.users.services.admin_signup_analytics import (
+from apps.users.services.admin_signup_analytics_services import (
     IntervalLiteral,
     get_signup_trend,
 )
