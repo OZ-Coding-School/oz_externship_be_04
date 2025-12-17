@@ -3,6 +3,7 @@ from typing import Any
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from apps.core.constants import USER_PROFILE_IMAGE_UPLOAD_PATH
 from apps.core.S3 import S3Uploader
 from apps.users.services.mypage_services import NicknameCheckConflict
 
@@ -44,7 +45,7 @@ class MyPageSerializer(serializers.ModelSerializer[Any]):
         if not value:
             return value
 
-        url = "uploads/users/profiles/"
+        url = USER_PROFILE_IMAGE_UPLOAD_PATH
         if not value.startswith(url):
             raise serializers.ValidationError(f"잘못된 경로 입니다. {url}'로 시작해야 합니다.")
         return value
