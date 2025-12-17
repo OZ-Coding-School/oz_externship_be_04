@@ -6,11 +6,11 @@ from apps.users.views.admin_account_views import (
     AdminAccountListSpec,
     AdminAccountRoleUpdateSpec,
 )
+from apps.users.views.admin_signup_trends_views import AdminSignupTrendView
 from apps.users.views.admin_withdrawal_views import (
     AdminWithdrawalDetail,
     AdminWithdrawalList,
 )
-from apps.users.views.admin_signup_trends_views import AdminSignupTrendView
 
 urlpatterns = [
     path(
@@ -47,5 +47,5 @@ urlpatterns = [
         "/admin/analytics/signup/trends",
         AdminSignupTrendView.as_view(),
         name="admin_signup_trends",
-    )
+    ),
 ]
