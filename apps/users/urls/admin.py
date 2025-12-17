@@ -8,6 +8,7 @@ from apps.users.views.admin_account_views import (
 )
 from apps.users.views.admin_withdrawal_views import (
     AdminWithdrawalList,
+    AdminWithdrawalDetail,
 )
 
 urlpatterns = [
@@ -32,8 +33,13 @@ urlpatterns = [
         name="admin_account_activate",
     ),
     path(
-        "/admin/withdrawal",
+        "/admin/withdrawals",
         AdminWithdrawalList.as_view(),
         name="admin_withdrawal_list",
+    ),
+    path(
+        "/admin/withdrawals/<int:withdrawal_id>",
+        AdminWithdrawalDetail.as_view(),
+        name="admin_withdrawal_detail",
     ),
 ]
