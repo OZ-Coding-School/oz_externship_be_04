@@ -45,7 +45,7 @@ class User(TimeStampedModel, PermissionsMixin, AbstractBaseUser):
     phone_number = models.CharField(max_length=20, unique=True)
     gender = models.CharField(max_length=1, choices=GenderChoices.choices)
     birthday = models.DateField(null=True)
-    profile_img_url = models.URLField(max_length=255)
+    profile_img_url = models.CharField(max_length=255, null=True, blank=True)
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
