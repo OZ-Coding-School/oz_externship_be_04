@@ -153,6 +153,8 @@ def build_user_vector(
             w = 5.0
         elif lec_id in group_lecture_ids:
             w = 3.0
+        elif lec_id in category_lecture_ids:
+            w = 2.0
         else:
             w = 1.0
 
