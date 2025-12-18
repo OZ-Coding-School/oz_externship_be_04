@@ -73,6 +73,17 @@ jobs:
           
             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:django-prod
             docker network inspect ws >/dev/null 2>&1 || docker network create ws
+            
+            docker pull redis:7-alpine
+            docker stop redis || true
+            docker rm redis || true
+            docker run -d \
+              --name redis \
+              --network ws \
+              redis:7-alpine
+            
+            sleep 3
+            
             docker run -d \
               --name django \
               --network ws \
