@@ -12,7 +12,17 @@ class SendAuth:
         "reset_password": {"subject": "비밀번호 재설정 이메일 인증", "message": "{code}"},
         "restore": {"subject": "계정 복구 이메일 인증", "message": "{code}"},
     }
+    verify_message = {
+        "signup": "회원가입을 위한 이메일 인증에 성공하였습니다.",
+        "find_password": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.",
+        "restore": "계정복구를 위한 이메일 인증에 성공하였습니다.",
+    }
 
+    email_subject = {
+        "signup": "회원가입 인증 코드",
+        "find_password": "비밀번호 찾기 인증 코드",
+        "restore": "계정 복구 인증 코드",
+    }
     @classmethod
     def send_email_auth(cls, email: str, auth_type: str) -> Response:
         try:
