@@ -2,6 +2,12 @@ from django.urls import path
 
 from apps.users.views.email_auth_views import EmailSignUpVerifyView, EmailSignUpView
 from apps.users.views.token_views import LogoutView, TokenRefreshView
+from apps.users.views.oauth_views import (
+    KakaoCallBackView,
+    KakaoLoginView,
+    NaverCallBackView,
+    NaverLoginView,
+)
 from apps.users.views.user_account_views import (
     NicknameCheckView,
     UserAccountView,
@@ -20,4 +26,8 @@ urlpatterns = [
     path("accounts/login", LoginView.as_view(), name="login"),
     path("accounts/logout", LogoutView.as_view(), name="logout"),
     path("accounts/token/refresh", TokenRefreshView.as_view(), name="token-refresh"),
+    path("accounts/social-login/naver", NaverLoginView.as_view(), name="naver-login"),
+    path("accounts/social-login/naver/callback", NaverCallBackView.as_view(), name="naver-callback"),
+    path("accounts/social-login/kakao", KakaoLoginView.as_view(), name="kakao-login"),
+    path("accounts/social-login/kakao/callback", KakaoCallBackView.as_view(), name="kakao-callback"),
 ]
