@@ -351,6 +351,8 @@ class ScheduleDetailView(APIView):
                     "session_date": "2026-12-01",
                     "start_time": "11:00:00",
                     "end_time": "11:50:00",
+                    "created_at": "2025-11-10T10:00:00",
+                    "updated_at": "2025-11-16T12:00:00",
                     "participants": [2, 3],
                 },
             )
