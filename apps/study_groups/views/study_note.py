@@ -152,7 +152,7 @@ class StudyNoteDetailView(APIView):
             except IntegrityError:
                 raise ValidationError({"error_detail": "이미 사용된 파일의 url 입니다."})
 
-    @extend_schema(summary="스터디 노트 상세 조회", tags=["StudyGroups"], responses={200: StudyNoteDetailSerializer})
+    @extend_schema(summary="스터디 노트 상세 조회", tags=["StudyGroup"], responses={200: StudyNoteDetailSerializer})
     def get(self, request: Request, group_id: int, note_id: int) -> Response:
         note = self._get_note(group_id, note_id, prefetch=["attachments", "images"])
         serializer = StudyNoteDetailSerializer(note)
