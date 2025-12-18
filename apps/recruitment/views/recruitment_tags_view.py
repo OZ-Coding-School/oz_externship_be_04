@@ -39,7 +39,7 @@ class RecruitmentTagAPIView(APIView):
         except Recruitment.DoesNotExist:
             return Response({"error_detail": "해당 공고를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
-        tags = [rt.tag for rt in recruitment.recruitment_tags.all()]
+        tags = [rt.tag for rt in recruitment.recruitment_tags.all()[:5]]
 
         serializer = TagSerializer(tags, many=True)
         return Response(

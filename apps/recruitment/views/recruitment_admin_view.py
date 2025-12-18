@@ -64,7 +64,7 @@ class AdminRecruitmentListView(APIView):
                 description="마감 여부 (true | false)",
             ),
             OpenApiParameter(
-                "tag",
+                "tags",
                 OpenApiTypes.STR,
                 required=False,
                 description="공고 태그별 필터링(단일 태그명 또는 콤마로 구분된 다중 태그)",
@@ -94,7 +94,7 @@ class AdminRecruitmentListView(APIView):
                 qs = qs.filter(is_closed=False)
 
         # 공고 태그별 필터링(선택된 태그 중 하나라도 포함하는 공고 조회)
-        tag_param = request.query_params.get("tag")
+        tag_param = request.query_params.get("tags")
         if tag_param:
             tag_names = [t.strip() for t in tag_param.split(",") if t.strip()]
             if tag_names:
