@@ -1,6 +1,11 @@
 from django.urls import path
 
-from apps.users.views.email_auth_views import EmailSignUpVerifyView, EmailSignUpView
+from apps.users.views.email_auth_views import (
+    EmailSignUpVerifyView,
+    EmailSignUpView,
+    FindPasswordSendEmailView,
+    FindPasswordVerifyEmailView,
+)
 from apps.users.views.token_views import LogoutView, TokenRefreshView
 from apps.users.views.user_account_views import (
     NicknameCheckView,
@@ -9,6 +14,13 @@ from apps.users.views.user_account_views import (
 )
 from apps.users.views.user_login_view import LoginView
 from apps.users.views.user_register import SignupView
+from apps.users.views.user_sms_view import (
+    ChangePhoneSendSMSView,
+    ChangePhoneView,
+    FindEmailSendSMSView,
+    SignupSendSMSView,
+    SignupVerifySMSView,
+)
 
 urlpatterns = [
     path("accounts/me", UserAccountView.as_view(), name="account"),
@@ -20,4 +32,13 @@ urlpatterns = [
     path("accounts/login", LoginView.as_view(), name="login"),
     path("accounts/logout", LogoutView.as_view(), name="logout"),
     path("accounts/token/refresh", TokenRefreshView.as_view(), name="token-refresh"),
+    path("accounts/signup/send-sms", SignupSendSMSView.as_view(), name="signup-send-sms"),
+    path("accounts/signup/verify-sms", SignupVerifySMSView.as_view(), name="signup-verify-sms"),
+    path("accounts/find-email/send-sms", FindEmailSendSMSView.as_view(), name="find-email-send-sms"),
+    path("accounts/change-phone/send-sms", ChangePhoneSendSMSView.as_view(), name="change-phone-send-sms"),
+    path("accounts/change-phone", ChangePhoneView.as_view(), name="change-phone"),
+    path("accounts/find-password/send-email", FindPasswordSendEmailView.as_view(), name="find-password-send-email"),
+    path(
+        "accounts/find-password/verify-email", FindPasswordVerifyEmailView.as_view(), name="find-password-verify-email"
+    ),
 ]
