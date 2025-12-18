@@ -1,0 +1,131 @@
+from datetime import date
+
+from rest_framework import status
+from rest_framework.test import APITestCase
+
+from apps.users.models import User
+
+
+class AdminSignupTrendAPITests(APITestCase):
+
+    def setUp(self) -> None:
+        self.url = "/api/v1/admin/analytics/signup/trends"
+
+        self.normal_user = User.objects.create(
+            email="user@example.com",
+            password="password123",
+            name="일반유저",
+            nickname="normal",
+            phone_number="01000000001",
+            gender="F",
+            birthday=date(2000, 1, 1),
+            profile_img_url="https://example.com/1.png",
+            is_active=True,
+        )
+
+        self.staff_user = User.objects.create(
+            email="staff@example.com",
+            password="password123",
+            name="스태프",
+            nickname="staff",
+            phone_number="01000000002",
+            gender="M",
+            birthday=date(1995, 1, 1),
+            profile_img_url="https://example.com/2.png",
+            is_active=True,
+            is_staff=True,
+        )
+
+        self.super_user = User.objects.create(
+            email="admin@example.com",
+            password="password123",
+            name="관리자",
+            nickname="admin",
+            phone_number="01000000003",
+            gender="M",
+            birthday=date(1990, 1, 1),
+            profile_img_url="https://example.com/3.png",
+            is_active=True,
+            is_staff=True,
+            is_superuser=True,
+        )
+
+    def test_signup_trend_unauthenticated_returns_401(self) -> None:
+        response = self.client.get(self.url, {"interval": "monthly"})
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertIn("error_detail", response.data)
+
+    def test_signup_trend_forbidden_for_normal_user(self) -> None:
+        self.client.force_authenticate(user=self.normal_user)
+
+        response = self.client.get(self.url, {"interval": "monthly"})
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn("error_detail", response.data)
+
+    def test_signup_trend_monthly_success_for_staff(self) -> None:
+        self.client.force_authenticate(user=self.staff_user)
+
+        response = self.client.get(self.url, {"interval": "monthly"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.data
+
+        self.assertEqual(data["interval"], "monthly")
+        self.assertIn("from_date", data)
+        self.assertIn("to_date", data)
+        self.assertIn("total", data)
+        self.assertIn("items", data)
+        self.assertIsInstance(data["items"], list)
+
+        for item in data["items"]:
+            self.assertIn("period", item)
+            self.assertIn("count", item)
+
+        summed = sum(item["count"] for item in data["items"])
+        self.assertEqual(data["total"], summed)
+
+        from_date = date.fromisoformat(data["from_date"])
+        to_date = date.fromisoformat(data["to_date"])
+
+        expected_total = User.objects.filter(
+            created_at__date__gte=from_date,
+            created_at__date__lte=to_date,
+        ).count()
+
+        self.assertEqual(data["total"], expected_total)
+
+    def test_signup_trend_yearly_success_for_staff(self) -> None:
+        self.client.force_authenticate(user=self.staff_user)
+
+        response = self.client.get(self.url, {"interval": "yearly"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.data
+
+        self.assertEqual(data["interval"], "yearly")
+        self.assertIn("from_date", data)
+        self.assertIn("to_date", data)
+        self.assertIn("total", data)
+        self.assertIn("items", data)
+        self.assertIsInstance(data["items"], list)
+
+        for item in data["items"]:
+            self.assertIn("period", item)
+            self.assertIn("count", item)
+
+        summed = sum(item["count"] for item in data["items"])
+        self.assertEqual(data["total"], summed)
+
+        from_date = date.fromisoformat(data["from_date"])
+        to_date = date.fromisoformat(data["to_date"])
+
+        expected_total = User.objects.filter(
+            created_at__date__gte=from_date,
+            created_at__date__lte=to_date,
+        ).count()
+
+        self.assertEqual(data["total"], expected_total)
