@@ -1,9 +1,13 @@
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+
+from apps.users.services.kakao_login_services import KaKaoLoginServices
+from apps.users.services.naver_login_services import NaverLoginService
 
 
 class SocialLoginTests(APITestCase):
@@ -85,3 +89,82 @@ class SocialLoginTests(APITestCase):
         self.assertIn("refresh_token", response.data)
         self.assertEqual(response.data["provider"], "naver")
         self.assertEqual(response.data["email"], "navertest@naver.com")
+
+
+class OAuthServiceTests(TestCase):
+
+    @patch("requests.post")
+    def test_kakao_get_token_success(self, mock_post: Any) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"access_token": "fake_access_token"}
+        mock_post.return_value = mock_response
+
+        service = KaKaoLoginServices()
+        token = service.get_kakao_access_token("fake_code")
+
+        self.assertEqual(token, "fake_access_token")
+
+    @patch("requests.get")
+    def test_kakao_get_user_info_success(self, mock_get: Any) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "id": 123456789,
+            "kakao_account": {
+                "email": "test@kakao.com",
+                "birthyear": "1995",
+                "birthday": "1225",
+                "gender": "male",
+                "phone_number": "+82 10-1234-5678",
+                "profile": {"nickname": "kakaonick", "profile_image_url": "http://kakao-image.com/profile.png"},
+            },
+        }
+        mock_get.return_value = mock_response
+
+        service = KaKaoLoginServices()
+        user_info = service.get_kakao_user_info("fake_token")
+
+        self.assertEqual(user_info["email"], "test@kakao.com")
+        self.assertEqual(user_info["birthday"], "1995-12-25")
+        self.assertEqual(user_info["phone_number"], "01012345678")
+        self.assertEqual(user_info["gender"], "M")
+
+    @patch("requests.get")
+    def test_naver_get_token_success(self, mock_get: Any) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"access_token": "fake_naver_token"}
+        mock_get.return_value = mock_response
+
+        service = NaverLoginService()
+        token = service.get_naver_access_token("fake_code", "fake_state")
+
+        self.assertEqual(token, "fake_naver_token")
+
+    @patch("requests.get")
+    def test_naver_get_user_info_success(self, mock_get: Any) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "resultcode": "00",
+            "response": {
+                "id": "naver_id_123",
+                "email": "test@naver.com",
+                "nickname": "navernick",
+                "name": "네이버버",
+                "mobile": "010-9876-5432",
+                "birthyear": "1990",
+                "birthday": "01-01",
+                "gender": "F",
+                "profile_image": "http://naver-image.com/profile.jpg",
+            },
+        }
+        mock_get.return_value = mock_response
+
+        service = NaverLoginService()
+        user_info = service.get_naver_user_info("fake_token")
+        self.assertEqual(user_info["email"], "test@naver.com")
+        self.assertEqual(user_info["birthday"], "1990-01-01")
+        self.assertEqual(user_info["phone_number"], "01098765432")
+        self.assertEqual(user_info["gender"], "F")
