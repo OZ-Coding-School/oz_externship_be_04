@@ -119,6 +119,15 @@ jobs:
               ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:nginx-prod
             
             docker image prune -af
+            
+            echo "🔍 Checking deployed services..."
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+            docker logs redis --tail 10
+            
+            docker logs django --tail 20
+
+            docker logs nginx --tail 10
 
       - name: Remove GitHub IP from AWS SG
         if: always()
