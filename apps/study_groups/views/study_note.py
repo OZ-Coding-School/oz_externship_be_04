@@ -52,7 +52,7 @@ class StudyNoteListCreateView(APIView):
 
     @extend_schema(
         summary="스터디 노트 목록 조회",
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
         parameters=[
             OpenApiParameter("page", int, required=False, description="페이지 번호 (기본값: 1)"),
             OpenApiParameter("page_size", int, required=False, description="페이지 크기 (기본값: 10)"),
@@ -83,7 +83,7 @@ class StudyNoteListCreateView(APIView):
 
     @extend_schema(
         summary="스터디 노트 작성",
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
         request=StudyNoteCreateSerializer,
         responses={200: inline_serializer(name="StudyNoteCreateResponse", fields={"detail": serializers.CharField()})},
     )
@@ -160,7 +160,7 @@ class StudyNoteDetailView(APIView):
 
     @extend_schema(
         summary="스터디 노트 수정",
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
         request=StudyNoteUpdateSerializer,
         responses={200: StudyNoteUpdateResponseSerializer},
     )
@@ -195,7 +195,7 @@ class StudyNoteDetailView(APIView):
 
     @extend_schema(
         summary="스터디 노트 삭제",
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
         responses={200: inline_serializer(name="StudyNoteDeleteResponse", fields={"detail": serializers.CharField()})},
     )
     @transaction.atomic
