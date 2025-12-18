@@ -2,8 +2,8 @@ from typing import Any
 
 from django.core.cache import cache
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiExample, extend_schema
-from rest_framework import status
+from drf_spectacular.utils import OpenApiExample, extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from apps.users.serializers.email_auth_serializer import (
     EmailSignUpSerializer,
     EmailSignUpVerifySerializer,
+    FindEmailSerializer,
 )
 from apps.users.utils.send_auth import SendAuth
 
@@ -85,4 +86,109 @@ class EmailSignUpVerifyView(APIView):
             cache.set(f"verified:email:{email}", True, timeout=900)
 
             return Response({"detail": "회원가입을 위한 이메일 인증에 성공하였습니다."}, status=status.HTTP_200_OK)
+        return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FindPasswordSendEmailView(APIView):
+    permission_classes = (AllowAny,)
+
+    @extend_schema(
+        tags=["Account"],
+        summary="비밀번호 재설정 시 이메일 인증 발송 API",
+        description="비밀번호 재설정 시 이메일 인증 발송",
+        request=inline_serializer(
+            name="FindPasswordSendEmailVRequest",
+            fields={
+                "email": serializers.EmailField(required=True, help_text="user@example.com"),
+            },
+        ),
+        examples=[
+            OpenApiExample(
+                name="Request",
+                request_only=True,
+                value={
+                    "email": "user@example.com",
+                },
+            ),
+            OpenApiExample(
+                name="200 OK",
+                response_only=True,
+                status_codes=["200"],
+                value={"detail": "비밀번호 찾기를 위한 이메일 인증 코드가 전송되었습니다."},
+            ),
+            OpenApiExample(
+                name="400 Bad Request",
+                response_only=True,
+                status_codes=["400"],
+                value={"error_detail": {"password": "이 필드는 필수 항목입니다."}},
+            ),
+        ],
+        responses={
+            200: inline_serializer(
+                name="FindPasswordSendEmailSuccess",
+                fields={"detail": serializers.CharField()},
+            ),
+            400: inline_serializer(
+                name="FindPasswordSendEmailError",
+                fields={"error_detail": serializers.DictField()},
+            ),
+        },
+    )
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        serializer = EmailSignUpSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        email = serializer.validated_data["email"]
+
+        email_auth = SendAuth.send_password_reset_email(email)
+
+        if email_auth.status_code == status.HTTP_200_OK:
+            return Response(
+                {"detail": "비밀번호 찾기를 위한 이메일 인증 코드가 전송되었습니다."}, status=status.HTTP_200_OK
+            )
+        return email_auth
+
+
+class FindPasswordVerifyEmailView(APIView):
+    permission_classes = (AllowAny,)
+
+    @extend_schema(
+        tags=["Account"],
+        summary="비밀번호 재설정 시 이메일 인증 API",
+        description="비밀번호 찾기 시 이메일 인증 코드를 검증합니다.",
+        request=inline_serializer(
+            name="FindPasswordVerifyEmailRequest",
+            fields={
+                "email": serializers.EmailField(required=True, help_text="user@example.com"),
+                "code": serializers.CharField(required=True, min_length=6, max_length=6, help_text="123456"),
+            },
+        ),
+        examples=[
+            OpenApiExample(
+                name="Request",
+                request_only=True,
+                value={"email": "user@example.com", "code": "a1ds21"},
+            ),
+            OpenApiExample(
+                name="200 OK",
+                response_only=True,
+                status_codes=["200"],
+                value={"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다."},
+            ),
+        ],
+        responses={
+            200: inline_serializer(name="FindPasswordVerifyEmailSuccess", fields={"detail": serializers.CharField()}),
+            400: inline_serializer(
+                name="FindPasswordVerifyEmailError", fields={"error_detail": serializers.DictField()}
+            ),
+        },
+    )
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        serializer = FindEmailSerializer(data=request.data)
+
+        if serializer.is_valid():
+            email = serializer.validated_data["email"].lower()
+            cache.set(f"verified:email:{email}", True, timeout=300)
+
+            return Response({"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다."}, status=status.HTTP_200_OK)
         return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
