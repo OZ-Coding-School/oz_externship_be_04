@@ -4,16 +4,16 @@ from .views.review_view import (
     StudyGroupReviewCreateAPIView,
     StudyGroupReviewUpdateAPIView,
 )
+from .views.schedule_views import (
+    ScheduleDetailView,
+    ScheduleView,
+)
 from .views.study_groups_view import (
     DelegateLeaderAPIView,
     KickStudyGroupMemberAPIView,
     LeaveStudyGroupMeAPIView,
     StudyGroupListCreateAPIView,
     StudyGroupRetrieveUpdateDestroyAPIView,
-)
-from .views.schedule_views import (
-    ScheduleView,
-    ScheduleDetailView,
 )
 from .views.study_note import (
     StudyNoteDetailView,

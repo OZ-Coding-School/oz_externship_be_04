@@ -354,14 +354,13 @@ class ScheduleDetailView(APIView):
                     "created_at": "2025-11-10T10:00:00",
                     "updated_at": "2025-11-16T12:00:00",
                     "participants": [
-                                {
-                                    "id": 3,
-                                    "nickname": "testuser3",
-                                    "is_leader": True,
-                                    "profile_img_url": "https://example.com/images/users/profiles/image.png",
-                                },
-                ]
-
+                        {
+                            "id": 3,
+                            "nickname": "testuser3",
+                            "is_leader": True,
+                            "profile_img_url": "https://example.com/images/users/profiles/image.png",
+                        },
+                    ],
                 },
             )
         ],
