@@ -4,8 +4,8 @@ from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.users.utils.send_sms import TwilioSendSms
 from apps.users.models.users import User
+from apps.users.utils.send_sms import TwilioSendSms
 
 
 class SMSAuthTestCase(APITestCase):
@@ -25,7 +25,6 @@ class SMSAuthTestCase(APITestCase):
     def tearDown(self) -> None:
         cache.clear()
         User.objects.all().delete()
-
 
     @patch("apps.users.utils.send_sms.Client")
     def test_change_phone_success(self, mock_client: MagicMock) -> None:
