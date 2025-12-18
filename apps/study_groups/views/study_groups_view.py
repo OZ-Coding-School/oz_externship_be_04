@@ -40,7 +40,6 @@ class StudyGroupListCreateAPIView(APIView):
         responses={201: StudyGroupSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
         tags=["StudyGroup"],
     )
-
     def get(self, request: Request) -> Response:
         status_filter = request.query_params.get("status")
         search = request.query_params.get("search")
@@ -92,7 +91,8 @@ class StudyGroupListCreateAPIView(APIView):
 
 class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
     permission_classes = [IsAuthenticated]
-    #상세조회
+
+    # 상세조회
     @extend_schema(
         summary="스터디 그룹 상세 조회",
         description="스터디 그룹 상세정보를 조회합니다.",
@@ -104,7 +104,8 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
         study_group = retrieve_study_group(pk)
         serializer = StudyGroupDetailSerializer(study_group, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
-    #수정
+
+    # 수정
     @extend_schema(
         summary="스터디 그룹 수정",
         description="스터디 그룹 정보를 수정합니다.",
@@ -122,7 +123,8 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
             StudyGroupSerializer(study_group, context={"request": request}).data,
             status=status.HTTP_200_OK,
         )
-    #삭제
+
+    # 삭제
     @extend_schema(
         summary="스터디 그룹 삭제",
         description="스터디 그룹을 삭제합니다. 리더만 삭제할 수 있습니다.",
@@ -150,6 +152,7 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
 
 class DelegateLeaderAPIView(APIView):
     permission_classes = [IsAuthenticated]
+
     # 위임
     @extend_schema(
         summary="스터디 그룹 리더 위임",
