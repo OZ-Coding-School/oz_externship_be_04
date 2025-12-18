@@ -13,9 +13,8 @@ class AdminSignupTrendAPITests(APITestCase):
         self.url = "/api/v1/admin/analytics/signup/trends"
 
         self.admin_user = User.objects.create_superuser(
-            username="admin",
-            email="admin@example.com",
-            password="adminpass123!",
+            "admin@example.com",
+            "adminpass123!",
             name="관리자",
             nickname="admin",
             phone_number="01000000000",
@@ -24,9 +23,8 @@ class AdminSignupTrendAPITests(APITestCase):
         )
 
         self.normal_user1 = User.objects.create_user(
-            username="user1",
-            email="user1@example.com",
-            password="userpass123!",
+            "user1@example.com",
+            "userpass123!",
             name="유저1",
             nickname="user1",
             phone_number="01000000001",
@@ -35,9 +33,8 @@ class AdminSignupTrendAPITests(APITestCase):
             is_active=True,
         )
         self.normal_user2 = User.objects.create_user(
-            username="user2",
-            email="user2@example.com",
-            password="userpass123!",
+            "user2@example.com",
+            "userpass123!",
             name="유저2",
             nickname="user2",
             phone_number="01000000002",
