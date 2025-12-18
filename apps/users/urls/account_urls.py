@@ -1,13 +1,13 @@
 from django.urls import path
 
 from apps.users.views.email_auth_views import EmailSignUpVerifyView, EmailSignUpView
-from apps.users.views.token_views import LogoutView, TokenRefreshView
 from apps.users.views.oauth_views import (
     KakaoCallBackView,
     KakaoLoginView,
     NaverCallBackView,
     NaverLoginView,
 )
+from apps.users.views.token_views import LogoutView, TokenRefreshView
 from apps.users.views.user_account_views import (
     NicknameCheckView,
     UserAccountView,
