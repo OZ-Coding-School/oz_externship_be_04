@@ -124,10 +124,7 @@ class S3Uploader:
             S3FileValidator.validate_content_type(content_type)
             S3FileValidator.validate_mime_match(ext, content_type)
 
-            if file_name and "." in file_name:
-                key = f"{prefix}{uuid.uuid4()}_{file_name}"
-            else:
-                key = f"{prefix}{uuid.uuid4()}_{file_name}.{ext}"
+            key = f"{prefix}{uuid.uuid4()}_{file_name}"
 
             presigned_post = cls.get_s3_client().generate_presigned_post(
                 Bucket=cls.get_bucket_name(),
