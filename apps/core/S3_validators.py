@@ -36,6 +36,14 @@ class S3FileValidator:
             raise ValidationError("허용된 확장자(MIME)만 등록 가능합니다.")
 
     @staticmethod
+    def validate_extension_match(file_name: str, file_ext: str) -> str:
+        """파일명에서 추출한 확장자와 파라미터 확장자 일치 검증"""
+        ext = S3FileValidator.validate_file_extension(file_name)
+        if ext != file_ext.lower():
+            raise ValidationError(f"파일명의 확장자({ext})와 요청한 확장자({file_ext})가 일치하지 않습니다.")
+        return ext
+
+    @staticmethod
     def validate_mime_match(ext: str, content_type: Optional[str]) -> None:
         """MIME 타입과 확장자 일치 검증"""
         if not content_type:
