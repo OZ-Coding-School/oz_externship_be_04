@@ -262,7 +262,7 @@ class AdminRecruitmentAPITestCase(APITestCase):
 
     def test_filter_by_multiple_tags(self) -> None:
         """다중 태그 중 하나라도 포함하는 공고를 필터링합니다."""
-        tag_url = f"{self.list_url}?tag=Django,Python,미사용태그"
+        tag_url = f"{self.list_url}?tags=Django,Python,미사용태그"
         response = self.client.get(tag_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
