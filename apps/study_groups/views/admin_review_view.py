@@ -135,7 +135,7 @@ class AdminStudyReviewListAPIView(APIView):
             )
             page_obj = offset_paginate_queryset(qs, pageable)
 
-            serializer = AdminStudyReviewListItemSerializer(page_obj.items, many=True) # type: ignore[arg-type]
+            serializer = AdminStudyReviewListItemSerializer(page_obj.items, many=True)  # type: ignore[arg-type]
 
             next_url = self._build_page_link(request, page_obj.current_page + 1) if page_obj.has_next else None
             prev_url = self._build_page_link(request, page_obj.current_page - 1) if page_obj.has_prev else None
