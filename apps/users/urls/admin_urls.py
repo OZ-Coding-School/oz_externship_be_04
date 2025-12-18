@@ -50,7 +50,7 @@ urlpatterns = [
         name="admin_signup_trends",
     ),
     path(
-        "admin/analytics/withdrawals/trends",
+        "/admin/analytics/withdrawals/trends",
         AdminWithdrawalTrendSpec.as_view(),
         name="admin_withdrawal_trends",
     ),
