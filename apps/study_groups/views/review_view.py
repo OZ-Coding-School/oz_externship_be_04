@@ -59,7 +59,7 @@ class StudyGroupReviewBaseAPIView(APIView):
 class StudyGroupReviewCreateAPIView(StudyGroupReviewBaseAPIView):
     @extend_schema(
         summary="스터디 그룹 리뷰 생성",
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
     )
     def post(self, request: Request, group_id: int) -> Response:
         try:
@@ -110,7 +110,7 @@ class StudyGroupReviewCreateAPIView(StudyGroupReviewBaseAPIView):
 
     @extend_schema(
         summary="스터디 그룹 리뷰 목록 조회",
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
     )
     def get(self, request: Request, group_id: int) -> Response:
         try:
@@ -138,7 +138,7 @@ class StudyGroupReviewCreateAPIView(StudyGroupReviewBaseAPIView):
 class StudyGroupReviewUpdateAPIView(StudyGroupReviewBaseAPIView):
     @extend_schema(
         summary="스터디 그룹 리뷰 수정",
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
     )
     def patch(self, request: Request, group_id: int, review_id: int) -> Response:
         try:

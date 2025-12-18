@@ -18,7 +18,7 @@ class ScheduleView(APIView):
 
     # 스케줄 생성
     @extend_schema(
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
         summary="스케줄 생성",
         description="스터디 그룹에 새로운 스케줄을 생성합니다.",
         request=GroupScheduleSerializer,
@@ -117,7 +117,7 @@ class ScheduleView(APIView):
 
     # 스케줄 조회
     @extend_schema(
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
         summary="스케줄 목록 조회",
         description="스터디 그룹의 전체 스케줄 목록을 조회합니다.",
         responses={
@@ -182,7 +182,7 @@ class ScheduleDetailView(APIView):
 
     # 스케줄 상세조회
     @extend_schema(
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
         summary="스케줄 상세 조회",
         description="특정 스케줄의 상세 정보를 조회합니다.",
         responses={
@@ -263,7 +263,7 @@ class ScheduleDetailView(APIView):
 
     # 스케줄 수정
     @extend_schema(
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
         summary="스케줄 수정",
         description="기존 스케줄의 정보를 수정합니다.",
         request=GroupScheduleSerializer,
@@ -391,7 +391,7 @@ class ScheduleDetailView(APIView):
 
     # 스케줄 삭제
     @extend_schema(
-        tags=["StudyGroups"],
+        tags=["StudyGroup"],
         summary="스케줄 삭제",
         description="특정 스케줄을 삭제합니다.",
         responses={
