@@ -1,5 +1,3 @@
-from typing import Optional, cast
-
 from django.contrib.auth.models import AnonymousUser
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
@@ -32,8 +30,7 @@ from apps.study_groups.services.study_group_service import (
 from apps.users.models import User
 
 
-# 스터디 그룹 만들기
-class StudyGroupCreateAPIView(APIView):
+class StudyGroupListCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -43,22 +40,6 @@ class StudyGroupCreateAPIView(APIView):
         responses={201: StudyGroupSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
         tags=["StudyGroup"],
     )
-    def post(self, request: Request) -> Response:
-        user = request.user
-
-        serializer = StudyGroupSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        # study_group = create_study_group(user, serializer.validated_data)
-        return Response(
-            {"detail": "스터디 그룹 생성에 성공하였습니다."},
-            status=status.HTTP_201_CREATED,
-        )
-
-
-# 스터디 그룹 목록 보기
-class StudyGroupListAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
     @extend_schema(
         summary="스터디 그룹 목록 조회",
         description="스터디 그룹 목록을 조회합니다.",
@@ -89,11 +70,26 @@ class StudyGroupListAPIView(APIView):
             queryset = queryset.filter(name__icontains=search)
 
         serializer = StudyGroupListSerializer(queryset, many=True, context={"request": request})
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request: Request) -> Response:
+        serializer = StudyGroupSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+
+        if isinstance(request.user, AnonymousUser):
+            return Response({"error_detail": "로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        study_group = create_study_group(
+            user=request.user,
+            validated_data=serializer.validated_data,
+        )
+        return Response(
+            StudyGroupSerializer(study_group, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
-# 스터디 그룹 상세정보 조회
-class StudyGroupRetrieveAPIView(APIView):
+class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -105,13 +101,7 @@ class StudyGroupRetrieveAPIView(APIView):
     def get(self, request: Request, pk: int) -> Response:
         study_group = retrieve_study_group(pk)
         serializer = StudyGroupDetailSerializer(study_group, context={"request": request})
-        return Response(serializer.data)
-
-
-# 스터디 그룹 수정(업데이트)하기
-# 로직 실행 전에 멤버/리더 여부 확인 필요
-class StudyGroupUpdateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
         summary="스터디 그룹 수정",
@@ -120,33 +110,30 @@ class StudyGroupUpdateAPIView(APIView):
         responses={200: StudyGroupSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
         tags=["StudyGroup"],
     )
-    def patch(self, request: Request, pk: int) -> Response:
-        study_group = get_object_or_404(StudyGroup, pk=pk)
+    def patch(self, request: Request, group_id: int) -> Response:
+        study_group = get_object_or_404(StudyGroup, pk=group_id)
         serializer = StudyGroupSerializer(study_group, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         study_group = update_study_group(study_group, serializer.validated_data)
-        return Response(StudyGroupSerializer(study_group).data)
+        return Response(
+            StudyGroupSerializer(study_group, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request: Request, group_id: int) -> Response:
+        study_group = get_object_or_404(StudyGroup, pk=group_id)
+
+        if isinstance(request.user, AnonymousUser):
+            return Response({"error_detail": "로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            delete_study_group(study_group, request.user)
+        except PermissionError as e:
+            return Response({"error_detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+
+        return Response(status=status.HTTP_200_OK)
 
 
-# 스터디그룹 삭제하기
-# 로직 실행 전에 멤버/리더 여부 확인 필요
-class StudyGroupDestroyAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @extend_schema(
-        summary="스터디 그룹 삭제",
-        description="스터디 그룹을 삭제합니다.",
-        responses={204: None},
-        tags=["StudyGroup"],
-    )
-    def delete(self, request: Request, pk: int) -> Response:
-        study_group = get_object_or_404(StudyGroup, pk=pk)
-        study_group.delete()
-
-        return Response({"detail": "스터디 그룹이 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
-
-
-# 리더 위임
 class DelegateLeaderAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -162,34 +149,27 @@ class DelegateLeaderAPIView(APIView):
         },
         tags=["StudyGroup"],
     )
-    def post(self, request: Request, study_group_id: int) -> Response:
-        user = cast(User, request.user)
-        current_leader = GroupMember.objects.filter(
-            study_group_id=study_group_id,
-            user_id=user.pk,
-            is_leader=True,
-        ).first()
-
-        if current_leader is None:
-            return Response({"error_detail": "권한이 없습니다."}, status=403)
-
-        serializer = DelegateLeaderRequestSerializer(data=request.data)
+    def post(self, request: Request, group_id: int) -> Response:
+        serializer = DelegateLeaderRequestSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        target_member_id = serializer.validated_data["target_member_id"]
 
-        target_member = GroupMember.objects.filter(
-            study_group_id=study_group_id,
-            user_id=target_member_id,
-        ).first()
+        if isinstance(request.user, AnonymousUser):
+            return Response({"error_detail": "로그인이 필요합니다."}, status=401)
 
-        if target_member is None:
-            return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
+        try:
+            delegate_leader(
+                group_id=group_id,
+                current_user=request.user,
+                target_user_id=serializer.validated_data["target_member_id"],
+            )
+        except PermissionError as e:
+            return Response({"error_detail": str(e)}, status=403)
+        except ValueError as e:
+            return Response({"error_detail": str(e)}, status=404)
 
-        delegate_leader(current_leader, target_member)
-        return Response({"detail": "리더 권한이 위임되었습니다."}, status=status.HTTP_200_OK)
+        return Response({"detail": "리더 권한이 위임되었습니다."}, status=200)
 
 
-# 스터디 그룹 나가기
 class LeaveStudyGroupMeAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -204,21 +184,21 @@ class LeaveStudyGroupMeAPIView(APIView):
         },
         tags=["StudyGroup"],
     )
-    def delete(self, request: Request, study_group_id: int) -> Response:
-        user = cast(User, request.user)
-        membership = GroupMember.objects.filter(study_group_id=study_group_id, user_id=user.id).first()
-        if membership is None:
-            return Response({"error_detail": "스터디 그룹을 찾을 수 없습니다."}, status=404)
+    def delete(self, request: Request, group_id: int) -> Response:
+        if isinstance(request.user, AnonymousUser):
+            return Response({"error_detail": "로그인이 필요합니다."}, status=401)
 
         try:
-            leave_study_group(membership)
+            leave_study_group(
+                group_id=group_id,
+                user=request.user,
+            )
         except ValueError as e:
             return Response({"error_detail": str(e)}, status=400)
 
-        return Response({"detail": "스터디 그룹에서 나가기에 성공했습니다."}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"detail": "스터디 그룹에서 나가기에 성공했습니다."}, status=status.HTTP_200_OK)
 
 
-# 멤버 추방
 class KickStudyGroupMemberAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -234,21 +214,19 @@ class KickStudyGroupMemberAPIView(APIView):
         },
         tags=["StudyGroup"],
     )
-    def delete(self, request: Request, study_group_id: int, member_id: int) -> Response:
-        user = cast(User, request.user)
-        current_leader = GroupMember.objects.filter(study_group_id=study_group_id, user_id=user.id).first()
-        if not current_leader or not current_leader.is_leader:
-            return Response({"error_detail": "리더만 멤버를 추방할 수 있습니다."}, status=403)
-        # 멤버십 -> 멤버 / is None -> not (bool)
-        target_member = GroupMember.objects.filter(study_group_id=study_group_id, user_id=member_id).first()
-        if not target_member:
-            return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
+    def delete(self, request: Request, group_id: int, member_id: int) -> Response:
+        if isinstance(request.user, AnonymousUser):
+            return Response({"error_detail": "로그인이 필요합니다."}, status=401)
 
         try:
-            kick_member(current_leader, target_member)
+            kick_member(
+                group_id=group_id,
+                current_user=request.user,
+                target_user_id=member_id,
+            )
+        except PermissionError as e:
+            return Response({"error_detail": str(e)}, status=403)
         except ValueError as e:
-            return Response({"error_detail": str(e)}, status=400)
+            return Response({"error_detail": str(e)}, status=404)
 
-        return Response(
-            {"detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."}, status=status.HTTP_204_NO_CONTENT
-        )
+        return Response({"detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."}, status=status.HTTP_200_OK)

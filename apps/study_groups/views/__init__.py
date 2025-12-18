@@ -1,15 +1,15 @@
 from .study_groups_view import (
-    StudyGroupCreateAPIView,
-    StudyGroupDestroyAPIView,
-    StudyGroupListAPIView,
-    StudyGroupRetrieveAPIView,
-    StudyGroupUpdateAPIView,
+    DelegateLeaderAPIView,
+    KickStudyGroupMemberAPIView,
+    LeaveStudyGroupMeAPIView,
+    StudyGroupListCreateAPIView,
+    StudyGroupRetrieveUpdateDestroyAPIView,
 )
 
 __all__ = [
-    "StudyGroupCreateAPIView",
-    "StudyGroupListAPIView",
-    "StudyGroupRetrieveAPIView",
-    "StudyGroupUpdateAPIView",
-    "StudyGroupDestroyAPIView",
+    "StudyGroupListCreateAPIView",
+    "StudyGroupRetrieveUpdateDestroyAPIView",
+    "LeaveStudyGroupMeAPIView",
+    "KickStudyGroupMemberAPIView",
+    "DelegateLeaderAPIView",
 ]
