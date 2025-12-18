@@ -20,13 +20,9 @@ class SenderSerializer(serializers.ModelSerializer[User]):
         )
 
     def get_profile_img_url(self, obj: User) -> Optional[str]:
-        profile = getattr(obj, "profile", None)
-        if profile:
-            try:
-                url = cast(str, profile.profile_img_url)
-                return url
-            except (ValueError, TypeError):
-                return None
+        url: Optional[str] = getattr(obj, "profile_img_url", None)
+        if url:
+            return url
         return None
 
 

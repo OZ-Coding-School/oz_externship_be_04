@@ -62,6 +62,12 @@ class AdminAccountDetailReadSerializer(serializers.ModelSerializer[User]):
             "created_at",
         ]
 
+    def to_representation(self, instance: User) -> dict[str, Any]:
+        data = super().to_representation(instance)
+        if not data.get("profile_img_url"):
+            data["profile_img_url"] = None
+        return data
+
 
 class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
     """
@@ -85,6 +91,12 @@ class AdminAccountDetailSerializer(serializers.ModelSerializer[User]):
             "profile_img_url",
             "updated_at",
         ]
+
+    def to_representation(self, instance: User) -> dict[str, Any]:
+        data = super().to_representation(instance)
+        if not data.get("profile_img_url"):
+            data["profile_img_url"] = None
+        return data
 
 
 class AdminAccountUpdateSerializer(serializers.Serializer[Any]):

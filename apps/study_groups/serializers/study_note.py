@@ -15,6 +15,12 @@ class AuthorSerializer(serializers.ModelSerializer["User"]):
         fields = ["id", "nickname", "profile_img_url"]
         read_only_fields = ["id", "nickname", "profile_img_url"]
 
+    def to_representation(self, instance: "User") -> dict[str, Any]:
+        data = super().to_representation(instance)
+        if not data.get("profile_img_url"):
+            data["profile_img_url"] = None
+        return data
+
 
 class FileSerializer(serializers.ModelSerializer["StudyNoteAttachment"]):
     """파일 정보"""

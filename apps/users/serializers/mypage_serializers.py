@@ -57,6 +57,8 @@ class MyPageSerializer(serializers.ModelSerializer[Any]):
         if img_url:
             base_url = S3Uploader.get_s3_base_url()
             data["profile_img_url"] = f"{base_url}{img_url}"
+        else:
+            data["profile_img_url"] = None
 
         request = self.context.get("request")
         if request.method == "GET":  # type: ignore
