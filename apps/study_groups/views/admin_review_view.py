@@ -1,6 +1,6 @@
 from urllib.parse import urlencode
 
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -69,7 +69,7 @@ class AdminStudyReviewListAPIView(APIView):
 
         return None
 
-    def _apply_search(self, qs, search: str | None):
+    def _apply_search(self, qs: QuerySet[Review], search: str | None) -> QuerySet[Review]:
         if not search:
             return qs
         keyword = search.strip()
@@ -84,7 +84,7 @@ class AdminStudyReviewListAPIView(APIView):
             | Q(study_group__name__icontains=keyword)
         )
 
-    def _apply_sort(self, qs, sort: str | None):
+    def _apply_sort(self, qs: QuerySet[Review], sort: str | None) -> QuerySet[Review]:
         # sort: latest | oldest (그 외는 latest로 처리)
         if sort == "oldest":
             return qs.order_by("created_at", "id")
@@ -128,14 +128,14 @@ class AdminStudyReviewListAPIView(APIView):
             qs = self._apply_search(qs, search)
             qs = self._apply_sort(qs, sort)
 
-            # 팀 내 pagination 사용
+            # core pagination 사용
             pageable = Pageable.from_params(
                 page_raw=request.query_params.get("page"),
                 size_raw=request.query_params.get("page_size"),
             )
             page_obj = offset_paginate_queryset(qs, pageable)
 
-            serializer = AdminStudyReviewListItemSerializer(page_obj.items, many=True)
+            serializer = AdminStudyReviewListItemSerializer(page_obj.items, many=True) # type: ignore[arg-type]
 
             next_url = self._build_page_link(request, page_obj.current_page + 1) if page_obj.has_next else None
             prev_url = self._build_page_link(request, page_obj.current_page - 1) if page_obj.has_prev else None
