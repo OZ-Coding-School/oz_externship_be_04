@@ -34,23 +34,6 @@ class StudyGroupListCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        summary="스터디 그룹 생성",
-        description="스터디 그룹을 생성합니다.",
-        request=StudyGroupSerializer,
-        responses={201: StudyGroupSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
-        tags=["StudyGroup"],
-    )
-    def get(self, request: Request) -> Response:
-        status_filter = request.query_params.get("status")
-        search = request.query_params.get("search")
-        queryset = get_study_group_list(status_filter)
-        if search:  # search None 대비
-            queryset = queryset.filter(name__icontains=search)
-
-        serializer = StudyGroupListSerializer(queryset, many=True, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @extend_schema(
         summary="스터디 그룹 목록 조회",
         description="스터디 그룹 목록을 조회합니다.",
         responses=StudyGroupListSerializer,
@@ -70,6 +53,23 @@ class StudyGroupListCreateAPIView(APIView):
                 default="PENDING",
             ),
         ],
+        tags=["StudyGroup"],
+    )
+    def get(self, request: Request) -> Response:
+        status_filter = request.query_params.get("status")
+        search = request.query_params.get("search")
+        queryset = get_study_group_list(status_filter)
+        if search:  # search None 대비
+            queryset = queryset.filter(name__icontains=search)
+
+        serializer = StudyGroupListSerializer(queryset, many=True, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="스터디 그룹 생성",
+        description="스터디 그룹을 생성합니다.",
+        request=StudyGroupSerializer,
+        responses={201: StudyGroupSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
         tags=["StudyGroup"],
     )
     def post(self, request: Request) -> Response:
