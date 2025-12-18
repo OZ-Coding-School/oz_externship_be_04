@@ -9,9 +9,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.users.serializers.email_auth_serializer import (
+    EmailSerializer,
     EmailSignUpSerializer,
     EmailSignUpVerifySerializer,
-    FindEmailSerializer, EmailVerifySerializer, EmailSerializer,
+    EmailVerifySerializer,
+    FindEmailSerializer,
 )
 from apps.users.utils.send_auth import SendAuth
 
@@ -191,25 +193,18 @@ class FindPasswordVerifyEmailView(APIView):
 
         email = serializer.validated_data["email"]
         code = serializer.validated_data["code"]
-        
+
         redis_key = f"email:reset_password:{email}"
         stored_code = cache.get(redis_key)
 
         if not stored_code:
             return Response(
-                {"error_detail": "인증 코드가 만료되었거나 존재하지 않습니다."},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error_detail": "인증 코드가 만료되었거나 존재하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST
             )
         if stored_code != code:
-            return Response(
-                {"error_detail": "인증 코드가 올바르지 않습니다."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error_detail": "인증 코드가 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
         cache.delete(redis_key)
         cache.set(f"email_verified:reset_password:{email}", True, timeout=1800)  # 30분
 
-        return Response(
-            {"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다."},
-            status=status.HTTP_200_OK
-        )
+        return Response({"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다."}, status=status.HTTP_200_OK)

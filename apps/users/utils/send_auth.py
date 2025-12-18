@@ -23,6 +23,7 @@ class SendAuth:
         "find_password": "비밀번호 찾기 인증 코드",
         "restore": "계정 복구 인증 코드",
     }
+
     @classmethod
     def send_email_auth(cls, email: str, auth_type: str) -> Response:
         try:
