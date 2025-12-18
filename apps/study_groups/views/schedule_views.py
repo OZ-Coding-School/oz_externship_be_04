@@ -278,10 +278,12 @@ class ScheduleDetailView(APIView):
                             "id": 1,
                             "group_id": 1,
                             "title": "파이썬 스터디 2회차",
-                            "objective": "파이썬 자료형 마스터하기",
+                            "objective": "파이썬 for문 마스터하기",
                             "session_date": "2025-11-20",
                             "start_time": "10:00",
                             "end_time": "11:00",
+                            "created_at": "2025-11-10T10:00:00",
+                            "updated_at": "2025-11-16T12:00:00",
                             "participants": [
                                 {
                                     "id": 3,
