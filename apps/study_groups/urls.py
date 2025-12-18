@@ -1,5 +1,9 @@
 from django.urls import path
 
+from .views.admin_review_view import (
+    AdminStudyReviewDetailAPIView,
+    AdminStudyReviewListAPIView,
+)
 from .views.review_view import (
     StudyGroupReviewCreateAPIView,
     StudyGroupReviewUpdateAPIView,
@@ -45,4 +49,10 @@ urlpatterns = [
     ),
     path("/study-groups/<int:group_id>/notes", StudyNoteListCreateView.as_view(), name="study-note-list-create"),
     path("/study-groups/<int:group_id>/notes/<int:note_id>", StudyNoteDetailView.as_view(), name="study-note-detail"),
+    path(
+        "/admin/study-reviews/<int:review_id>",
+        AdminStudyReviewDetailAPIView.as_view(),
+        name="admin-study-review-detail",
+    ),
+    path("/admin/study-reviews", AdminStudyReviewListAPIView.as_view(), name="admin-study-review-list"),
 ]
