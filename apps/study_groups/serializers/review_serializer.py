@@ -1,6 +1,7 @@
 from typing import Any, List, cast
 
 from rest_framework import serializers
+from rest_framework.request import Request
 
 from apps.study_groups.models import Review
 
@@ -33,6 +34,21 @@ class ReviewSerializer(serializers.Serializer[Review]):
     content = serializers.CharField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
+
+
+class ReviewListSerializer(ReviewSerializer):
+    is_mine = serializers.SerializerMethodField()
+
+    def get_is_mine(self, obj: Review) -> bool:
+        context_request = self.context.get("request")
+        if context_request is None:
+            return False
+
+        drf_request = cast(Request, context_request)
+        if not drf_request.user.is_authenticated:
+            return False
+
+        return bool(obj.user_id == drf_request.user.id)
 
 
 class ReviewUpdateSerializer(serializers.Serializer[Review]):
