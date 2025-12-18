@@ -74,6 +74,12 @@ class ApplicantSummarySerializer(serializers.ModelSerializer[User]):
         fields = ["id", "nickname", "gender", "profile_img_url"]
         read_only_fields = ["id", "nickname", "gender", "profile_img_url"]
 
+    def to_representation(self, instance: User) -> Dict[str, Any]:
+        data = super().to_representation(instance)
+        if not data.get("profile_img_url"):
+            data["profile_img_url"] = None
+        return data
+
 
 class LectureSummarySerializer(serializers.ModelSerializer[CrawledLecture]):
     """강의 요약 정보"""

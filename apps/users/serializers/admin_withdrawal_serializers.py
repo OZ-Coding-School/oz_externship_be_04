@@ -56,6 +56,12 @@ class AdminWithdrawalUserDetailsSerializer(serializers.ModelSerializer[User]):
             "created_at",
         ]
 
+    def to_representation(self, instance: User) -> dict[str, Any]:
+        data = super().to_representation(instance)
+        if not data.get("profile_img_url"):
+            data["profile_img_url"] = None
+        return data
+
 
 class AdminWithdrawalDetailSerializer(serializers.ModelSerializer[Withdrawal]):
     user = AdminWithdrawalUserDetailsSerializer(read_only=True)

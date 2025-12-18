@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict
 
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -55,6 +55,12 @@ class AdminApplicantDetailSerializer(serializers.ModelSerializer[User]):
         model = User
         fields = ["id", "nickname", "email", "gender", "profile_img_url"]
         read_only_fields = ["id", "nickname", "email", "gender", "profile_img_url"]
+
+    def to_representation(self, instance: User) -> Dict[str, Any]:
+        data = super().to_representation(instance)
+        if not data.get("profile_img_url"):
+            data["profile_img_url"] = None
+        return data
 
 
 class AdminRecruitmentSummarySerializer(serializers.ModelSerializer[Recruitment]):
