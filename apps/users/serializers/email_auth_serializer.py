@@ -55,9 +55,7 @@ class FindEmailSerializer(serializers.Serializer[Any]):
         phone_number = attrs.get("phone_number")
 
         if phone_number is None:
-            raise serializers.ValidationError(
-                {"phone_number": ["휴대폰 번호가 제공되지 않았습니다."]}
-            )
+            raise serializers.ValidationError({"phone_number": ["휴대폰 번호가 제공되지 않았습니다."]})
 
         phone_number = phone_number.replace("-", "")
         attrs["phone_number"] = phone_number
