@@ -1,10 +1,9 @@
 from datetime import date
 
-from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-User = get_user_model()
+from apps.users.models import User
 
 
 class AdminSignupTrendAPITests(APITestCase):
@@ -12,53 +11,61 @@ class AdminSignupTrendAPITests(APITestCase):
     def setUp(self) -> None:
         self.url = "/api/v1/admin/analytics/signup/trends"
 
-        self.admin_user = User.objects.create_superuser(
-            "admin@example.com",
-            "adminpass123!",
-            name="관리자",
-            nickname="admin",
-            phone_number="01000000000",
-            gender="M",
-            profile_img_url="https://example.com/admin.png",
-        )
-
-        self.normal_user1 = User.objects.create_user(
-            "user1@example.com",
-            "userpass123!",
-            name="유저1",
-            nickname="user1",
+        self.normal_user = User.objects.create(
+            email="user@example.com",
+            password="password123",
+            name="일반유저",
+            nickname="normal",
             phone_number="01000000001",
             gender="F",
-            profile_img_url="https://example.com/user1.png",
-            is_active=True,
-        )
-        self.normal_user2 = User.objects.create_user(
-            "user2@example.com",
-            "userpass123!",
-            name="유저2",
-            nickname="user2",
-            phone_number="01000000002",
-            gender="M",
-            profile_img_url="https://example.com/user2.png",
+            birthday=date(2000, 1, 1),
+            profile_img_url="https://example.com/1.png",
             is_active=True,
         )
 
-    def test_signup_trend_unauthorized(self) -> None:
+        self.staff_user = User.objects.create(
+            email="staff@example.com",
+            password="password123",
+            name="스태프",
+            nickname="staff",
+            phone_number="01000000002",
+            gender="M",
+            birthday=date(1995, 1, 1),
+            profile_img_url="https://example.com/2.png",
+            is_active=True,
+            is_staff=True,
+        )
+
+        self.super_user = User.objects.create(
+            email="admin@example.com",
+            password="password123",
+            name="관리자",
+            nickname="admin",
+            phone_number="01000000003",
+            gender="M",
+            birthday=date(1990, 1, 1),
+            profile_img_url="https://example.com/3.png",
+            is_active=True,
+            is_staff=True,
+            is_superuser=True,
+        )
+
+    def test_signup_trend_unauthenticated_returns_401(self) -> None:
         response = self.client.get(self.url, {"interval": "monthly"})
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertIn("error_detail", response.data)
 
     def test_signup_trend_forbidden_for_normal_user(self) -> None:
-        self.client.force_authenticate(user=self.normal_user1)
+        self.client.force_authenticate(user=self.normal_user)
 
         response = self.client.get(self.url, {"interval": "monthly"})
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertIn("error_detail", response.data)
 
-    def test_signup_trend_monthly_success_for_admin(self) -> None:
-        self.client.force_authenticate(user=self.admin_user)
+    def test_signup_trend_monthly_success_for_staff(self) -> None:
+        self.client.force_authenticate(user=self.staff_user)
 
         response = self.client.get(self.url, {"interval": "monthly"})
 
@@ -90,8 +97,8 @@ class AdminSignupTrendAPITests(APITestCase):
 
         self.assertEqual(data["total"], expected_total)
 
-    def test_signup_trend_yearly_success_for_admin(self) -> None:
-        self.client.force_authenticate(user=self.admin_user)
+    def test_signup_trend_yearly_success_for_staff(self) -> None:
+        self.client.force_authenticate(user=self.staff_user)
 
         response = self.client.get(self.url, {"interval": "yearly"})
 

@@ -1,13 +1,11 @@
 from datetime import date
 
-from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.users.models import User
 from apps.users.models.withdrawal import Withdrawal
 from apps.users.utils.reason_choices import WithdrawalReason
-
-User = get_user_model()
 
 
 class AdminWithdrawalTrendAPITests(APITestCase):
@@ -15,75 +13,72 @@ class AdminWithdrawalTrendAPITests(APITestCase):
     def setUp(self) -> None:
         self.url = "/api/v1/admin/analytics/withdrawals/trends"
 
-        self.admin_user = User.objects.create_superuser(
-            "admin@example.com",
-            "adminpass123!",
-            name="관리자",
-            nickname="admin",
-            phone_number="01000000000",
-            gender="M",
-            profile_img_url="https://example.com/admin.png",
-        )
-
-        self.normal_user1 = User.objects.create_user(
-            "user1@example.com",
-            "userpass123!",
-            name="유저1",
-            nickname="user1",
+        self.normal_user = User.objects.create(
+            email="user@example.com",
+            password="password123",
+            name="일반유저",
+            nickname="normal",
             phone_number="01000000001",
             gender="F",
-            profile_img_url="https://example.com/user1.png",
+            birthday=date(2000, 1, 1),
+            profile_img_url="https://example.com/1.png",
             is_active=False,
         )
-        self.normal_user2 = User.objects.create_user(
-            "user2@example.com",
-            "userpass123!",
-            name="유저2",
-            nickname="user2",
+
+        self.staff_user = User.objects.create(
+            email="staff@example.com",
+            password="password123",
+            name="스태프",
+            nickname="staff",
             phone_number="01000000002",
             gender="M",
-            profile_img_url="https://example.com/user2.png",
-            is_active=False,
-        )
-
-        Withdrawal.objects.create(
-            user=self.normal_user1,
-            reason=WithdrawalReason.OTHER,
-            reason_detail="기타 사유 1",
-        )
-        Withdrawal.objects.create(
-            user=self.normal_user2,
-            reason=WithdrawalReason.NO_LONGER_NEEDED,
-            reason_detail="서비스가 더 이상 필요 없음",
-        )
-
-        self.active_normal_user = User.objects.create_user(
-            "active_user@example.com",
-            "userpass123!",
-            name="일반유저",
-            nickname="active_user",
-            phone_number="01000000003",
-            gender="F",
-            profile_img_url="https://example.com/active_user.png",
+            birthday=date(1995, 1, 1),
+            profile_img_url="https://example.com/2.png",
             is_active=True,
+            is_staff=True,
         )
 
-    def test_withdrawal_trend_unauthorized(self) -> None:
+        self.super_user = User.objects.create(
+            email="admin@example.com",
+            password="password123",
+            name="관리자",
+            nickname="admin",
+            phone_number="01000000003",
+            gender="M",
+            birthday=date(1990, 1, 1),
+            profile_img_url="https://example.com/3.png",
+            is_active=True,
+            is_staff=True,
+            is_superuser=True,
+        )
+
+        self.withdrawal_1 = Withdrawal.objects.create(
+            user=self.normal_user,
+            reason=WithdrawalReason.NO_LONGER_NEEDED,
+            reason_detail="더 이상 서비스가 필요 없음",
+        )
+        self.withdrawal_2 = Withdrawal.objects.create(
+            user=self.staff_user,
+            reason=WithdrawalReason.LACK_OF_INTEREST,
+            reason_detail="관심 감소",
+        )
+
+    def test_withdrawal_trend_unauthorized_returns_401(self) -> None:
         response = self.client.get(self.url, {"interval": "monthly"})
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertIn("error_detail", response.data)
 
     def test_withdrawal_trend_forbidden_for_normal_user(self) -> None:
-        self.client.force_authenticate(user=self.active_normal_user)
+        self.client.force_authenticate(user=self.normal_user)
 
         response = self.client.get(self.url, {"interval": "monthly"})
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertIn("error_detail", response.data)
 
-    def test_withdrawal_trend_monthly_success_for_admin(self) -> None:
-        self.client.force_authenticate(user=self.admin_user)
+    def test_withdrawal_trend_monthly_success_for_staff(self) -> None:
+        self.client.force_authenticate(user=self.staff_user)
 
         response = self.client.get(self.url, {"interval": "monthly"})
 
@@ -115,8 +110,8 @@ class AdminWithdrawalTrendAPITests(APITestCase):
 
         self.assertEqual(data["total"], expected_total)
 
-    def test_withdrawal_trend_yearly_success_for_admin(self) -> None:
-        self.client.force_authenticate(user=self.admin_user)
+    def test_withdrawal_trend_yearly_success_for_staff(self) -> None:
+        self.client.force_authenticate(user=self.staff_user)
 
         response = self.client.get(self.url, {"interval": "yearly"})
 
