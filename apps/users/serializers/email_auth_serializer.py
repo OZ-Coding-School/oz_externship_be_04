@@ -29,3 +29,47 @@ class EmailSignUpVerifySerializer(serializers.Serializer[Any]):
         if not AuthCodeCache.verify(key, code):
             raise serializers.ValidationError({"code": ["인증 코드가 올바르지 않거나 만료되었습니다."]})
         return data
+
+
+class EmailVerifySerializer(serializers.Serializer[Any]):
+    email = serializers.EmailField(required=True)
+    code = serializers.CharField(
+        required=True, min_length=6, max_length=6, error_messages={"required": "인증 코드를 입력해주세요."}
+    )
+
+    def validate_code(self, value: str) -> str:
+        if not value.isalnum():
+            raise serializers.ValidationError("인증 코드는 영문자와 숫자만 입력 가능합니다.")
+        return value
+
+
+class FindEmailSerializer(serializers.Serializer[Any]):
+    name = serializers.CharField(required=True, max_length=20, error_messages={"required": "이름을 입력해주세요."})
+
+    phone_number = serializers.CharField(
+        required=True, max_length=20, error_messages={"required": "휴대폰 번호를 입력해주세요."}
+    )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        name = attrs.get("name")
+        phone_number = attrs.get("phone_number")
+
+        if phone_number is None:
+            raise serializers.ValidationError({"phone_number": ["휴대폰 번호가 제공되지 않았습니다."]})
+
+        phone_number = phone_number.replace("-", "")
+        attrs["phone_number"] = phone_number
+
+        user = User.objects.filter(name=name, phone_number=phone_number).first()
+
+        if not user:
+            raise serializers.ValidationError("등록된 정보가 없습니다.")
+
+        attrs["user"] = user
+
+        return attrs
+
+
+class EmailSerializer(serializers.Serializer[Any]):
+
+    email = serializers.EmailField(required=True)
