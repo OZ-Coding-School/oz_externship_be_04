@@ -152,7 +152,24 @@ class LectureBookmarkListCreateAPIView(APIView):
     def post(self, request: Request) -> Response:
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+
+        lecture = serializer.validated_data["lecture"]
+        assert isinstance(lecture, CrawledLecture)
+
+        user_id = request.user.id
+        assert isinstance(user_id, int)
+
+        bookmark, created = LectureBookmark.objects.get_or_create(
+            user_id=user_id,
+            lecture=lecture,
+        )
+
+        if not created:
+            bookmark.delete()
+            return Response(
+                {"detail": "북마크를 취소하였습니다."},
+                status=200,
+            )
 
         return Response(
             {"detail": "북마크를 추가하였습니다."},
