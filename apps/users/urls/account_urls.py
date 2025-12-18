@@ -1,6 +1,11 @@
 from django.urls import path
 
-from apps.users.views.email_auth_views import EmailSignUpVerifyView, EmailSignUpView
+from apps.users.views.email_auth_views import (
+    EmailSignUpVerifyView,
+    EmailSignUpView,
+    FindPasswordSendEmailView,
+    FindPasswordVerifyEmailView,
+)
 from apps.users.views.token_views import LogoutView, TokenRefreshView
 from apps.users.views.user_account_views import (
     NicknameCheckView,
@@ -32,4 +37,8 @@ urlpatterns = [
     path("accounts/find-email/send-sms", FindEmailSendSMSView.as_view(), name="find-email-send-sms"),
     path("accounts/change-phone/send-sms", ChangePhoneSendSMSView.as_view(), name="change-phone-send-sms"),
     path("accounts/change-phone", ChangePhoneView.as_view(), name="change-phone"),
+    path("accounts/find-password/send-email", FindPasswordSendEmailView.as_view(), name="find-password-send-email"),
+    path(
+        "accounts/find-password/verify-email", FindPasswordVerifyEmailView.as_view(), name="find-password-verify-email"
+    ),
 ]
