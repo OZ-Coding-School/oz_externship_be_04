@@ -345,6 +345,14 @@ class S3UploaderTest(S3MockTestBase):
             S3Uploader.delete_file(key="   ")
         self.assertIn("key는 필수입니다", str(ctx.exception.detail))
 
+    def test_delete_file_not_found(self) -> None:
+        """존재하지 않는 파일 삭제 시도"""
+        non_existent_key = "uploads/test/non-existent-file.png"
+
+        with self.assertRaises(ValidationError) as ctx:
+            S3Uploader.delete_file(key=non_existent_key)
+        self.assertIn("파일이 존재하지 않습니다", str(ctx.exception.detail))
+
     def test_delete_file_errors(self) -> None:
         """파일 삭제 에러 핸들링"""
         from unittest.mock import patch

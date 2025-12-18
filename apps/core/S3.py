@@ -168,11 +168,19 @@ class S3Uploader:
                 - key: 삭제된 객체 키
 
         Raises:
-            ValidationError: key가 비어있을 경우
+            ValidationError: key가 비어있거나 파일이 존재하지 않을 경우
             APIException: S3 삭제 실패
         """
         if not key or not key.strip():
             raise ValidationError("key는 필수입니다.")
+
+        try:
+            cls.get_s3_client().head_object(Bucket=cls.get_bucket_name(), Key=key)
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code", "")
+            if error_code == "404":
+                raise ValidationError(f"파일이 존재하지 않습니다: {key}")
+            raise
 
         cls.get_s3_client().delete_object(
             Bucket=cls.get_bucket_name(),

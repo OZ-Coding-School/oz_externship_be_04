@@ -142,7 +142,20 @@ class S3FileDeleteView(APIView):
             },
             400: {
                 "description": "잘못된 요청",
-                "content": {"application/json": {"example": {"error_detail": "key는 필수입니다."}}},
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "missing_key": {
+                                "summary": "key 누락",
+                                "value": {"error_detail": "key는 필수입니다."},
+                            },
+                            "file_not_found": {
+                                "summary": "파일이 존재하지 않음",
+                                "value": {"error_detail": "파일이 존재하지 않습니다: uploads/images/example.png"},
+                            },
+                        }
+                    }
+                },
             },
             401: {
                 "description": "인증 실패",
