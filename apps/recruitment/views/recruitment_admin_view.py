@@ -58,10 +58,10 @@ class AdminRecruitmentListView(APIView):
         parameters=[
             OpenApiParameter("search", OpenApiTypes.STR, required=False, description="구인공고 제목 검색"),
             OpenApiParameter(
-                "status",
-                OpenApiTypes.STR,
+                name="is_closed",
+                type=OpenApiTypes.BOOL,
                 required=False,
-                description="구인 공고 상태 : 'open' (모집중), 'closed' (마감) )",
+                description="마감 여부 (true | false)",
             ),
             OpenApiParameter(
                 "tag",
@@ -85,13 +85,13 @@ class AdminRecruitmentListView(APIView):
         if search_keyword:
             qs = qs.filter(title__icontains=search_keyword)
 
-        # 구인 공고 상태 ( 모집중, 마감 )
-        status_param = request.query_params.get("status")
-        if status_param == "open":
-            qs = qs.filter(is_closed=False)
-
-        elif status_param == "closed":
-            qs = qs.filter(is_closed=True)
+        # 구인 공고 상태
+        is_closed = request.query_params.get("is_closed")
+        if is_closed is not None:
+            if is_closed.strip().lower() in ("true", "1", "yes"):
+                qs = qs.filter(is_closed=True)
+            elif is_closed.strip().lower() in ("false", "0", "no"):
+                qs = qs.filter(is_closed=False)
 
         # 공고 태그별 필터링(선택된 태그 중 하나라도 포함하는 공고 조회)
         tag_param = request.query_params.get("tag")

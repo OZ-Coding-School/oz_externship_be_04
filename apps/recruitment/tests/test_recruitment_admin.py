@@ -241,7 +241,7 @@ class AdminRecruitmentAPITestCase(APITestCase):
 
     def test_filter_by_open_status(self) -> None:
         """모집중(status=open)인 공고만 필터링 합니다."""
-        open_url = f"{self.list_url}?status=open"
+        open_url = f"{self.list_url}?is_closed=false"
         response = self.client.get(open_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -253,7 +253,7 @@ class AdminRecruitmentAPITestCase(APITestCase):
 
     def test_filter_by_closed_status(self) -> None:
         """마감(status=closed)된 공고만 필터링합니다."""
-        closed_url = f"{self.list_url}?status=closed"
+        closed_url = f"{self.list_url}?is_closed=true"
         response = self.client.get(closed_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
