@@ -101,7 +101,7 @@ class AdminStudyReviewListAPIView(APIView):
 
     @extend_schema(
         summary="관리자 스터디 리뷰 목록 조회",
-        tags=["Admin"],
+        tags=["StudyGroup"],
         parameters=[
             OpenApiParameter(name="page", type=OpenApiTypes.INT, required=False),
             OpenApiParameter(name="page_size", type=OpenApiTypes.INT, required=False),
