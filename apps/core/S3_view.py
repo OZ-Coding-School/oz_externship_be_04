@@ -1,6 +1,6 @@
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
-from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -114,4 +114,46 @@ class S3PresignedURLView(APIView):
             file_name=file_name,
             file_ext=file_ext,
         )
+        return Response(result, status=status.HTTP_200_OK)
+
+
+class S3FileDeleteView(APIView):
+    """S3 파일 삭제 View (단일)"""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="S3 파일 삭제 (단일)",
+        description="S3 객체 키로 파일을 삭제합니다.",
+        request={
+            "application/json": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}
+        },
+        responses={
+            200: {
+                "description": "성공",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "message": "파일이 성공적으로 삭제되었습니다.",
+                            "key": "uploads/recruitment/images/uuid.png",
+                        }
+                    }
+                },
+            },
+            400: {
+                "description": "잘못된 요청",
+                "content": {"application/json": {"example": {"error_detail": "key는 필수입니다."}}},
+            },
+            401: {
+                "description": "인증 실패",
+                "content": {
+                    "application/json": {"example": {"error_detail": "자격 인증 데이터가 제공되지 않았습니다."}}
+                },
+            },
+        },
+        tags=["Common"],
+    )
+    def delete(self, request: Request) -> Response:
+        key = request.data.get("key", "")
+        result = s3_uploader.delete_file(key=key)
         return Response(result, status=status.HTTP_200_OK)

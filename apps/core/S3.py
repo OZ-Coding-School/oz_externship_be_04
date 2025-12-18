@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 import uuid
-from functools import wraps
-from typing import Any, Callable, ClassVar, cast
+from functools import lru_cache, wraps
+from typing import Any, Callable
 
 import boto3
 from botocore.exceptions import (
@@ -13,7 +13,6 @@ from botocore.exceptions import (
     ParamValidationError,
 )
 from django.conf import settings
-from django.core.files.uploadedfile import UploadedFile
 from rest_framework.exceptions import APIException, ValidationError
 
 from apps.core.S3_constants import FileType, S3Constants
@@ -65,19 +64,16 @@ class S3Uploader:
     - 파일 업로드 (테스트 및 관리용)
     """
 
-    _s3_client: Any = None
-
-    @classmethod
-    def get_s3_client(cls) -> Any:
-        """S3 클라이언트 반환 (lazy initialization)"""
-        if cls._s3_client is None:
-            cls._s3_client = boto3.client(
-                "s3",
-                aws_access_key_id=getattr(settings, "AWS_S3_ACCESS_KEY_ID", None),
-                aws_secret_access_key=getattr(settings, "AWS_S3_SECRET_ACCESS_KEY", None),
-                region_name=getattr(settings, "AWS_S3_REGION", None),
-            )
-        return cls._s3_client
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def get_s3_client() -> Any:
+        """S3 클라이언트 반환 (thread-safe lazy initialization)"""
+        return boto3.client(
+            "s3",
+            aws_access_key_id=getattr(settings, "AWS_S3_ACCESS_KEY_ID", None),
+            aws_secret_access_key=getattr(settings, "AWS_S3_SECRET_ACCESS_KEY", None),
+            region_name=getattr(settings, "AWS_S3_REGION", None),
+        )
 
     @classmethod
     def get_bucket_name(cls) -> str:
@@ -90,69 +86,6 @@ class S3Uploader:
         bucket = cls.get_bucket_name()
         region = getattr(settings, "AWS_S3_REGION", "")
         return f"https://{bucket}.s3.{region}.amazonaws.com/"
-
-    @classmethod
-    @handle_s3_errors("Presigned URL 생성")
-    def generate_presigned_urls(cls, prefix: str, files: list[dict[str, str]]) -> list[dict[str, Any]]:
-        """
-        Presigned URL 생성 (POST 방식, 복수)
-
-        Args:
-            prefix: S3 저장 경로 prefix
-            files: 파일 정보 리스트 (file_name, content_type 포함)
-
-        Returns:
-            list[dict]: Presigned URL 정보 리스트
-
-        Raises:
-            APIException: Presigned URL 생성 실패
-        """
-        presigned_data: list[dict[str, Any]] = []
-
-        if prefix and not prefix.endswith("/"):
-            prefix += "/"
-
-        for file in files:
-            file_name = file.get("file_name")
-            content_type = file.get("content_type")
-
-            if not file_name or not content_type:
-                raise ValidationError("file_name과 content_type은 필수입니다.")
-
-            S3FileValidator.validate_file_name(file_name)
-            ext = S3FileValidator.validate_file_extension(file_name)
-            S3FileValidator.validate_content_type(content_type)
-            S3FileValidator.validate_mime_match(ext, content_type)
-
-            key = f"{prefix}{uuid.uuid4()}_{file_name}"
-
-            presigned_post = cls.get_s3_client().generate_presigned_post(
-                Bucket=cls.get_bucket_name(),
-                Key=key,
-                Fields={"Content-Type": content_type},
-                Conditions=[
-                    {"Content-Type": content_type},
-                    [
-                        "content-length-range",
-                        S3Constants.MIN_FILE_SIZE_BYTES,
-                        S3Constants.MAX_FILE_SIZE_BYTES,
-                    ],
-                ],
-                ExpiresIn=S3Constants.PRESIGNED_URL_EXPIRE_SECONDS,
-            )
-
-            presigned_data.append(
-                {
-                    "file_name": file_name,
-                    "key": key,
-                    "url": presigned_post["url"],
-                    "fields": presigned_post["fields"],
-                    "file_url": cls.get_s3_base_url() + key,
-                    "expires_in": S3Constants.PRESIGNED_URL_EXPIRE_SECONDS,
-                }
-            )
-
-        return presigned_data
 
     @classmethod
     @handle_s3_errors("Presigned URL 생성")
@@ -191,15 +124,17 @@ class S3Uploader:
 
         S3FileValidator.validate_file_name(file_name)
 
-        S3FileValidator.validate_file_extension(file_name)
+        ext = S3FileValidator.validate_extension_match(file_name, file_ext)
 
-        S3FileValidator.validate_mime_match(file_ext, content_type)
+        S3FileValidator.validate_content_type(content_type)
+
+        S3FileValidator.validate_mime_match(ext, content_type)
 
         prefix = S3Constants.PATH_MAPPING.get(file_type_enum)
         if not prefix:
             raise ValidationError(f"경로를 찾을 수 없습니다: {file_type}")
 
-        key = f"{prefix}/{uuid.uuid4()}.{file_ext}"
+        key = f"{prefix}/{uuid.uuid4()}.{ext}"
 
         upload_url = cls.get_s3_client().generate_presigned_url(
             "put_object",
@@ -216,6 +151,37 @@ class S3Uploader:
             "file_url": f"{cls.get_s3_base_url()}{key}",
             "key": key,
             "headers": {"Content-Type": content_type},
+        }
+
+    @classmethod
+    @handle_s3_errors("파일 삭제")
+    def delete_file(cls, key: str) -> dict[str, Any]:
+        """
+        S3 파일 삭제 (단일)
+
+        Args:
+            key: S3 객체 키 (예: uploads/recruitments/images/uuid.png)
+
+        Returns:
+            dict: 삭제 결과
+                - message: 성공 메시지
+                - key: 삭제된 객체 키
+
+        Raises:
+            ValidationError: key가 비어있을 경우
+            APIException: S3 삭제 실패
+        """
+        if not key or not key.strip():
+            raise ValidationError("key는 필수입니다.")
+
+        cls.get_s3_client().delete_object(
+            Bucket=cls.get_bucket_name(),
+            Key=key,
+        )
+
+        return {
+            "message": "파일이 성공적으로 삭제되었습니다.",
+            "key": key,
         }
 
 
