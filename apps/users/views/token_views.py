@@ -1,5 +1,6 @@
 from typing import Any
 
+from django.core.cache import cache
 from drf_spectacular.utils import OpenApiExample, extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
@@ -10,6 +11,22 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.models import User
+
+
+def blacklist_token(token: RefreshToken) -> None:
+    jti = token.payload.get("jti")
+    exp = token.payload.get("exp")
+    if jti and exp:
+        import time
+
+        ttl = exp - int(time.time())
+        if ttl > 0:
+            cache.set(f"blacklist:{jti}", "1", timeout=ttl)
+
+
+def is_token_blacklisted(token: RefreshToken) -> bool:
+    jti = token.payload.get("jti")
+    return cache.get(f"blacklist:{jti}") is not None
 
 
 class TokenRefreshView(APIView):
@@ -56,8 +73,15 @@ class TokenRefreshView(APIView):
         try:
             refresh = RefreshToken(refresh_token)  # type: ignore[arg-type]
 
-            # 이전 토큰 블랙리스트 처리
-            refresh.blacklist()
+            # 블랙리스트 확인
+            if is_token_blacklisted(refresh):
+                return Response(
+                    {"error_detail": "유효하지 않은 토큰입니다."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # 이전 토큰 블랙리스트 처리 (Redis)
+            blacklist_token(refresh)
 
             # 새 토큰 발급
             user = User.objects.get(id=refresh.payload.get("user_id"))
@@ -109,7 +133,7 @@ class LogoutView(APIView):
         if refresh_token:
             try:
                 refresh = RefreshToken(refresh_token)  # type: ignore[arg-type]
-                refresh.blacklist()
+                blacklist_token(refresh)
             except TokenError:
                 pass
 
