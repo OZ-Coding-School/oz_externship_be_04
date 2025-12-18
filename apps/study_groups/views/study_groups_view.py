@@ -34,13 +34,6 @@ class StudyGroupListCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        summary="스터디 그룹 생성",
-        description="스터디 그룹을 생성합니다.",
-        request=StudyGroupSerializer,
-        responses={201: StudyGroupSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
-        tags=["StudyGroup"],
-    )
-    @extend_schema(
         summary="스터디 그룹 목록 조회",
         description="스터디 그룹 목록을 조회합니다.",
         responses=StudyGroupListSerializer,
@@ -72,6 +65,13 @@ class StudyGroupListCreateAPIView(APIView):
         serializer = StudyGroupListSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="스터디 그룹 생성",
+        description="스터디 그룹을 생성합니다.",
+        request=StudyGroupSerializer,
+        responses={201: StudyGroupSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
+        tags=["StudyGroup"],
+    )
     def post(self, request: Request) -> Response:
         serializer = StudyGroupSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -92,6 +92,7 @@ class StudyGroupListCreateAPIView(APIView):
 class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
+    # 상세조회
     @extend_schema(
         summary="스터디 그룹 상세 조회",
         description="스터디 그룹 상세정보를 조회합니다.",
@@ -99,10 +100,12 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
         tags=["StudyGroup"],
     )
     def get(self, request: Request, pk: int) -> Response:
+
         study_group = retrieve_study_group(pk)
         serializer = StudyGroupDetailSerializer(study_group, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    # 수정
     @extend_schema(
         summary="스터디 그룹 수정",
         description="스터디 그룹 정보를 수정합니다.",
@@ -111,6 +114,7 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
         tags=["StudyGroup"],
     )
     def patch(self, request: Request, group_id: int) -> Response:
+        ###extend_schema 추가/수정 필요
         study_group = get_object_or_404(StudyGroup, pk=group_id)
         serializer = StudyGroupSerializer(study_group, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -120,6 +124,18 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    # 삭제
+    @extend_schema(
+        summary="스터디 그룹 삭제",
+        description="스터디 그룹을 삭제합니다. 리더만 삭제할 수 있습니다.",
+        responses={
+            200: DetailResponseSerializer,
+            401: ErrorDetailResponseSerializer,
+            403: ErrorDetailResponseSerializer,
+            404: ErrorDetailResponseSerializer,
+        },
+        tags=["StudyGroup"],
+    )
     def delete(self, request: Request, group_id: int) -> Response:
         study_group = get_object_or_404(StudyGroup, pk=group_id)
 
@@ -137,6 +153,7 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
 class DelegateLeaderAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
+    # 위임
     @extend_schema(
         summary="스터디 그룹 리더 위임",
         description="스터디 그룹 리더 권한을 특정 멤버에게 위임합니다.",
