@@ -8,6 +8,7 @@ from apps.users.views.admin_account_views import (
 )
 from apps.users.views.admin_signup_trends_views import AdminSignupTrendView
 from apps.users.views.admin_withdrawal_reasons_views import (
+    AdminWithdrawalReasonMonthlyStatsView,
     AdminWithdrawalReasonPercentageView,
 )
 from apps.users.views.admin_withdrawal_views import (
@@ -61,5 +62,10 @@ urlpatterns = [
         "/admin/analytics/withdrawal-reasons/percentage",
         AdminWithdrawalReasonPercentageView.as_view(),
         name="admin_withdrawal_reason_percentage",
+    ),
+    path(
+        "/admin/analytics/withdrawal-reasons/stats/monthly",
+        AdminWithdrawalReasonMonthlyStatsView.as_view(),
+        name="admin_withdrawal_reasons_stats_monthly",
     ),
 ]
