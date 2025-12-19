@@ -190,3 +190,69 @@ def get_withdrawal_reason_percentage() -> WithdrawalReasonPercentageResult:
         total=total,
         items=items,
     )
+
+
+class WithdrawalReasonMonthlyStatsItem(TypedDict):
+    period: str
+    count: int
+
+
+class WithdrawalReasonMonthlyStatsResult(TypedDict):
+    reason: str
+    reason_label: str
+    from_date: date
+    to_date: date
+    total: int
+    items: List[WithdrawalReasonMonthlyStatsItem]
+
+
+def get_withdrawal_reason_monthly_stats(
+    reason: str,
+    today: date | None = None,
+    months: int = DEFAULT_RECENT_MONTHS,
+) -> WithdrawalReasonMonthlyStatsResult:
+
+    if today is None:
+        today = timezone.localdate()
+
+    start_date, end_date, labels = calc_month_range(today, months)
+
+    qs: Iterable[dict[str, Any]] = (
+        Withdrawal.objects.filter(
+            reason=reason,
+            withdrawn_at__date__gte=start_date,
+            withdrawn_at__date__lte=end_date,
+        )
+        .annotate(period=TruncMonth("withdrawn_at"))
+        .values("period")
+        .annotate(count=Count("id"))
+        .order_by("period")
+    )
+
+    counts_map: "OrderedDict[str, int]" = init_counts_map(labels)
+
+    for row in qs:
+        period_date = row["period"]
+        label = f"{period_date.year:04d}-{period_date.month:02d}"
+        if label in counts_map:
+            counts_map[label] = int(row["count"])
+
+    items: List[WithdrawalReasonMonthlyStatsItem] = [
+        WithdrawalReasonMonthlyStatsItem(period=label, count=count) for label, count in counts_map.items()
+    ]
+    total = sum(counts_map.values())
+
+    try:
+        reason_choice = WithdrawalReason(reason)
+        reason_label = str(reason_choice.label)
+    except ValueError:
+        reason_label = reason
+
+    return WithdrawalReasonMonthlyStatsResult(
+        reason=reason,
+        reason_label=reason_label,
+        from_date=start_date,
+        to_date=end_date,
+        total=total,
+        items=items,
+    )
