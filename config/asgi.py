@@ -16,7 +16,7 @@ from channels.routing import (  # type: ignore[import-untyped]
 )
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")  # 로컬 테스트용 .local 삭제
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")  # 로컬 테스트용 .local 삭제
 
 django_asgi_app = get_asgi_application()
 
