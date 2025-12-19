@@ -30,9 +30,9 @@ def get_study_group_list(status: Optional[str] = None) -> QuerySet[StudyGroup]: 
 def retrieve_study_group(group_id: int) -> StudyGroup:
     return get_object_or_404(
         StudyGroup.objects.prefetch_related(
-            # prefetch 객체(강의/유저) 추가
-            "studylecture_study_groups__lecture",
-            "groupmember_study_groups__user_id",
+            # swagger에서 객체 추가로 인해 오류 발생 확인. 복구
+            "studylecture_study_groups",
+            "groupmember_study_groups",
         ),
         pk=group_id,
     )
