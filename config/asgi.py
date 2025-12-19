@@ -9,12 +9,14 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
 
 import os
 
-from channels.auth import JWTAuthMiddlewareStack  # type: ignore
 from channels.routing import (  # type: ignore[import-untyped]
     ProtocolTypeRouter,
     URLRouter,
 )
 from django.core.asgi import get_asgi_application
+from django_channels_jwt_auth_middleware.auth import (  # type: ignore[import-untyped]
+    JWTAuthMiddlewareStack,
+)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")  # 로컬 테스트용 .local 삭제
 
