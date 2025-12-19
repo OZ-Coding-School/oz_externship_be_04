@@ -4,6 +4,7 @@ from .study_group import (
     ErrorDetailResponseSerializer,
     StudyGroupListSerializer,
     StudyGroupSerializer,
+    StudyGroupDetailSerializer
 )
 from .study_note import (
     StudyNoteDetailSerializer,
@@ -14,6 +15,7 @@ from .study_note import (
 __all__ = [
     "StudyGroupSerializer",
     "StudyGroupListSerializer",
+    "StudyGroupDetailSerializer",
     "DelegateLeaderRequestSerializer",
     "DetailResponseSerializer",
     "ErrorDetailResponseSerializer",
