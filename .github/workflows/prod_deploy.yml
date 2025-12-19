@@ -77,7 +77,7 @@ jobs:
               --network ws \
               -v static-volume:/oz_externship/static \
               -v media-volume:/oz_externship/media \
-              -p 8000:8000\
+              -p 8000:8000 \
               --env-file ${{ secrets.ENV_FILE_NAME }} \
               ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:django-prod \
               sh -c "python manage.py migrate && \
@@ -100,7 +100,7 @@ jobs:
               -v certbot-conf:/etc/letsencrypt \
               -v certbot-www:/var/www/certbot \
               -p 80:80 \
-              -p 443:443 \  
+              -p 443:443 \
               ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:nginx-prod
             
             docker image prune -af
