@@ -34,7 +34,7 @@ def create_study_group(user: CustomUser, validated_data: dict[str, Any]) -> Stud
 
 def get_study_group_list(user: CustomUser, status: Optional[str] = None) -> QuerySet[StudyGroup]:
     # 소속 그룹만 필터링
-    user_group_ids = GroupMember.objects.filter(user_id=user).values_list("study_group_id", flat=True)
+    user_group_ids = GroupMember.objects.filter(user_id=user.id).values_list("study_group_id", flat=True)
     queryset = StudyGroup.objects.filter(id__in=user_group_ids).prefetch_related(
         "studylecture_study_groups", "groupmember_study_groups", "review_study_groups"
     )

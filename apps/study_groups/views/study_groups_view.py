@@ -1,3 +1,5 @@
+from typing import cast
+
 from django.contrib.auth.models import AnonymousUser
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -59,7 +61,8 @@ class StudyGroupListCreateAPIView(APIView):
     def get(self, request: Request) -> Response:
         status_filter = request.query_params.get("status")
         search = request.query_params.get("search")
-        queryset = get_study_group_list(user=request.user, status=status_filter)  # user 추가
+        user = cast(User, request.user)  # is_authenticated 사용하므로 user 객체 cast 처리로 진행
+        queryset = get_study_group_list(user=user, status=status_filter)  # user 추가
         if search:  # search None 대비
             queryset = queryset.filter(name__icontains=search)
 
@@ -107,8 +110,9 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
     )
     def get(self, request: Request, pk: int) -> Response:
         # 404 예외처리
+        user = cast(User, request.user)
         try:
-            study_group = retrieve_study_group(group_id=pk, user=request.user)
+            study_group = retrieve_study_group(group_id=pk, user=user)
         except Http404 as e:
             # 없는 그룹 / 외부인
             error_message = str(e) if str(e) else "소속된 스터디 그룹이 아닙니다."
