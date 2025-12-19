@@ -17,6 +17,7 @@ class AdminWithdrawalTrendSerializer(serializers.Serializer[Any]):
     total = serializers.IntegerField()
     items = AdminWithdrawalTrendItemSerializer(many=True)
 
+
 class WithdrawalReasonPercentageItemSerializer(serializers.Serializer[Any]):
     reason = serializers.CharField()
     reason_label = serializers.CharField()

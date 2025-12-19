@@ -7,6 +7,9 @@ from apps.users.views.admin_account_views import (
     AdminAccountRoleUpdateSpec,
 )
 from apps.users.views.admin_signup_trends_views import AdminSignupTrendView
+from apps.users.views.admin_withdrawal_reasons_views import (
+    AdminWithdrawalReasonPercentageView,
+)
 from apps.users.views.admin_withdrawal_views import (
     AdminWithdrawalDetail,
     AdminWithdrawalList,
@@ -53,5 +56,10 @@ urlpatterns = [
         "/admin/analytics/withdrawals/trends",
         AdminWithdrawalTrendSpec.as_view(),
         name="admin_withdrawal_trends",
+    ),
+    path(
+        "/admin/analytics/withdrawal-reasons/percentage",
+        AdminWithdrawalReasonPercentageView.as_view(),
+        name="admin_withdrawal_reason_percentage",
     ),
 ]

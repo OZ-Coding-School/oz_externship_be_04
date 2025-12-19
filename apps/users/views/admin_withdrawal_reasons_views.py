@@ -14,7 +14,6 @@ from apps.users.services.admin_withdrawals_analytics_service import (
 )
 from apps.users.utils.permissions import StaffOrSuperUser
 
-
 AdminWithdrawalAnalyticsSimpleErrorSerializer = inline_serializer(
     name="AdminWithdrawalAnalyticsSimpleError",
     fields={
