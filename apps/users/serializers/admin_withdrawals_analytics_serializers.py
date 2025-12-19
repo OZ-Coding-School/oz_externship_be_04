@@ -30,3 +30,17 @@ class WithdrawalReasonPercentageSerializer(serializers.Serializer[Any]):
     to_date = serializers.DateField()
     total = serializers.IntegerField()
     items = WithdrawalReasonPercentageItemSerializer(many=True)
+
+
+class WithdrawalReasonMonthlyStatsItemSerializer(serializers.Serializer[Any]):
+    period = serializers.CharField()
+    count = serializers.IntegerField()
+
+
+class WithdrawalReasonMonthlyStatsSerializer(serializers.Serializer[Any]):
+    reason = serializers.CharField()
+    reason_label = serializers.CharField()
+    from_date = serializers.DateField()
+    to_date = serializers.DateField()
+    total = serializers.IntegerField()
+    items = WithdrawalReasonMonthlyStatsItemSerializer(many=True)
