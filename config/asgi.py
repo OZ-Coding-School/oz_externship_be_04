@@ -14,8 +14,8 @@ from channels.routing import (  # type: ignore[import-untyped]
     URLRouter,
 )
 from django.core.asgi import get_asgi_application
-from django_channels_jwt_auth_middleware.auth import (
-    JWTAuthMiddlewareStack,  # type: ignore
+from django_channels_jwt_auth_middleware.auth import ( # type: ignore
+    JWTAuthMiddlewareStack, # type: ignore
 )
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")  # 로컬 테스트용 .local 삭제
