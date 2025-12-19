@@ -29,34 +29,37 @@ class SocialLoginService:
         if social_user:
             return social_user.user, False
 
+        existing_user = None
+
         # email 기반 기존 유저 연결
         if email_input:
             existing_user = User.objects.filter(email=email_input).first()
-            if existing_user:
-                SocialUser.objects.get_or_create(
-                    user=existing_user,
-                    provider=provider,
-                    provider_id=provider_id,
-                )
 
-                if not existing_user.nickname and nickname_input:
-                    existing_user.nickname = nickname_input
+        if not existing_user and phone_number_input:
+            existing_user = User.objects.filter(phone_number=phone_number_input).first()
 
-                if not existing_user.profile_img_url and profile_img_url_input:
-                    existing_user.profile_img_url = profile_img_url_input
+        if existing_user:
+            SocialUser.objects.get_or_create(
+                user=existing_user,
+                provider=provider,
+                provider_id=provider_id,
+            )
 
-                # gender, phone_number도 조건 체크 후 할당
-                if not existing_user.gender and gender_input:
-                    existing_user.gender = gender_input
-                if not existing_user.phone_number and phone_number_input:
-                    existing_user.phone_number = phone_number_input
-                if not existing_user.name and name_input:
-                    existing_user.name = name_input
-                if not existing_user.birthday and birthday_input:
-                    existing_user.birthday = birthday_input
+            if not existing_user.nickname and nickname_input:
+                existing_user.nickname = nickname_input
+            if not existing_user.profile_img_url and profile_img_url_input:
+                existing_user.profile_img_url = profile_img_url_input
+            if not existing_user.gender and gender_input:
+                existing_user.gender = gender_input
+            if not existing_user.phone_number and phone_number_input:
+                existing_user.phone_number = phone_number_input
+            if not existing_user.name and name_input:
+                existing_user.name = name_input
+            if not existing_user.birthday and birthday_input:
+                existing_user.birthday = birthday_input
 
-                existing_user.save()
-                return existing_user, False
+            existing_user.save()
+            return existing_user, False
 
         # 새 이메일 생성
         email = email_input or f"{provider}_{provider_id}@auto.com"
@@ -86,6 +89,8 @@ class SocialLoginService:
             user_data["phone_number"] = phone_number_input
 
         new_user = User.objects.create(**user_data)
+        new_user.set_unusable_password()
+        new_user.save()
 
         SocialUser.objects.create(
             user=new_user,
