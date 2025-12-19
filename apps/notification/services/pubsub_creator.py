@@ -1,9 +1,10 @@
+import asyncio
 import json
 import logging
 from typing import Any, AsyncGenerator, Dict, Optional
 
 from django.conf import settings
-from redis.asyncio import Redis
+from redis.asyncio import ConnectionPool, Redis
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,9 @@ class RedisPubSubService:
         redis_url = getattr(settings, "CACHES", {}).get("default", {}).get("LOCATION")
         if not redis_url:
             raise RuntimeError("REDIS URL을 찾지 못했습니다. : settings.CACHES['default']['LOCATION']")
-        self.redis_client: Redis = Redis.from_url(redis_url)
+        # Connection Pool : 매번 새로운 Redis 연결을 만들지 말고 미리 만들어 둔 연결을 재사용하는 방식
+        self.pool = ConnectionPool.from_url(redis_url, decode_responses=True)
+        self.redis_client: Redis = Redis(connection_pool=self.pool)
 
     def get_user_channel(self, user_id: int) -> str:
         # 사용자 알림 채널
@@ -69,15 +72,18 @@ class RedisPubSubService:
                         data = json.loads(message["data"])
                         yield data
                     except (json.JSONDecodeError, UnicodeDecodeError) as e:
-                        logger.exception(f"메시지 디코드가 실패했습니다. {channels}:{e}")
+                        logger.exception(f"메시지 파싱 에러. {channels}:{e}")
 
         except Exception as e:
-            logger.exception(f"레디스 구독 에러:{e}")
+            logger.exception(f"구독 중 에러 발생:{e}")
         finally:
             try:
+                await pubsub.unsubscribe()
                 await pubsub.close()
-            except Exception:
-                pass
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.warning(f"PubSub 자원 해제 중 비정상 예외 발생: {e}")
 
 
 notification_service: RedisPubSubService = RedisPubSubService()
