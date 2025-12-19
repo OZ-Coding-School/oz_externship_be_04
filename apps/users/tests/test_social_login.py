@@ -55,11 +55,9 @@ class SocialLoginTests(APITestCase):
 
         response = self.client.get(url, {"code": "fake_code"})
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("access_token", response.data)
-        self.assertIn("refresh_token", response.data)
-        self.assertEqual(response.data["provider"], "kakao")
-        self.assertEqual(response.data["email"], "kakaotest@kakao.com")
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        self.assertIn("access_token", response.url)  # type: ignore
+        self.assertIn("refresh_token", response.cookies)
 
     @patch("apps.users.services.naver_login_services.NaverLoginService.get_naver_access_token")
     @patch("apps.users.services.naver_login_services.NaverLoginService.get_naver_user_info")
@@ -84,11 +82,9 @@ class SocialLoginTests(APITestCase):
 
         response = self.client.get(url, {"code": "random_code", "state": "random_state"})
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("access_token", response.data)
-        self.assertIn("refresh_token", response.data)
-        self.assertEqual(response.data["provider"], "naver")
-        self.assertEqual(response.data["email"], "navertest@naver.com")
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        self.assertIn("access_token", response.url)  # type: ignore
+        self.assertIn("refresh_token", response.cookies)
 
 
 class OAuthServiceTests(TestCase):
