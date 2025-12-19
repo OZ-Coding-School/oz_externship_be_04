@@ -224,12 +224,12 @@ class AdminStudyReviewAPITest(APITestCase):
         url = reverse("admin-study-review-list")
 
         # "test"가 포함된 content: r1, r3
-        res = self.client.get(url, data={"search": "test"})
+        res = self.client.get(url, data={"search": "admin_user"})
 
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.data["count"], 2)
+        self.assertEqual(res.data["count"], 1)
         got_ids = sorted([x["id"] for x in res.data["results"]])
-        self.assertEqual(got_ids, sorted([self.r1.id, self.r3.id]))
+        self.assertEqual(got_ids, sorted([self.r2.id]))
 
     def test_admin_review_list_pagination_page_and_page_size(self) -> None:
         self._auth(self.admin)
