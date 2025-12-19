@@ -19,8 +19,8 @@ class SocialLoginTests(APITestCase):
             url = "/api/v1/accounts/social-login/kakao"
 
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("login_url", response.data)
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        self.assertIn("kauth.kakao.com", response.url)  # type: ignore
 
     def test_naver_login_url(self) -> None:
         try:
@@ -29,8 +29,8 @@ class SocialLoginTests(APITestCase):
             url = "/api/v1/accounts/social-login/naver"
 
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("login_url", response.data)
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        self.assertIn("nid.naver.com", response.url)  # type: ignore
 
     @patch("apps.users.services.kakao_login_services.KaKaoLoginServices.get_kakao_access_token")
     @patch("apps.users.services.kakao_login_services.KaKaoLoginServices.get_kakao_user_info")

@@ -29,7 +29,7 @@ class NaverLoginView(APIView):
         methods=["GET"],
         responses={200: OpenApiTypes.OBJECT},
     )
-    def get(self, request: Request) -> Response:
+    def get(self, request: Request) -> HttpResponse:
 
         state = uuid.uuid4().hex
 
@@ -39,7 +39,7 @@ class NaverLoginView(APIView):
             f"&redirect_uri={settings.NAVER_REDIRECT_URI}"
             f"&state={state}"
         )
-        return Response({"login_url": login_url})
+        return redirect(login_url)
 
 
 class NaverCallBackView(APIView):
@@ -48,7 +48,7 @@ class NaverCallBackView(APIView):
     @extend_schema(
         tags=["Account"],
         summary="네이버 로그인 콜백",
-        description="네이버 인증 코드를 받아 처리합니다.",
+        description="네이버 인증 코드를 받아 리다이렉트 시킵니다.",
         methods=["GET"],
         responses={302: None},
     )
@@ -83,8 +83,8 @@ class NaverCallBackView(APIView):
                 }
             )
 
-            base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:8000")
-            redirect_url = f"{base_url}/oauth/callback?{return_list}"
+            base_url = getattr(settings, "FRONTEND_BASE_URL", "http://localhost:5173")
+            redirect_url = f"{base_url}/social-callback?{return_list}"
 
             response = redirect(redirect_url)
 
@@ -114,13 +114,13 @@ class KakaoLoginView(APIView):
         methods=["GET"],
         responses={200: OpenApiTypes.OBJECT},
     )
-    def get(self, request: Request) -> Response:
+    def get(self, request: Request) -> HttpResponse:
         login_url = (
             f"https://kauth.kakao.com/oauth/authorize?response_type=code"
             f"&client_id={settings.KAKAO_CLIENT_ID}"
             f"&redirect_uri={settings.KAKAO_REDIRECT_URI}"
         )
-        return Response({"login_url": login_url})
+        return redirect(login_url)
 
 
 class KakaoCallBackView(APIView):
@@ -129,7 +129,7 @@ class KakaoCallBackView(APIView):
     @extend_schema(
         tags=["Account"],
         summary="카카오 로그인 콜백",
-        description="카카오 인증 코드를 받아 처리합니다.",
+        description="카카오 인증 코드를 받아 리다이렉트 시킵니다.",
         methods=["GET"],
         responses={302: None},
     )
@@ -166,8 +166,8 @@ class KakaoCallBackView(APIView):
                 }
             )
 
-            base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:8000")
-            redirect_url = f"{base_url}/oauth/callback?{return_list}"
+            base_url = getattr(settings, "FRONTEND_BASE_URL", "http://localhost:5173")
+            redirect_url = f"{base_url}/social-callback?{return_list}"
 
             response = redirect(redirect_url)
             response.set_cookie(
