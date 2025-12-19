@@ -1,6 +1,7 @@
 import json
 from typing import Any, Dict, List, Optional
 
+# [수정] channels 관련 import에 type: ignore 추가
 from channels.db import database_sync_to_async  # type: ignore
 from channels.generic.websocket import AsyncWebsocketConsumer  # type: ignore
 from rest_framework_simplejwt.tokens import AccessToken
@@ -28,11 +29,12 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
             await self.close(4000)
             return
 
-        # 인증
-        user = await self.authenticate()
-        if user is None:
+        # asgi.py JWTAuthMiddlewareStack에서 파싱
+        user = self.scope.get("user")
+        if user is None or not user.is_authenticated:
             await self.close(4001)
             return
+
         self.user = user
 
         # 멤버 검증
@@ -44,13 +46,11 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
-        # 온라인 등록
         try:
-            await PresenceService.add(self.group_id, self.user.id)  # type: ignore
+            await database_sync_to_async(PresenceService.add)(self.group_id, self.user.id)
         except Exception:
             pass
 
-        # presence (Service 사용)
         members = await self.get_presence()
         await self.safe_send(
             {
@@ -88,7 +88,7 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
 
         if user:
             try:
-                await PresenceService.remove(self.group_id, user.id)  # type: ignore
+                await database_sync_to_async(PresenceService.remove)(self.group_id, user.id)
             except Exception:
                 pass
 
@@ -154,27 +154,13 @@ class ChatConsumer(AsyncWebsocketConsumer):  # type: ignore
             pass
 
     @database_sync_to_async  # type: ignore
-    def authenticate(self) -> Optional[User]:
-        try:
-            qs = self.scope["query_string"].decode()
-            params = dict(x.split("=") for x in qs.split("&") if "=" in x)
-            token = params.get("token")
-            if not token:
-                return None
-
-            access = AccessToken(token)
-            return User.objects.get(id=access["user_id"])
-        except Exception:
-            return None
-
-    @database_sync_to_async  # type: ignore
     def check_member(self) -> bool:
         return GroupMember.objects.filter(
             study_group_id=self.group_id,
             user_id=self.user.id,
         ).exists()
 
-    @database_sync_to_async  # type: ignore[misc]
+    @database_sync_to_async  # type: ignore
     def get_presence(self) -> list[dict[str, Any]]:
         return PresenceService.get_members(self.group_id)
 
