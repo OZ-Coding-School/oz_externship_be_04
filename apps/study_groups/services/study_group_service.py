@@ -13,7 +13,7 @@ from apps.users.models import User as CustomUser
 def create_study_group(user: CustomUser, validated_data: dict[str, Any]) -> StudyGroup:
     lectures_data = validated_data.pop("lectures", [])
     study_group = StudyGroup.objects.create(**validated_data)
-    
+
     # 강의 저장 (StudyLecture 생성)
     if lectures_data:
         lectures = [
@@ -24,12 +24,13 @@ def create_study_group(user: CustomUser, validated_data: dict[str, Any]) -> Stud
             for lecture_id in lectures_data
         ]
         StudyLecture.objects.bulk_create(lectures)
-    
+
     GroupMember.objects.create(study_group_id=study_group, user_id=user, is_leader=True)
     return study_group
 
 
 # 스터디 그룹 목록 조회
+
 
 def get_study_group_list(user: CustomUser, status: Optional[str] = None) -> QuerySet[StudyGroup]:
     # 소속 그룹만 필터링
@@ -44,7 +45,7 @@ def get_study_group_list(user: CustomUser, status: Optional[str] = None) -> Quer
 
 # 스터디 그룹 상세 조회
 def retrieve_study_group(group_id: int, user: CustomUser) -> StudyGroup:
-     # 소속 그룹만 필터링 / 오류 404 처리
+    # 소속 그룹만 필터링 / 오류 404 처리
     study_group = get_object_or_404(
         StudyGroup.objects.prefetch_related(
             "studylecture_study_groups",
@@ -52,27 +53,27 @@ def retrieve_study_group(group_id: int, user: CustomUser) -> StudyGroup:
         ),
         pk=group_id,
     )
-    
+
     # 소속 멤버 여부 검증 / 404 처리
     is_member = GroupMember.objects.filter(
         study_group_id=study_group.id,
         user_id=user.id,
     ).exists()
-    
+
     if not is_member:
         raise Http404("소속된 스터디 그룹이 아닙니다.")
-    
+
     return study_group
 
 
 # 스터디 그룹 수정 (강의 모델 실제 구조에 맞추어 str,any로 타입 수정)
 def update_study_group(study_group: StudyGroup, validated_data: dict[str, Any]) -> StudyGroup:
     lectures_data = validated_data.pop("lectures", None)
-    
+
     for attr, value in validated_data.items():
         setattr(study_group, attr, value)
     study_group.save()
-    
+
     # 강의 상태 수정
     if lectures_data is not None:
         with transaction.atomic():
@@ -86,7 +87,7 @@ def update_study_group(study_group: StudyGroup, validated_data: dict[str, Any]) 
                     for lecture_id in lectures_data
                 ]
                 StudyLecture.objects.bulk_create(lectures)
-    
+
     return study_group
 
 

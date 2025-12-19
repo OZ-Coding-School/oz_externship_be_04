@@ -59,7 +59,7 @@ class StudyGroupListCreateAPIView(APIView):
     def get(self, request: Request) -> Response:
         status_filter = request.query_params.get("status")
         search = request.query_params.get("search")
-        queryset = get_study_group_list(user=request.user, status=status_filter) # user 추가
+        queryset = get_study_group_list(user=request.user, status=status_filter)  # user 추가
         if search:  # search None 대비
             queryset = queryset.filter(name__icontains=search)
 
@@ -97,7 +97,12 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
     @extend_schema(
         summary="스터디 그룹 상세 조회",
         description="스터디 그룹 상세정보를 조회합니다.",
-        responses={200: StudyGroupDetailSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT, 404: ErrorDetailResponseSerializer}, # 404 추가
+        responses={
+            200: StudyGroupDetailSerializer,
+            401: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
+            404: ErrorDetailResponseSerializer,
+        },  # 404 추가
         tags=["StudyGroup"],
     )
     def get(self, request: Request, pk: int) -> Response:
@@ -111,7 +116,7 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
                 {"error_detail": error_message},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        
+
         serializer = StudyGroupDetailSerializer(study_group, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
