@@ -6,6 +6,7 @@ from rest_framework import serializers
 
 User = get_user_model()
 
+
 class SMSValidator:
     REGEX_PHONE = r"^01[0-9]-\d{3,4}-\d{4}$"
     REGEX_PHONE_NO_HYPHEN = r"^01[0-9]\d{8}$"
