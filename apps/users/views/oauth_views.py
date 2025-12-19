@@ -1,6 +1,11 @@
 import uuid
+from urllib.parse import urlencode
 
 from django.conf import settings
+from django.http import HttpResponse
+from django.shortcuts import redirect
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -17,6 +22,13 @@ from apps.users.services.oauth_services import SocialLoginService
 class NaverLoginView(APIView):
     permission_classes = (AllowAny,)
 
+    @extend_schema(
+        tags=["Account"],
+        summary="네이버 로그인",
+        description="현재 네이버 로그인 된 유저의 상세 정보를 조회합니다.",
+        methods=["GET"],
+        responses={200: OpenApiTypes.OBJECT},
+    )
     def get(self, request: Request) -> Response:
 
         state = uuid.uuid4().hex
@@ -31,12 +43,21 @@ class NaverLoginView(APIView):
 
 
 class NaverCallBackView(APIView):
-    def get(self, request: Request) -> Response:
+    permission_classes = (AllowAny,)
+
+    @extend_schema(
+        tags=["Account"],
+        summary="네이버 로그인 콜백",
+        description="네이버 인증 코드를 받아 처리합니다.",
+        methods=["GET"],
+        responses={302: None},
+    )
+    def get(self, request: Request) -> HttpResponse:
         code = request.GET.get("code")
         state = request.GET.get("state")
 
         if not code or not state:
-            return Response({"error": "네이버 로그인 인증에 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error_detail": "네이버 로그인 인증에 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
         try:
             naver_login = NaverLoginService()
             access_token = naver_login.get_naver_access_token(code, state)
@@ -47,10 +68,9 @@ class NaverCallBackView(APIView):
 
             token = RefreshToken.for_user(user)
 
-            return Response(
+            return_list = urlencode(
                 {
                     "access_token": str(token.access_token),
-                    "refresh_token": str(token),
                     "is_created": is_created,
                     "email": user.email,
                     "nickname": user.nickname,
@@ -60,17 +80,40 @@ class NaverCallBackView(APIView):
                     "gender": user.gender,
                     "profile_img_url": user.profile_img_url or "",
                     "provider": "naver",
-                },
-                status.HTTP_200_OK,
+                }
             )
 
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:8000")
+            redirect_url = f"{base_url}/oauth/callback?{return_list}"
+
+            response = redirect(redirect_url)
+
+            response.set_cookie(
+                key="refresh_token",
+                value=str(token),
+                httponly=True,
+                secure=False,
+                samesite="Lax",
+                max_age=7 * 24 * 60 * 60,
+            )
+            return response
+
+        except:
+            return Response(
+                {"error_detail": "네이버 로그인 도중 오류가 발생했습니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class KakaoLoginView(APIView):
     permission_classes = (AllowAny,)
 
+    @extend_schema(
+        tags=["Account"],
+        summary="카카오 로그인",
+        description="현재 카카오 로그인 된 유저의 상세 정보를 조회합니다.",
+        methods=["GET"],
+        responses={200: OpenApiTypes.OBJECT},
+    )
     def get(self, request: Request) -> Response:
         login_url = (
             f"https://kauth.kakao.com/oauth/authorize?response_type=code"
@@ -81,12 +124,20 @@ class KakaoLoginView(APIView):
 
 
 class KakaoCallBackView(APIView):
+    permission_classes = (AllowAny,)
 
-    def get(self, request: Request) -> Response:
+    @extend_schema(
+        tags=["Account"],
+        summary="카카오 로그인 콜백",
+        description="카카오 인증 코드를 받아 처리합니다.",
+        methods=["GET"],
+        responses={302: None},
+    )
+    def get(self, request: Request) -> HttpResponse:
         code = request.GET.get("code")
 
         if not code:
-            return Response({"error": "카카오 로그인 인증에 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error_detail": "카카오 로그인 인증에 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             kakao_login = KaKaoLoginServices()
@@ -100,10 +151,9 @@ class KakaoCallBackView(APIView):
 
             token = RefreshToken.for_user(user)
 
-            return Response(
+            return_list = urlencode(
                 {
                     "access_token": str(token.access_token),
-                    "refresh_token": str(token),
                     "is_created": is_created,
                     "email": user.email,
                     "name": user.name,
@@ -113,9 +163,24 @@ class KakaoCallBackView(APIView):
                     "gender": user.gender,
                     "profile_img_url": user.profile_img_url or "",
                     "provider": "kakao",
-                },
-                status.HTTP_200_OK,
+                }
             )
 
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:8000")
+            redirect_url = f"{base_url}/oauth/callback?{return_list}"
+
+            response = redirect(redirect_url)
+            response.set_cookie(
+                key="refresh_token",
+                value=str(token),
+                httponly=True,
+                secure=False,
+                samesite="Lax",
+                max_age=7 * 24 * 60 * 60,
+            )
+            return response
+
+        except:
+            return Response(
+                {"error_detail": "카카오 로그인 도중 오류가 발생했습니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
