@@ -84,7 +84,7 @@ class NaverCallBackView(APIView):
             )
 
             base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:8000")
-            redirect_url = f"{base_url}/oauth/callback?{return_list}"
+            redirect_url = f"{base_url}/social-callback?{return_list}"
 
             response = redirect(redirect_url)
 
@@ -167,7 +167,7 @@ class KakaoCallBackView(APIView):
             )
 
             base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:8000")
-            redirect_url = f"{base_url}/oauth/callback?{return_list}"
+            redirect_url = f"{base_url}/social-callback?{return_list}"
 
             response = redirect(redirect_url)
             response.set_cookie(
