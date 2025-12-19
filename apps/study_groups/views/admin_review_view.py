@@ -76,13 +76,8 @@ class AdminStudyReviewListAPIView(APIView):
         if not keyword:
             return qs
 
-        # 검색 범위: content, 작성자 닉네임/이메일, 스터디그룹명
-        return qs.filter(
-            Q(content__icontains=keyword)
-            | Q(user__nickname__icontains=keyword)
-            | Q(user__email__icontains=keyword)
-            | Q(study_group__name__icontains=keyword)
-        )
+        # 검색 범위: 작성자 닉네임/이메일
+        return qs.filter(Q(user__nickname__icontains=keyword) | Q(user__email__icontains=keyword))
 
     def _apply_sort(self, qs: QuerySet[Review], sort: str | None) -> QuerySet[Review]:
         # sort: latest | oldest (그 외는 latest로 처리)
