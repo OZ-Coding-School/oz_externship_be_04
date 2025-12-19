@@ -2,7 +2,7 @@ from collections import OrderedDict
 from datetime import date
 from typing import Any, Iterable, List, TypedDict
 
-from django.db.models import Count, Min, Max
+from django.db.models import Count, Max, Min
 from django.db.models.functions import TruncMonth, TruncYear
 from django.utils import timezone
 
@@ -60,8 +60,7 @@ def _get_monthly_withdrawal_trend(
             counts_map[label] = int(row["count"])
 
     items: List[WithdrawalTrendItem] = [
-        WithdrawalTrendItem(period=label, count=count)
-        for label, count in counts_map.items()
+        WithdrawalTrendItem(period=label, count=count) for label, count in counts_map.items()
     ]
     total = sum(counts_map.values())
 
@@ -104,8 +103,7 @@ def _get_yearly_withdrawal_trend(
             counts_map[label] = int(row["count"])
 
     items: List[WithdrawalTrendItem] = [
-        WithdrawalTrendItem(period=label, count=count)
-        for label, count in counts_map.items()
+        WithdrawalTrendItem(period=label, count=count) for label, count in counts_map.items()
     ]
     total = sum(counts_map.values())
 
@@ -123,11 +121,13 @@ def get_withdrawal_trend(interval: IntervalLiteral) -> WithdrawalTrendResult:
         return _get_monthly_withdrawal_trend()
     return _get_yearly_withdrawal_trend()
 
+
 class WithdrawalReasonPercentageItem(TypedDict):
     reason: str
     reason_label: str
     count: int
     percentage: float
+
 
 class WithdrawalReasonPercentageResult(TypedDict):
     from_date: date
@@ -160,11 +160,7 @@ def get_withdrawal_reason_percentage() -> WithdrawalReasonPercentageResult:
     from_date = agg["from_dt"].date()
     to_date = agg["to_dt"].date()
 
-    reason_counts: Iterable[dict[str, Any]] = (
-        qs_all.values("reason")
-        .annotate(count=Count("id"))
-        .order_by("-count")
-    )
+    reason_counts: Iterable[dict[str, Any]] = qs_all.values("reason").annotate(count=Count("id")).order_by("-count")
 
     items: List[WithdrawalReasonPercentageItem] = []
 

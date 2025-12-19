@@ -76,3 +76,17 @@ class AdminWithdrawalDetailSerializer(serializers.ModelSerializer[Withdrawal]):
             "due_date",
             "withdrawn_at",
         ]
+
+
+class WithdrawalReasonPercentageItemSerializer(serializers.Serializer[Any]):
+    reason = serializers.CharField()
+    reason_label = serializers.CharField()
+    count = serializers.IntegerField()
+    percentage = serializers.FloatField()
+
+
+class WithdrawalReasonPercentageSerializer(serializers.Serializer[Any]):
+    from_date = serializers.DateField()
+    to_date = serializers.DateField()
+    total = serializers.IntegerField()
+    items = WithdrawalReasonPercentageItemSerializer(many=True)
