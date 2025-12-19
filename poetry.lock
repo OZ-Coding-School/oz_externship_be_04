@@ -1584,6 +1584,22 @@ python-crontab = ">=2.3.4"
 tzdata = "*"
 
 [[package]]
+name = "django-channels-jwt-auth-middleware"
+version = "1.0.0"
+description = "JWT Auth Middleware for Django Channels"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "django-channels-jwt-auth-middleware-1.0.0.tar.gz", hash = "sha256:7fdaaf419ef7f800d0da990d8e0ca53f7d120a66de7fb4446f77607ea3b3dd76"},
+]
+
+[package.dependencies]
+channels = ">=3.0.0"
+django = ">=3.1.0"
+pyjwt = ">=2.0.0"
+
+[[package]]
 name = "django-cors-headers"
 version = "4.7.0"
 description = "django-cors-headers is a Django application for handling the server headers required for Cross-Origin Resource Sharing (CORS)."
@@ -4987,4 +5003,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "d079078992230001acf6fc258649709902fdb45a8e0542e88e816c2101c48f00"
+content-hash = "38d516454ff3d935475d9c27d81616e610b8b5813ec31ea6a4323da143237b4c"
