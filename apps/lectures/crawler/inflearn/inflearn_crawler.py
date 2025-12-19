@@ -19,7 +19,7 @@ class InflearnCrawler:
     PAGE_SIZE = 40
     REVIEW_PARAMS = {
         "pageNumber": 1,
-        "pageSize": 4,
+        "pageSize": 30,
         "sort": "RECENT",
         "lang": "ko",
     }
@@ -96,12 +96,14 @@ class InflearnCrawler:
                 continue
             out.append(
                 {
-                    "id": f"{cid}_{i}",
+                    "id": r.get("id"),  # 리뷰 api에서 제공하는 id사용
                     "rating": rating,
                     "content": content,
                     "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }
             )
+            if len(out) == 4:  # 평점과 바디에 있는 4개만 가져옴
+                break
         return out
 
     # 태그 추출
