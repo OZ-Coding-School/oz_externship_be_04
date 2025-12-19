@@ -88,6 +88,7 @@ class SSEViewStreamTests(TestCase):
 
         mock_notification_service.subscribe_notification.side_effect = fake_subscribe_notification
         mock_notification_service.redis_client.pubsub.return_value.close = AsyncMock()
+        mock_notification_service.redis_client.pubsub.return_value.unsubscribe = AsyncMock()
 
         request = self.factory.get("/stream", HTTP_AUTHORIZATION="Bearer ValidToken")
         response = async_to_sync(notification_stream)(request)

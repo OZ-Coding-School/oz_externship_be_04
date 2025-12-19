@@ -20,12 +20,13 @@ UserModel = get_user_model()
 
 
 async def notification_stream(request: HttpRequest) -> Union[StreamingHttpResponse, JsonResponse]:
-    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    auth_header = request.headers.get("Authorization", "")
     # 헤더에서 베어러 접두사 제거
-    if auth_header.startswith("Bearer "):
-        token = auth_header[7:]
-    else:
+    # 프론트에서 Polyfill 쓰기로 했으므로 META 대신에 headers 사용
+    if not auth_header.startswith("Bearer "):
         return JsonResponse({"detail": "토큰이 필요합니다."}, status=401)
+
+    token = auth_header[7:]
 
     try:
         auth = JWTAuthentication()
@@ -37,6 +38,10 @@ async def notification_stream(request: HttpRequest) -> Union[StreamingHttpRespon
 
     except (InvalidToken, AuthenticationFailed):
         return JsonResponse({"detail": "인증되지 않은 토큰입니다."}, status=401)
+
+    except Exception as e:
+        logger.error(f"SSE 인증 과정 중 예상치 못한 오류 : {e}")
+        return JsonResponse({"detail": "서버 내부 오류가 발생했습니다."}, status=500)
 
     async def async_event_stream() -> AsyncGenerator[str, None]:
         try:
