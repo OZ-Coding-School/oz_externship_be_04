@@ -1,3 +1,7 @@
+from .admin_study_group_serializer import (
+    AdminStudyGroupDetailSerializer,
+    AdminStudyGroupListSerializer,
+)
 from .study_group import (
     DelegateLeaderRequestSerializer,
     DetailResponseSerializer,
@@ -13,6 +17,8 @@ from .study_note import (
 )
 
 __all__ = [
+    "AdminStudyGroupListSerializer",
+    "AdminStudyGroupDetailSerializer",
     "StudyGroupSerializer",
     "StudyGroupListSerializer",
     "StudyGroupDetailSerializer",
