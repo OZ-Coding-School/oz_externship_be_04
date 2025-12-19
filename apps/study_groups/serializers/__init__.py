@@ -2,9 +2,9 @@ from .study_group import (
     DelegateLeaderRequestSerializer,
     DetailResponseSerializer,
     ErrorDetailResponseSerializer,
+    StudyGroupDetailSerializer,
     StudyGroupListSerializer,
     StudyGroupSerializer,
-    StudyGroupDetailSerializer
 )
 from .study_note import (
     StudyNoteDetailSerializer,
