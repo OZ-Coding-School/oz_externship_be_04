@@ -223,7 +223,7 @@ class AdminStudyReviewAPITest(APITestCase):
 
         url = reverse("admin-study-review-list")
 
-        # "test"가 포함된 content: r1, r3
+        # 닉네임/이메일 검색만 허용: "admin_user"에 매칭되는 작성자의 리뷰는 r2
         res = self.client.get(url, data={"search": "admin_user"})
 
         self.assertEqual(res.status_code, 200)
