@@ -83,7 +83,10 @@ jobs:
               ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:django-dev \
               sh -c "python manage.py migrate && \
                 python manage.py collectstatic --noinput && \
-                gunicorn --workers 3 --bind 0.0.0.0:8000 config.wsgi:application"
+                gunicorn config.asgi:application \
+                  -k uvicorn.workers.UvicornWorker \
+                  --workers 3 \
+                  --bind 0.0.0.0:8000"
                         
             docker stop ${{ secrets.NGINX_CONTAINER_NAME }} || true
             docker rm ${{ secrets.NGINX_CONTAINER_NAME }} || true

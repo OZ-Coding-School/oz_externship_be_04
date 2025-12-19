@@ -72,18 +72,6 @@ jobs:
             docker rmi ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:django-prod
           
             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:django-prod
-            docker network inspect ws >/dev/null 2>&1 || docker network create ws
-            
-            docker pull redis:7-alpine
-            docker stop redis || true
-            docker rm redis || true
-            docker run -d \
-              --name redis \
-              --network ws \
-              redis:7-alpine
-            
-            sleep 3
-            
             docker run -d \
               --name django \
               --network ws \
@@ -94,10 +82,7 @@ jobs:
               ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:django-prod \
               sh -c "python manage.py migrate && \
                 python manage.py collectstatic --noinput && \
-                gunicorn config.asgi:application \
-                  -k uvicorn.workers.UvicornWorker \
-                  --workers 3 \
-                  --bind 0.0.0.0:8000"
+                gunicorn --workers 3 --bind 0.0.0.0:8000 config.wsgi:application"
             
                         
             docker stop ${{ secrets.NGINX_CONTAINER_NAME }} || true
@@ -119,15 +104,6 @@ jobs:
               ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:nginx-prod
             
             docker image prune -af
-            
-            echo "🔍 Checking deployed services..."
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-
-            docker logs redis --tail 10
-            
-            docker logs django --tail 20
-
-            docker logs nginx --tail 10
 
       - name: Remove GitHub IP from AWS SG
         if: always()
