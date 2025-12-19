@@ -46,7 +46,7 @@ def sync_inflearn_db(final_results: List[Dict[str, Any]]) -> SyncResult:
             "description": item.get("description") or "",
             "platform": platform_name,
             "original_price": item.get("original_price", 0),
-            "discount_price": item.get("discounted_price", 0),
+            "discount_price": item.get("discount_price", 0),
             "url_link": item.get("url_link", ""),
             "thumbnail_img_url": item.get("thumbnail_img_url") or "",
         }
