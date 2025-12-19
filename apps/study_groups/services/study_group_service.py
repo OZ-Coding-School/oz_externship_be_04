@@ -4,14 +4,26 @@ from django.db import transaction
 from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 
-from apps.study_groups.models import GroupMember, StudyGroup
+from apps.study_groups.models import GroupMember, StudyGroup, StudyLecture
 from apps.users.models import User as CustomUser
 
 
 # 스터디 그룹 생성
 def create_study_group(user: CustomUser, validated_data: dict[str, Any]) -> StudyGroup:
-    lectures = validated_data.pop("lectures", [])
+    lectures_data = validated_data.pop("lectures", [])
     study_group = StudyGroup.objects.create(**validated_data)
+    
+    # 강의 저장 (StudyLecture 생성)
+    if lectures_data:
+        lectures = [
+            StudyLecture(
+                study_group=study_group,
+                lecture_id=lecture_id,
+            )
+            for lecture_id in lectures_data
+        ]
+        StudyLecture.objects.bulk_create(lectures)
+    
     GroupMember.objects.create(study_group_id=study_group, user_id=user, is_leader=True)
     return study_group
 
@@ -38,11 +50,28 @@ def retrieve_study_group(group_id: int) -> StudyGroup:
     )
 
 
-# 스터디 그룹 수정
-def update_study_group(study_group: StudyGroup, validated_data: dict[str, str]) -> StudyGroup:
+# 스터디 그룹 수정 (강의 모델 실제 구조에 맞추어 str,any로 타입 수정)
+def update_study_group(study_group: StudyGroup, validated_data: dict[str, Any]) -> StudyGroup:
+    lectures_data = validated_data.pop("lectures", None)
+    
     for attr, value in validated_data.items():
         setattr(study_group, attr, value)
     study_group.save()
+    
+    # 강의 상태 수정
+    if lectures_data is not None:
+        with transaction.atomic():
+            StudyLecture.objects.filter(study_group=study_group).delete()
+            if lectures_data:
+                lectures = [
+                    StudyLecture(
+                        study_group=study_group,
+                        lecture_id=lecture_id,
+                    )
+                    for lecture_id in lectures_data
+                ]
+                StudyLecture.objects.bulk_create(lectures)
+    
     return study_group
 
 
