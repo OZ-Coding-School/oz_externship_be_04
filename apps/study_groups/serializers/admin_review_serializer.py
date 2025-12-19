@@ -15,9 +15,8 @@ class AdminReviewAuthorSerializer(serializers.Serializer[User]):
     email = serializers.EmailField()
 
 
-class AdminStudyReviewListItemSerializer(serializers.Serializer[Review]):
+class AdminReviewBaseSerializer(serializers.Serializer[Review]):
     id = serializers.IntegerField()
-    study_group = AdminStudyGroupSimpleSerializer()
     author = AdminReviewAuthorSerializer(source="user")
     star_rating = serializers.IntegerField()
     content = serializers.CharField()
@@ -33,11 +32,10 @@ class AdminStudyGroupSerializer(serializers.Serializer[StudyGroup]):
     introduction = serializers.CharField(allow_null=True, required=False)
 
 
-class AdminStudyReviewDetailSerializer(serializers.Serializer[Review]):
+class AdminStudyReviewDetailSerializer(AdminReviewBaseSerializer):
     id = serializers.IntegerField()
     study_group = AdminStudyGroupSerializer()
-    author = AdminReviewAuthorSerializer(source="user")
-    star_rating = serializers.IntegerField()
-    content = serializers.CharField()
-    created_at = serializers.DateTimeField()
-    updated_at = serializers.DateTimeField()
+
+
+class AdminStudyReviewListItemSerializer(AdminReviewBaseSerializer):
+    study_group = AdminStudyGroupSimpleSerializer()
