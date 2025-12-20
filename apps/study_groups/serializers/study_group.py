@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
@@ -182,20 +183,40 @@ class StudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
         return obj.groupmember_study_groups.count()
 
     def get_lectures(self, obj: StudyGroup) -> list[dict[str, Any]]:
-        return [
-            {
-                "id": sl.lecture.id,
-                "title": sl.lecture.title,
-                "thumbnail_img_url": sl.lecture.thumbnail_img_url,
-                "instructor": sl.lecture.instructor,
-                "url_link": sl.lecture.url_link,
-            }
-            for sl in obj.studylecture_study_groups.all()
-        ]
+        study_lectures = obj.studylecture_study_groups.all()
+        # 삭제된 강의는 제외하고 유효한 강의만 반환
+        result = []
+        for sl in study_lectures:
+            # 강의 none 관련 오류 try-exceapt 예외처리
+            try:
+                lecture = getattr(sl, "lecture", None)
+                if lecture is not None:
+                    result.append(
+                        {
+                            "id": lecture.id,
+                            "thumbnail_img_url": lecture.thumbnail_img_url,
+                            "title": lecture.title,
+                            "instructor": lecture.instructor,
+                            "url_link": lecture.url_link,
+                        }
+                    )
+            except (ObjectDoesNotExist, AttributeError):
+                continue
+        return result
 
     def get_members(self, obj: StudyGroup) -> list[dict[str, Any]]:
         members = obj.groupmember_study_groups.all().order_by("-is_leader")
-        return [{"nickname": m.user_id.nickname, "is_leader": m.is_leader} for m in members]
+        # 삭제된 사용자는 제외하고 유효한 멤버만 반환
+        result = []
+        for m in members:
+            # getattr, try-except로 예외처리
+            try:
+                user = getattr(m, "user_id", None)
+                if user is not None:
+                    result.append({"nickname": user.nickname, "is_leader": m.is_leader})
+            except (ObjectDoesNotExist, AttributeError):
+                continue
+        return result
 
 
 class DelegateLeaderRequestSerializer(serializers.Serializer):  # type: ignore
