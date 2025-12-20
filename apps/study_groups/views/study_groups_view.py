@@ -1,4 +1,7 @@
+from typing import cast
+
 from django.contrib.auth.models import AnonymousUser
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -58,7 +61,8 @@ class StudyGroupListCreateAPIView(APIView):
     def get(self, request: Request) -> Response:
         status_filter = request.query_params.get("status")
         search = request.query_params.get("search")
-        queryset = get_study_group_list(status_filter)
+        user = cast(User, request.user)  # is_authenticated 사용하므로 user 객체 cast 처리로 진행
+        queryset = get_study_group_list(user=user, status=status_filter)  # user 추가
         if search:  # search None 대비
             queryset = queryset.filter(name__icontains=search)
 
@@ -96,12 +100,27 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
     @extend_schema(
         summary="스터디 그룹 상세 조회",
         description="스터디 그룹 상세정보를 조회합니다.",
-        responses={200: StudyGroupDetailSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
+        responses={
+            200: StudyGroupDetailSerializer,
+            401: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
+            404: ErrorDetailResponseSerializer,
+        },  # 404 추가
         tags=["StudyGroup"],
     )
     def get(self, request: Request, pk: int) -> Response:
+        # 404 예외처리
+        user = cast(User, request.user)
+        try:
+            study_group = retrieve_study_group(group_id=pk, user=user)
+        except Http404 as e:
+            # 없는 그룹 / 외부인
+            error_message = str(e) if str(e) else "소속된 스터디 그룹이 아닙니다."
+            return Response(
+                {"error_detail": error_message},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
-        study_group = retrieve_study_group(pk)
         serializer = StudyGroupDetailSerializer(study_group, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 

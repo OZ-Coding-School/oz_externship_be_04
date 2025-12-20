@@ -461,7 +461,7 @@ class StudyGroupManagementTests(TestCase):
         request = factory.get("/")
         request.user = self.leader
 
-        study_group = retrieve_study_group(self.study_group.id)
+        study_group = retrieve_study_group(group_id=self.study_group.id, user=self.leader)
         serializer = StudyGroupDetailSerializer(study_group, context={"request": request})
 
         # 실제 에러

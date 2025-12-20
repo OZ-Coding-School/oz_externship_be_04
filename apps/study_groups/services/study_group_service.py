@@ -2,23 +2,40 @@ from typing import Any, Optional
 
 from django.db import transaction
 from django.db.models import QuerySet
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 
-from apps.study_groups.models import GroupMember, StudyGroup
+from apps.study_groups.models import GroupMember, StudyGroup, StudyLecture
 from apps.users.models import User as CustomUser
 
 
 # 스터디 그룹 생성
 def create_study_group(user: CustomUser, validated_data: dict[str, Any]) -> StudyGroup:
-    lectures = validated_data.pop("lectures", [])
+    lectures_data = validated_data.pop("lectures", [])
     study_group = StudyGroup.objects.create(**validated_data)
+
+    # 강의 저장 (StudyLecture 생성)
+    if lectures_data:
+        lectures = [
+            StudyLecture(
+                study_group=study_group,
+                lecture_id=lecture_id,
+            )
+            for lecture_id in lectures_data
+        ]
+        StudyLecture.objects.bulk_create(lectures)
+
     GroupMember.objects.create(study_group_id=study_group, user_id=user, is_leader=True)
     return study_group
 
 
 # 스터디 그룹 목록 조회
-def get_study_group_list(status: Optional[str] = None) -> QuerySet[StudyGroup]:  # list -> 쿼리셋으로 수정
-    queryset = StudyGroup.objects.prefetch_related(
+
+
+def get_study_group_list(user: CustomUser, status: Optional[str] = None) -> QuerySet[StudyGroup]:
+    # 소속 그룹만 필터링
+    user_group_ids = GroupMember.objects.filter(user_id=user.id).values_list("study_group_id", flat=True)
+    queryset = StudyGroup.objects.filter(id__in=user_group_ids).prefetch_related(
         "studylecture_study_groups", "groupmember_study_groups", "review_study_groups"
     )
     if status:
@@ -27,22 +44,50 @@ def get_study_group_list(status: Optional[str] = None) -> QuerySet[StudyGroup]: 
 
 
 # 스터디 그룹 상세 조회
-def retrieve_study_group(group_id: int) -> StudyGroup:
-    return get_object_or_404(
+def retrieve_study_group(group_id: int, user: CustomUser) -> StudyGroup:
+    # 소속 그룹만 필터링 / 오류 404 처리
+    study_group = get_object_or_404(
         StudyGroup.objects.prefetch_related(
-            # swagger에서 객체 추가로 인해 오류 발생 확인. 복구
             "studylecture_study_groups",
             "groupmember_study_groups",
         ),
         pk=group_id,
     )
 
+    # 소속 멤버 여부 검증 / 404 처리
+    is_member = GroupMember.objects.filter(
+        study_group_id=study_group.id,
+        user_id=user.id,
+    ).exists()
 
-# 스터디 그룹 수정
-def update_study_group(study_group: StudyGroup, validated_data: dict[str, str]) -> StudyGroup:
+    if not is_member:
+        raise Http404("소속된 스터디 그룹이 아닙니다.")
+
+    return study_group
+
+
+# 스터디 그룹 수정 (강의 모델 실제 구조에 맞추어 str,any로 타입 수정)
+def update_study_group(study_group: StudyGroup, validated_data: dict[str, Any]) -> StudyGroup:
+    lectures_data = validated_data.pop("lectures", None)
+
     for attr, value in validated_data.items():
         setattr(study_group, attr, value)
     study_group.save()
+
+    # 강의 상태 수정
+    if lectures_data is not None:
+        with transaction.atomic():
+            StudyLecture.objects.filter(study_group=study_group).delete()
+            if lectures_data:
+                lectures = [
+                    StudyLecture(
+                        study_group=study_group,
+                        lecture_id=lecture_id,
+                    )
+                    for lecture_id in lectures_data
+                ]
+                StudyLecture.objects.bulk_create(lectures)
+
     return study_group
 
 
