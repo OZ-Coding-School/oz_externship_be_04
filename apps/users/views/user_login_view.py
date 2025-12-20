@@ -76,8 +76,9 @@ class LoginView(APIView):
             key="refresh_token",
             value=str(refresh),
             httponly=True,
-            secure=False,  # 개발환경에서는 False, 배포시 True
-            samesite="Lax",
+            secure=True,  # 개발환경에서는 False, 배포시 True
+            samesite="None",
+            domain=".ozcoding.site",
             max_age=7 * 24 * 60 * 60,  # 7일
         )
         return response

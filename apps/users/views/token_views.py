@@ -93,8 +93,9 @@ class TokenRefreshView(APIView):
                 key="refresh_token",
                 value=str(new_refresh),
                 httponly=True,
-                secure=False,
-                samesite="Lax",
+                secure=True,
+                samesite="None",
+                domain=".ozcoding.site",
                 max_age=7 * 24 * 60 * 60,
             )
             return response

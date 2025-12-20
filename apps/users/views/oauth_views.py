@@ -92,8 +92,9 @@ class NaverCallBackView(APIView):
                 key="refresh_token",
                 value=str(token),
                 httponly=True,
-                secure=False,
-                samesite="Lax",
+                secure=True,
+                samesite="None",
+                domain=".ozcoding.site",
                 max_age=7 * 24 * 60 * 60,
             )
             return response
@@ -174,8 +175,9 @@ class KakaoCallBackView(APIView):
                 key="refresh_token",
                 value=str(token),
                 httponly=True,
-                secure=False,
-                samesite="Lax",
+                secure=True,
+                samesite="None",
+                domain=".ozcoding.site",
                 max_age=7 * 24 * 60 * 60,
             )
             return response
