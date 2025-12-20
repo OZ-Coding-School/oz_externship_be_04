@@ -18,6 +18,10 @@ from apps.users.services.kakao_login_services import KaKaoLoginServices
 from apps.users.services.naver_login_services import NaverLoginService
 from apps.users.services.oauth_services import SocialLoginService
 
+check_secure = not settings.DEBUG
+check_samesite = "None" if not settings.DEBUG else "Lax"
+check_domain = ".ozcoding.site" if not settings.DEBUG else None
+
 
 class NaverLoginView(APIView):
     permission_classes = (AllowAny,)
@@ -92,9 +96,9 @@ class NaverCallBackView(APIView):
                 key="refresh_token",
                 value=str(token),
                 httponly=True,
-                secure=True,
-                samesite="None",
-                domain=".ozcoding.site",
+                secure=check_secure,
+                samesite=check_samesite,  # type: ignore
+                domain=check_domain,
                 max_age=7 * 24 * 60 * 60,
             )
             return response
@@ -175,9 +179,9 @@ class KakaoCallBackView(APIView):
                 key="refresh_token",
                 value=str(token),
                 httponly=True,
-                secure=True,
-                samesite="None",
-                domain=".ozcoding.site",
+                secure=check_secure,
+                samesite=check_samesite,  # type: ignore
+                domain=check_domain,
                 max_age=7 * 24 * 60 * 60,
             )
             return response
