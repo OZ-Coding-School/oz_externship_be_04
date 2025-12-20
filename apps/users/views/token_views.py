@@ -1,5 +1,6 @@
 from typing import Any
 
+from django.conf import settings
 from django.core.cache import cache
 from drf_spectacular.utils import OpenApiExample, extend_schema, inline_serializer
 from rest_framework import serializers, status
@@ -11,6 +12,10 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.models import User
+
+check_secure = not settings.DEBUG
+check_samesite = "None" if not settings.DEBUG else "Lax"
+check_domain = ".ozcoding.site" if not settings.DEBUG else None
 
 
 def blacklist_token(token: RefreshToken) -> None:
@@ -93,8 +98,9 @@ class TokenRefreshView(APIView):
                 key="refresh_token",
                 value=str(new_refresh),
                 httponly=True,
-                secure=False,
-                samesite="Lax",
+                secure=check_secure,
+                samesite=check_samesite,  # type: ignore
+                domain=check_domain,
                 max_age=7 * 24 * 60 * 60,
             )
             return response

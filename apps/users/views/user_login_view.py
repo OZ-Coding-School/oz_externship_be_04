@@ -1,5 +1,6 @@
 from typing import Any
 
+from django.conf import settings
 from drf_spectacular.utils import OpenApiExample, extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
@@ -9,6 +10,10 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.serializers.login_serializer import LoginSerializer
+
+check_secure = not settings.DEBUG
+check_samesite = "None" if not settings.DEBUG else "Lax"
+check_domain = ".ozcoding.site" if not settings.DEBUG else None
 
 
 class LoginView(APIView):
@@ -76,8 +81,9 @@ class LoginView(APIView):
             key="refresh_token",
             value=str(refresh),
             httponly=True,
-            secure=False,  # 개발환경에서는 False, 배포시 True
-            samesite="Lax",
+            secure=check_secure,  # 개발환경에서는 False, 배포시 True
+            samesite=check_samesite,  # type: ignore
+            domain=check_domain,
             max_age=7 * 24 * 60 * 60,  # 7일
         )
         return response
