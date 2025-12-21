@@ -135,13 +135,13 @@ class StudyGroupListSerializer(serializers.ModelSerializer[StudyGroup]):
         ]
 
     def get_current_headcount(self, obj: StudyGroup) -> int:
-        return obj.groupmember_study_groups.count()
+        return len(obj.groupmember_study_groups.all())
 
     def get_is_leader(self, obj: StudyGroup) -> bool:
         user = self.context["request"].user
         if not getattr(user, "is_authenticated", False):
             return False
-        return obj.groupmember_study_groups.filter(user_id=user.id, is_leader=True).exists()
+        return any(m.user_id.id == user.id and m.is_leader for m in obj.groupmember_study_groups.all())
 
     def get_reviews(self, obj: StudyGroup) -> list[dict[str, Any]]:
         user = self.context["request"].user
@@ -180,7 +180,7 @@ class StudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
         ]
 
     def get_current_headcount(self, obj: StudyGroup) -> int:
-        return obj.groupmember_study_groups.count()
+        return len(obj.groupmember_study_groups.all())
 
     def get_lectures(self, obj: StudyGroup) -> list[dict[str, Any]]:
         study_lectures = obj.studylecture_study_groups.all()
