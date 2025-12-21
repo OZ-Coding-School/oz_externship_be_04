@@ -48,8 +48,9 @@ def retrieve_study_group(group_id: int, user: CustomUser) -> StudyGroup:
     # 소속 그룹만 필터링 / 오류 404 처리
     study_group = get_object_or_404(
         StudyGroup.objects.prefetch_related(
-            "studylecture_study_groups",
-            "groupmember_study_groups",
+            # prefetch가... 이쪽이 맞네요... 정상작동하네요... 죄송합니다. 다시 붙였습니다 ㅠ
+            "studylecture_study_groups__lecture",
+            "groupmember_study_groups__user_id",
         ),
         pk=group_id,
     )

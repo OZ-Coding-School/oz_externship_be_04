@@ -108,11 +108,13 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
         },  # 404 추가
         tags=["StudyGroup"],
     )
-    def get(self, request: Request, pk: int) -> Response:
+    # 가장 직접적인 500 에러 원인 추정... url과 불일치하여 pk 대신 그룹 아이디로 통일했습니다.
+    def get(self, request: Request, group_id: int) -> Response:
         # 404 예외처리
         user = cast(User, request.user)
         try:
-            study_group = retrieve_study_group(group_id=pk, user=user)
+            # 여기도 group_id로 통일
+            study_group = retrieve_study_group(group_id=group_id, user=user)
         except Http404 as e:
             # 없는 그룹 / 외부인
             error_message = str(e) if str(e) else "소속된 스터디 그룹이 아닙니다."
@@ -133,7 +135,6 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
         tags=["StudyGroup"],
     )
     def patch(self, request: Request, group_id: int) -> Response:
-        ###extend_schema 추가/수정 필요
         study_group = get_object_or_404(StudyGroup, pk=group_id)
         serializer = StudyGroupSerializer(study_group, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
