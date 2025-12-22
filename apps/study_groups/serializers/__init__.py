@@ -1,5 +1,5 @@
 from .admin_study_group_serializer import (
-    AdminStudyGroupDetailSerializer,
+    # AdminStudyGroupDetailSerializer,
     AdminStudyGroupListSerializer,
 )
 from .study_group import (
