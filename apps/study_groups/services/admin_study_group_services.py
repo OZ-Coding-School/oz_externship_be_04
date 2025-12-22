@@ -26,3 +26,15 @@ def filter_study_groups_by_status(queryset: QuerySet[StudyGroup], status: Option
     if status:
         queryset = queryset.filter(status=status)
     return queryset
+
+
+# 순서 지정
+def sort_study_groups(queryset: QuerySet[StudyGroup], sort: Optional[str]) -> QuerySet[StudyGroup]:
+    sort_map = {
+        "latest": "-created_at",
+        "oldest": "created_at",
+        "name_asc": "name",
+        "name_desc": "-name",
+    }
+    order_by_field = sort_map.get(sort or "latest", sort_map["latest"])
+    return queryset.order_by(order_by_field, "-id")

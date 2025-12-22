@@ -8,7 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.study_groups.models import StudyGroup
-from apps.study_groups.serializers import (  # AdminStudyGroupDetailSerializer,
+from apps.study_groups.serializers import (
+    AdminStudyGroupDetailSerializer,
     AdminStudyGroupListSerializer,
 )
 from apps.study_groups.services.admin_study_group_services import (
@@ -72,5 +73,36 @@ class AdminStudyGroupListView(APIView):
             serializer = AdminStudyGroupListSerializer(qs, many=True, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        serializer = AdminStudyGroupListSerializer(paginated_qs, many=True, context={"request": request})
-        return paginator.get_paginated_response(serializer.data)
+
+# 그룹 상세정보
+class AdminStudyGroupDetailView(APIView):
+
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(
+        operation_id="admin_study_group_detail",
+        summary="Admin 스터디 그룹 상세 조회",
+        tags=["Admin"],
+        responses={
+            200: AdminStudyGroupDetailSerializer,
+            403: {
+                "type": "object",
+                "properties": {"error_detail": {"type": "string", "example": "권한이 없습니다."}},
+            },
+            404: {
+                "type": "object",
+                "properties": {"error_detail": {"type": "string", "example": "해당 스터디 그룹을 찾을 수 없습니다."}},
+            },
+        },
+    )
+    def get(self, request: Request, study_group_id: int) -> Response:
+        study_group = get_admin_study_group_queryset().filter(id=study_group_id).first()
+
+        if not study_group:
+            return Response(
+                {"error_detail": "해당 스터디 그룹을 찾을 수 없습니다."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = AdminStudyGroupDetailSerializer(study_group, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
