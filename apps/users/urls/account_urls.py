@@ -24,6 +24,7 @@ from apps.users.views.user_sms_view import (
     ChangePhoneSendSMSView,
     ChangePhoneView,
     FindEmailSendSMSView,
+    FindEmailView,
     SignupSendSMSView,
     SignupVerifySMSView,
 )
@@ -51,4 +52,5 @@ urlpatterns = [
     path(
         "accounts/find-password/verify-email", FindPasswordVerifyEmailView.as_view(), name="find-password-verify-email"
     ),
+    path("accounts/find-email", FindEmailView.as_view(), name="find_email"),
 ]
