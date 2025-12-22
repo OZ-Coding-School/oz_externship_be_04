@@ -49,10 +49,14 @@ class NotificationListAPIView(APIView):
         ],
     )
     def get(self, request: Request) -> Response:
-        is_read_param = request.query_params.get("is_read")  # true, false
         authenticated_user = cast(UserType, request.user)
-        qs = Notification.objects.filter(user_id=authenticated_user.id)  # type: ignore
+        base_qs = Notification.objects.filter(user_id=authenticated_user.id)  # type: ignore
+        # 전체 개수 먼저 확보 (필터 영향받지 않도록)
+        total = base_qs.count()
 
+        qs = base_qs
+
+        is_read_param = request.query_params.get("is_read")  # true, false
         if is_read_param is not None:
             if is_read_param.lower() == "true":
                 qs = qs.filter(is_read=True)
@@ -61,6 +65,9 @@ class NotificationListAPIView(APIView):
 
         paginator = self.pagination_class()
         paginated_qs = paginator.paginate_queryset(qs, request)
+
+        # 페이지네이션 객체에 토탈 속성 심기
+        paginator.total_count = total
 
         # 시리얼라이즈
         serializer = self.serializer_class(paginated_qs, many=True)
