@@ -79,3 +79,18 @@ class ChangePhoneSerializer(serializers.Serializer[Any]):
 
     def validate_code(self, value: str) -> str:
         return SMSValidator.code_digit(value)
+
+class FindEmailVerifySerializer(serializers.Serializer[Any]):
+    phone_number = serializers.CharField(
+        required=True, max_length=20, error_messages={"required": "휴대폰 번호를 입력해주세요."}
+    )
+    code = serializers.CharField(
+        required=True, min_length=6, max_length=6, error_messages={"required": "인증 코드를 입력해주세요."}
+    )
+    def validate_phone_number(self, value: str) -> str:
+        return SMSValidator.phone_format(value)
+
+    def validate_code(self, value: str) -> str:
+        if not value.isdigit():
+            raise serializers.ValidationError("인증 코드는 숫자만 입력 가능합니다.")
+        return value
