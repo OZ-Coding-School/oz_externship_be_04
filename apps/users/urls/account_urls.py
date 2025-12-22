@@ -12,6 +12,7 @@ from apps.users.views.oauth_views import (
     NaverCallBackView,
     NaverLoginView,
 )
+from apps.users.views.restore_views import RestoreAccountView, RestoreSendEmailView
 from apps.users.views.token_views import LogoutView, TokenRefreshView
 from apps.users.views.user_account_views import (
     NicknameCheckView,
@@ -53,4 +54,6 @@ urlpatterns = [
         "accounts/find-password/verify-email", FindPasswordVerifyEmailView.as_view(), name="find-password-verify-email"
     ),
     path("accounts/find-email", FindEmailView.as_view(), name="find_email"),
+    path("accounts/restore", RestoreAccountView.as_view(), name="restore"),
+    path("accounts/restore/send-email", RestoreSendEmailView.as_view(), name="restore-send-email"),
 ]
