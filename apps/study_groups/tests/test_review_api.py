@@ -80,9 +80,19 @@ class StudyGroupReviewAPITest(APITestCase):
     def test_list_reviews_success_200_and_returns_array(self) -> None:
         self._auth(self.user1)
 
-        # 리뷰 2개 생성 (user1, user2)
-        Review.objects.create(user=self.user1, study_group=self.study_group, star_rating=5, content="좋았어요")
-        Review.objects.create(user=self.user2, study_group=self.study_group, star_rating=3, content="그저 그랬어요")
+        # 리뷰 2개 생성 (내 리뷰, 다른 사람 리뷰)
+        my_review = Review.objects.create(
+            user=self.user1,
+            study_group=self.study_group,
+            star_rating=5,
+            content="좋았어요",
+        )
+        other_review = Review.objects.create(
+            user=self.user2,
+            study_group=self.study_group,
+            star_rating=3,
+            content="그저 그랬어요",
+        )
 
         url = reverse("study-group-review", kwargs={"group_id": self.study_group.id})
         res = self.client.get(url)
@@ -98,6 +108,11 @@ class StudyGroupReviewAPITest(APITestCase):
             self.assertIn("content", item)
             self.assertIn("created_at", item)
             self.assertIn("updated_at", item)
+            self.assertIn("is_mine", item)
+
+        by_id = {item["id"]: item for item in res.data}
+        self.assertTrue(by_id[my_review.id]["is_mine"])
+        self.assertFalse(by_id[other_review.id]["is_mine"])
 
     def test_update_review_success_200_and_reflects_changes(self) -> None:
         self._auth(self.user1)

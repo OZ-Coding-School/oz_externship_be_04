@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from apps.study_groups.models import GroupMember, Review, StudyGroup
 from apps.study_groups.serializers.review_serializer import (
     ReviewCreateSerializer,
+    ReviewListSerializer,
     ReviewSerializer,
     ReviewUpdateSerializer,
 )
@@ -119,8 +120,12 @@ class StudyGroupReviewCreateAPIView(StudyGroupReviewBaseAPIView):
                 return error_response
 
             # 해당 스터디 그룹의 리뷰 목록 조회
-            reviews = list(Review.objects.filter(study_group=study_group).order_by("-created_at"))
-            serializer = ReviewSerializer(cast(Any, reviews), many=True)
+            reviews = Review.objects.filter(study_group=study_group).order_by("-created_at")
+            serializer = ReviewListSerializer(
+                cast(Any, reviews),
+                many=True,
+                context={"request": request},
+            )
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         except PermissionDenied:
