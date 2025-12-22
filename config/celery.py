@@ -29,4 +29,8 @@ app.conf.beat_schedule = {
         "task": "send_today_schedule_notifications",
         "schedule": crontab(hour=0, minute=1),
     },
+    "hard_delete_expired_users": {
+        "task": "apps.users.tasks.hard_delete_user_schedule",
+        "schedule": crontab(hour=0, minute=0),
+    },
 }
