@@ -1,17 +1,37 @@
+import logging
 from typing import Any, Optional
 
+from celery import shared_task
 from django.db import transaction
 from django.db.models import QuerySet
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from apps.study_groups.models import GroupMember, StudyGroup, StudyLecture
 from apps.users.models import User as CustomUser
+
+logger = logging.getLogger(__name__)
 
 
 # 스터디 그룹 생성
 def create_study_group(user: CustomUser, validated_data: dict[str, Any]) -> StudyGroup:
     lectures_data = validated_data.pop("lectures", [])
+
+    # 오늘 날짜와 request 날짜 비교하여 status 자동 설정 로직
+    today = timezone.now()
+    start_at = validated_data.get("start_at")
+    end_at = validated_data.get("end_at")
+
+    if start_at and end_at:
+        # end_at 다음날부터 ENDED 처리 (end_at 당일까지는 ONGOING)
+        if end_at < today:
+            validated_data["status"] = StudyGroup.StudyGroupStatusChoices.ENDED
+        elif start_at <= today:
+            validated_data["status"] = StudyGroup.StudyGroupStatusChoices.ONGOING
+        else:
+            validated_data["status"] = StudyGroup.StudyGroupStatusChoices.PENDING
+
     study_group = StudyGroup.objects.create(**validated_data)
 
     # 강의 저장 (StudyLecture 생성)
@@ -184,3 +204,40 @@ def kick_member(*, group_id: int, current_user: CustomUser, target_user_id: int)
         raise ValueError("리더는 추방할 수 없습니다.")
 
     target_member.delete()
+
+
+# 스터디 그룹 상태 자동 갱신 (celery beat 사용해 작업 예약)
+@shared_task(name="study_groups.update_study_group_statuses")  # type: ignore[misc]
+def update_all_study_group_statuses() -> dict[str, int]:
+    try:
+        today = timezone.now()
+        updated_count = 0
+
+        # PENDING → ONGOING
+        pending_to_ongoing = StudyGroup.objects.filter(
+            status=StudyGroup.StudyGroupStatusChoices.PENDING,
+            start_at__lte=today,
+        )
+        for study_group in pending_to_ongoing:
+            if study_group.status == StudyGroup.StudyGroupStatusChoices.PENDING:
+                study_group.status = StudyGroup.StudyGroupStatusChoices.ONGOING
+                study_group.save(update_fields=["status"])
+                updated_count += 1
+
+        # ONGOING → ENDED (end_at 다음날부터 ENDED 처리)
+        ongoing_to_ended = StudyGroup.objects.filter(
+            status=StudyGroup.StudyGroupStatusChoices.ONGOING,
+            end_at__lt=today,
+        )
+        for study_group in ongoing_to_ended:
+            if study_group.status == StudyGroup.StudyGroupStatusChoices.ONGOING:
+                study_group.status = StudyGroup.StudyGroupStatusChoices.ENDED
+                study_group.save(update_fields=["status"])
+                updated_count += 1
+
+        result = {"updated_count": updated_count}
+        logger.info(f"스터디 그룹 상태 갱신 완료: {result['updated_count']}개 그룹이 갱신되었습니다.")
+        return result
+    except Exception as e:
+        logger.exception(f"스터디 그룹 상태 갱신 중 오류 발생: {e}")
+        raise
