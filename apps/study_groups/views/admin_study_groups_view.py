@@ -1,6 +1,7 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -17,9 +18,17 @@ from apps.study_groups.services.admin_study_group_services import (
 )
 
 
+# 스터디 그룹 페이지네이션 (PageNumberPagination)
+class AdminStudyGroupPagination(PageNumberPagination):
+    page_size = 5
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
 # 그룹 목록
 class AdminStudyGroupListView(APIView):
     permission_classes = [IsAdminUser]
+    pagination_class = AdminStudyGroupPagination
 
     @extend_schema(
         operation_id="admin_study_group_list",
@@ -39,6 +48,8 @@ class AdminStudyGroupListView(APIView):
                 description="스터디 상태 필터",
                 enum=["PENDING", "ONGOING", "ENDED"],
             ),
+            OpenApiParameter("page", OpenApiTypes.INT, required=False),
+            OpenApiParameter("page_size", OpenApiTypes.INT, required=False),
         ],
         responses={200: AdminStudyGroupListSerializer(many=True)},
     )
@@ -54,6 +65,12 @@ class AdminStudyGroupListView(APIView):
         if status_param and status_param in [choice[0] for choice in StudyGroup.StudyGroupStatusChoices.choices]:
             qs = filter_study_groups_by_status(qs, status_param)
 
-        serializer = AdminStudyGroupListSerializer(qs, many=True, context={"request": request})
+        paginator = self.pagination_class()
+        paginated_qs = paginator.paginate_queryset(qs, request, view=self)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if paginated_qs is None:
+            serializer = AdminStudyGroupListSerializer(qs, many=True, context={"request": request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        serializer = AdminStudyGroupListSerializer(paginated_qs, many=True, context={"request": request})
+        return paginator.get_paginated_response(serializer.data)
