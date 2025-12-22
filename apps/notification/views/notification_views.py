@@ -4,27 +4,19 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework.pagination import CursorPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.notification.models import Notification
+from apps.notification.pagination import NotificationCursorPagination
 from apps.notification.serializers.notification_serializers import (
     NotificationSerializer,
 )
 
 User = get_user_model()
 UserType = AbstractUser
-
-
-# 목 데이터 제거
-class NotificationCursorPagination(CursorPagination):
-    page_size_query_param = "page_size"
-    page_size = 10
-    max_page_size = 100
-    ordering = "-id"
 
 
 class NotificationListAPIView(APIView):
