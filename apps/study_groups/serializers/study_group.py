@@ -150,7 +150,9 @@ class StudyGroupListSerializer(serializers.ModelSerializer[StudyGroup]):
         return [
             {
                 "id": rvw.id,
-                "is_mine": (rvw.user_id == user_id) if user_id is not None else False,
+                # GroupMember 쪽은 user_id / Review 쪽은 user?이 맞는듯함...
+                # user_id 자체가 int로 인식되어 mypy 오류 발생 -> user.id
+                "is_mine": (rvw.user.id == user_id) if user_id is not None else False,
                 "star_rating": rvw.star_rating,
                 "content": rvw.content,
             }

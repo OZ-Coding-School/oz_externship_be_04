@@ -4,11 +4,9 @@ from .views.admin_review_view import (
     AdminStudyReviewDetailAPIView,
     AdminStudyReviewListAPIView,
 )
-
-# from .views.admin_study_groups_view import (
-#     AdminStudyGroupDetailView,
-#     AdminStudyGroupListView,
-# )
+from .views.admin_study_groups_view import (  # AdminStudyGroupDetailView,
+    AdminStudyGroupListView,
+)
 from .views.review_view import (
     StudyGroupReviewCreateAPIView,
     StudyGroupReviewUpdateAPIView,
@@ -31,7 +29,7 @@ from .views.study_note import (
 
 urlpatterns = [
     # StudyGroup Admin
-    # path("/admin/study-groups", AdminStudyGroupListView.as_view(), name="admin-study-group-list"),
+    path("/admin/study-groups", AdminStudyGroupListView.as_view(), name="admin-study-group-list"),
     # path(
     #     "/admin/study-groups/<int:study_group_id>", AdminStudyGroupDetailView.as_view(), name="admin-study-group-detail"
     # ),

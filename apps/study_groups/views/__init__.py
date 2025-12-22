@@ -1,7 +1,6 @@
-# from .admin_study_groups_view import (
-#     AdminStudyGroupDetailView,
-#     AdminStudyGroupListView,
-# )
+from .admin_study_groups_view import (  # AdminStudyGroupDetailView,
+    AdminStudyGroupListView,
+)
 from .study_groups_view import (
     DelegateLeaderAPIView,
     KickStudyGroupMemberAPIView,
@@ -11,7 +10,7 @@ from .study_groups_view import (
 )
 
 __all__ = [
-    # "AdminStudyGroupListView",
+    "AdminStudyGroupListView",
     # "AdminStudyGroupDetailView",
     "StudyGroupListCreateAPIView",
     "StudyGroupRetrieveUpdateDestroyAPIView",
