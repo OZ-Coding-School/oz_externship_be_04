@@ -213,7 +213,14 @@ class StudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
             try:
                 user = getattr(m, "user_id", None)
                 if user is not None:
-                    result.append({"nickname": user.nickname, "is_leader": m.is_leader})
+                    result.append(
+                        {
+                            "id": user.id,
+                            "nickname": user.nickname,
+                            "profile_img_url": user.profile_img_url,
+                            "is_leader": m.is_leader,
+                        }
+                    )
             except (ObjectDoesNotExist, AttributeError):
                 continue
         return result
