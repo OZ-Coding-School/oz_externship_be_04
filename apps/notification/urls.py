@@ -10,8 +10,8 @@ from apps.notification.views.sse_views import notification_stream
 app_name = "notification"
 
 urlpatterns = [
-    path("", NotificationListAPIView.as_view(), name="notification-list"),
-    path("stream", notification_stream, name="notification-stream"),
-    path("<int:notification_id>/read", NotificationReadView.as_view(), name="notification-read"),
-    path("read-all", NotificationReadAllView.as_view(), name="notification-read-all"),
+    path("notification", NotificationListAPIView.as_view(), name="notification-list"),
+    path("notification/stream", notification_stream, name="notification-stream"),
+    path("notification/<int:notification_id>/read", NotificationReadView.as_view(), name="notification-read"),
+    path("notification/read-all", NotificationReadAllView.as_view(), name="notification-read-all"),
 ]
