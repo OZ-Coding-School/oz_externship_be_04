@@ -23,5 +23,8 @@ class LoginSerializer(serializers.Serializer[Any]):
         if not check_password(password, user.password):
             raise serializers.ValidationError("비밀번호가 일치하지 않습니다")
 
+        if not user.is_active == True:
+            raise serializers.ValidationError("탈퇴 처리된 유저입니다. 회원 복구를 진행합니다.")
+
         data["user"] = user
         return data
