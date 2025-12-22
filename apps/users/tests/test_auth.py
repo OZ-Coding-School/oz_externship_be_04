@@ -44,7 +44,7 @@ class test_user_register(APITestCase):
         self.assertEqual(before + 1, after)
         user = User.objects.get(email=self.valid_user_data["email"])
         self.assertEqual(user.name, self.valid_user_data["name"])
-        self.assertFalse(user.is_active)
+        self.assertTrue(user.is_active)
 
     def test_field_missed(self) -> None:
         required_fields = ["email", "password", "name", "nickname", "phone_number", "gender"]
