@@ -66,13 +66,22 @@ class AdminStudyGroupListView(APIView):
         if status_param and status_param in [choice[0] for choice in StudyGroup.StudyGroupStatusChoices.choices]:
             qs = filter_study_groups_by_status(qs, status_param)
 
-        paginator = self.pagination_class()
-        paginated_qs = paginator.paginate_queryset(qs, request, view=self)
+        # 페이지네이션 파라미터 check/none 및 파라미터 반환 시 처리
+        has_pagination_params = "page" in request.query_params or "page_size" in request.query_params
 
-        if paginated_qs is None:
+        if has_pagination_params:
+            paginator = self.pagination_class()
+            paginated_qs = paginator.paginate_queryset(qs, request, view=self)
+
+            if paginated_qs is None:
+                serializer = AdminStudyGroupListSerializer(qs, many=True, context={"request": request})
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            serializer = AdminStudyGroupListSerializer(paginated_qs, many=True, context={"request": request})
+            return paginator.get_paginated_response(serializer.data)
+        else:
             serializer = AdminStudyGroupListSerializer(qs, many=True, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 # 그룹 상세정보
 class AdminStudyGroupDetailView(APIView):
