@@ -1,6 +1,6 @@
 import json
 from typing import Any, AsyncGenerator, AsyncIterable, Iterable, Optional, Union
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from asgiref.sync import async_to_sync
 from django.http import JsonResponse, StreamingHttpResponse
@@ -80,13 +80,15 @@ class SSEViewStreamTests(TestCase):
         # 스트리밍 첫 번째 메시지('connected')가 제대로 나오도록
         # subscribe_notification 을 Mock 으로 교체해 테스트
         async def fake_subscribe_notification(
-            _user_id: Optional[Any] = None, _group_ids: Optional[Any] = None
+            user_id: Optional[Any] = None, group_ids: Optional[Any] = None
         ) -> AsyncGenerator[Any, None]:
             yield {"type": "connected"}
 
         # 가짜 async generator를 만들어 넣는데, 조건 : async함수일 것. 내부에 yield가 있을 것
 
         mock_notification_service.subscribe_notification.side_effect = fake_subscribe_notification
+        mock_notification_service.redis_client.pubsub.return_value.close = AsyncMock()
+        mock_notification_service.redis_client.pubsub.return_value.unsubscribe = AsyncMock()
 
         request = self.factory.get("/stream", HTTP_AUTHORIZATION="Bearer ValidToken")
         response = async_to_sync(notification_stream)(request)

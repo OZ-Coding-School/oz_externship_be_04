@@ -1,39 +1,47 @@
+import asyncio
 import json
-from typing import Any, AsyncGenerator, TypeAlias, Union, cast
+import logging
+from typing import Any, AsyncGenerator, TypeAlias, Union
 
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.http import HttpRequest, JsonResponse, StreamingHttpResponse
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework_simplejwt.exceptions import AuthenticationFailed, InvalidToken
 
 from apps.notification.services.pubsub_creator import notification_service
 from apps.study_groups.models import GroupMember
+
+logger = logging.getLogger(__name__)
 
 UserType: TypeAlias = AbstractBaseUser
 UserModel = get_user_model()
 
 
 async def notification_stream(request: HttpRequest) -> Union[StreamingHttpResponse, JsonResponse]:
-    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    auth_header = request.headers.get("Authorization", "")
     # 헤더에서 베어러 접두사 제거
-    if auth_header.startswith("Bearer "):
-        token = auth_header[7:]
-    else:
+    # 프론트에서 Polyfill 쓰기로 했으므로 META 대신에 headers 사용
+    if not auth_header.startswith("Bearer "):
         return JsonResponse({"detail": "토큰이 필요합니다."}, status=401)
+
+    token = auth_header[7:]
 
     try:
         auth = JWTAuthentication()
-        valid_token = auth.get_validated_token(token.encode())
+        valid_token = auth.get_validated_token(token.encode("utf-8"))
         user: Any = await sync_to_async(lambda wf: auth.get_user(wf), thread_sensitive=True)(valid_token)
-        if isinstance(user, UserModel):
-            user = cast(UserType, user)
-            user_id: int = user.id
-        else:
-            return JsonResponse({"detail": "사용자를 찾을수 없습니다."}, status=401)
-    except InvalidToken:
+        if not user or not user.is_authenticated:
+            return JsonResponse({"detail": "사용자를 찾을 수 없습니다."}, status=401)
+        user_id: int = user.id
+
+    except (InvalidToken, AuthenticationFailed):
         return JsonResponse({"detail": "인증되지 않은 토큰입니다."}, status=401)
+
+    except Exception as e:
+        logger.error(f"SSE 인증 과정 중 예상치 못한 오류 : {e}")
+        return JsonResponse({"detail": "서버 내부 오류가 발생했습니다."}, status=500)
 
     async def async_event_stream() -> AsyncGenerator[str, None]:
         try:
@@ -59,11 +67,19 @@ async def notification_stream(request: HttpRequest) -> Union[StreamingHttpRespon
                 yield f"data: {noti}\n\n"
                 # 예: {"message":"알림이 알립니다.", "group_id":15}
                 # SSE로는 이렇게 data: {"message":"알림이 알립니다.", "group_id":15}
+        except asyncio.CancelledError:
+            # 클라이언트가 연결을 끊었을 때 발생하는 정상적인 상황
+            logger.info(f"User {user_id} SSE 커넥션이 클라이언트에 의해 닫혔습니다.")
+            raise
+
         except Exception as e:
+            logger.exception(f"SSE 스트림 중 예외 발생: {e}")
             yield f"data:{json.dumps({'type':'Error', 'message':str(e)}, ensure_ascii=False)}\n\n"
 
     response = StreamingHttpResponse(async_event_stream(), content_type="text/event-stream")
-    response["Cache-Control"] = "no-cache"
+    response["Cache-Control"] = "no-cache, no-transform"
     response["Connection"] = "keep-alive"
+    # Nginx 사용 시 필수 설정(버퍼링 방지)
+    response["X-Accel-Buffering"] = "no"
 
     return response
