@@ -10,6 +10,8 @@ from drf_spectacular.utils import (
 from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.serializers.mypage_serializers import (
     MyPageSerializer,
@@ -23,6 +25,7 @@ from apps.users.services.mypage_services import (
 )
 from apps.users.services.withdrawal_services import withdraw_service
 from apps.users.utils.reason_choices import WithdrawalReason
+from apps.users.views.token_views import blacklist_token
 
 
 class UserAccountView(APIView):
@@ -194,12 +197,24 @@ class UserAccountView(APIView):
         data.pop("agree_check")
 
         withdraw_service(request.user, data)
-        return Response(
+
+        # refresh 토큰 블랙리스트 처리
+        refresh_token = request.COOKIES.get("refresh_token")
+        if refresh_token:
+            try:
+                refresh = RefreshToken(refresh_token)
+                blacklist_token(refresh)
+            except TokenError:
+                pass
+
+        response = Response(
             {
                 "detail": "회원 탈퇴 처리가 완료되었습니다. 14일 후 계정이 영구 삭제되며, 그전에 다시 로그인하시면 계정을 복구하실 수 있습니다."
             },
             status=status.HTTP_200_OK,
         )
+        response.delete_cookie("refresh_token")
+        return response
 
 
 class NicknameCheckView(APIView):
