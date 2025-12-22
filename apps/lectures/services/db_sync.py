@@ -101,7 +101,9 @@ def sync_inflearn_db(final_results: List[Dict[str, Any]]) -> SyncResult:
 
     LectureCategory.objects.filter(lecture__platform=platform_name).delete()
 
-    category_map = {c.name: c for c in Category.objects.all()}
+    category_names = {c["name"] for item in final_results for c in item.get("categories", [])}
+
+    category_map = {c.name: c for c in Category.objects.filter(name__in=category_names)}
     lecture_category_objs: list[LectureCategory] = []
 
     for item in final_results:
@@ -127,8 +129,6 @@ def sync_inflearn_db(final_results: List[Dict[str, Any]]) -> SyncResult:
             batch_size=1000,
             ignore_conflicts=True,
         )
-
-    CrawledLectureReview.objects.filter(lecture__platform=platform_name).delete()
 
     review_objs: list[CrawledLectureReview] = []
 
