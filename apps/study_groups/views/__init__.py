@@ -1,5 +1,4 @@
-from .admin_study_groups_view import (
-    # AdminStudyGroupDetailView,
+from .admin_study_groups_view import (  # AdminStudyGroupDetailView,
     AdminStudyGroupListView,
 )
 from .study_groups_view import (
