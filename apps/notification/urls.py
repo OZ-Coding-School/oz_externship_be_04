@@ -15,3 +15,5 @@ urlpatterns = [
     path("notifications/<int:notification_id>/read", NotificationReadView.as_view(), name="notification-read"),
     path("notifications/read-all", NotificationReadAllView.as_view(), name="notification-read-all"),
 ]
+
+# 커밋하기 위한 주석
