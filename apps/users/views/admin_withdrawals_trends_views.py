@@ -13,7 +13,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.users.serializers.admin_withdrawals_serializers import (
+from apps.users.serializers.admin_withdrawals_analytics_serializers import (
     AdminWithdrawalTrendSerializer,
 )
 from apps.users.services.admin_analytics_common import IntervalLiteral
