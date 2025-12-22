@@ -51,6 +51,12 @@ class LoginView(APIView):
                 status_codes=["400"],
                 value={"error_detail": {"password": "이 필드는 필수 항목입니다."}},
             ),
+            OpenApiExample(
+                name="403 Forbidden",
+                response_only=True,
+                status_codes=["403"],
+                value={"error_detail": "탈퇴 처리된 계정입니다. 계정 복구를 진행해주세요."},
+            ),
         ],
         responses={
             200: inline_serializer(
@@ -60,6 +66,10 @@ class LoginView(APIView):
             400: inline_serializer(
                 name="LoginError",
                 fields={"error_detail": serializers.DictField()},
+            ),
+            403: inline_serializer(
+                name="LoginForbidden",
+                fields={"error_detail": serializers.CharField()},
             ),
         },
     )
@@ -72,6 +82,12 @@ class LoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         user = serializer.validated_data["user"]
+
+        if not user.is_active:
+            return Response(
+                {"error_detail": "탈퇴 처리된 계정입니다. 계정 복구를 진행해주세요"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
