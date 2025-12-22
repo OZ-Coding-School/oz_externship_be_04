@@ -2,7 +2,7 @@ from typing import Any, Dict, List, TypedDict
 
 from django.db import transaction
 
-from apps.lectures.models.category import Category
+from apps.lectures.models.category import Category, LectureCategory
 from apps.lectures.models.crawled_lecture import CrawledLecture
 from apps.lectures.models.crawled_lecture_review import CrawledLectureReview
 
@@ -98,6 +98,37 @@ def sync_inflearn_db(final_results: List[Dict[str, Any]]) -> SyncResult:
             external_id__in=external_ids,
         )
     }
+
+    LectureCategory.objects.filter(lecture__platform=platform_name).delete()
+
+    category_names = {c["name"] for item in final_results for c in item.get("categories", [])}
+
+    category_map = {c.name: c for c in Category.objects.filter(name__in=category_names)}
+    lecture_category_objs: list[LectureCategory] = []
+
+    for item in final_results:
+        lecture = lecture_map.get(str(item["id"]))
+        if lecture is None:
+            continue
+
+        for c in item.get("categories", []):
+            category = category_map.get(c["name"])
+            if category is None:
+                continue
+
+            lecture_category_objs.append(
+                LectureCategory(
+                    lecture=lecture,
+                    category=category,
+                )
+            )
+
+    if lecture_category_objs:
+        LectureCategory.objects.bulk_create(
+            lecture_category_objs,
+            batch_size=1000,
+            ignore_conflicts=True,
+        )
 
     review_objs: list[CrawledLectureReview] = []
 
