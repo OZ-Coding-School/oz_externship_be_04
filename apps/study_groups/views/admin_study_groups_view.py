@@ -83,6 +83,7 @@ class AdminStudyGroupListView(APIView):
             serializer = AdminStudyGroupListSerializer(qs, many=True, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 # 그룹 상세정보
 class AdminStudyGroupDetailView(APIView):
 
