@@ -1,5 +1,4 @@
 import uuid
-from urllib.parse import urlencode
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -64,37 +63,33 @@ class NaverCallBackView(APIView):
             return Response({"error_detail": "네이버 로그인 인증에 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
         try:
             naver_login = NaverLoginService()
-            access_token = naver_login.get_naver_access_token(code, state)
-            user_info = naver_login.get_naver_user_info(access_token)
+            naver_auth_token = naver_login.get_naver_access_token(code, state)
+            user_info = naver_login.get_naver_user_info(naver_auth_token)
 
             social_service = SocialLoginService()
             user, is_created = social_service.login_or_signup(provider=ProviderChoices.NAVER, user_info=user_info)
 
-            token = RefreshToken.for_user(user)
-
-            return_list = urlencode(
-                {
-                    "access_token": str(token.access_token),
-                    "is_created": is_created,
-                    "email": user.email,
-                    "nickname": user.nickname,
-                    "name": user.name,
-                    "phone_number": user.phone_number,
-                    "birthday": user.birthday,
-                    "gender": user.gender,
-                    "profile_img_url": user.profile_img_url or "",
-                    "provider": "naver",
-                }
-            )
+            naver_token = RefreshToken.for_user(user)
+            jwt_access_token = str(naver_token.access_token)
+            jwt_refresh_token = str(naver_token)
 
             base_url = getattr(settings, "FRONTEND_BASE_URL", "http://localhost:5173")
-            redirect_url = f"{base_url}/social-callback?{return_list}"
-
+            redirect_url = f"{base_url}/social-callback"
             response = redirect(redirect_url)
 
             response.set_cookie(
+                key="access_token",
+                value=jwt_access_token,
+                httponly=False,
+                secure=check_secure,
+                samesite=check_samesite,  # type: ignore
+                domain=check_domain,
+                max_age=3600,
+            )
+
+            response.set_cookie(
                 key="refresh_token",
-                value=str(token),
+                value=jwt_refresh_token,
                 httponly=True,
                 secure=check_secure,
                 samesite=check_samesite,  # type: ignore
@@ -148,38 +143,35 @@ class KakaoCallBackView(APIView):
 
         try:
             kakao_login = KaKaoLoginServices()
-            access_token = kakao_login.get_kakao_access_token(code)
-            user_info = kakao_login.get_kakao_user_info(access_token)
+            kakao_auth_token = kakao_login.get_kakao_access_token(code)
+            user_info = kakao_login.get_kakao_user_info(kakao_auth_token)
             social_service = SocialLoginService()
             user, is_created = social_service.login_or_signup(
                 provider=ProviderChoices.KAKAO,
                 user_info=user_info,
             )
 
-            token = RefreshToken.for_user(user)
-
-            return_list = urlencode(
-                {
-                    "access_token": str(token.access_token),
-                    "is_created": is_created,
-                    "email": user.email,
-                    "name": user.name,
-                    "nickname": user.nickname,
-                    "phone_number": user.phone_number,
-                    "birthday": user.birthday,
-                    "gender": user.gender,
-                    "profile_img_url": user.profile_img_url or "",
-                    "provider": "kakao",
-                }
-            )
+            kakao_token = RefreshToken.for_user(user)
+            jwt_access_token = str(kakao_token.access_token)
+            jwt_refresh_token = str(kakao_token)
 
             base_url = getattr(settings, "FRONTEND_BASE_URL", "http://localhost:5173")
-            redirect_url = f"{base_url}/social-callback?{return_list}"
-
+            redirect_url = f"{base_url}/social-callback"
             response = redirect(redirect_url)
+
+            response.set_cookie(
+                key="access_token",
+                value=jwt_access_token,
+                httponly=False,
+                secure=check_secure,
+                samesite=check_samesite,  # type: ignore
+                domain=check_domain,
+                max_age=3600,
+            )
+
             response.set_cookie(
                 key="refresh_token",
-                value=str(token),
+                value=jwt_refresh_token,
                 httponly=True,
                 secure=check_secure,
                 samesite=check_samesite,  # type: ignore
