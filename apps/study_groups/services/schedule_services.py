@@ -27,7 +27,7 @@ class ScheduleService:
 
     @staticmethod
     def create_schedule(*, validated_data: Dict[str, Any], group_id: int) -> GroupSchedule:
-        study_group = StudyGroup.objects.filter(id=group_id).first()
+        study_group = GroupMember.objects.filter(id=group_id).first()
         if study_group is None:
             raise ValueError("스터디 그룹 없음")
 
