@@ -4,5 +4,5 @@ from django.apps import AppConfig
 class CoreConfig(AppConfig):
     name = "apps.core"
 
-    def ready(self):
+    def ready(self) -> None:
         import apps.core.schema
