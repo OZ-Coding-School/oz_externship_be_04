@@ -5,6 +5,7 @@ import re
 import textwrap
 import time
 from typing import ClassVar
+from unittest.mock import MagicMock
 
 from django.conf import settings
 from django.utils import timezone
@@ -25,7 +26,7 @@ class StudyNoteAIService:
     """
 
     MODEL_NAME: ClassVar[str] = settings.GEMINI_MODEL_NAME
-    _CLIENT: ClassVar[genai.Client]
+    _CLIENT: ClassVar[genai.Client | MagicMock]
 
     WEEKDAYS_KR: ClassVar[list[str]] = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
     ERROR_KEYWORDS: ClassVar[list[str]] = ["요약 오류", "오류 발생", "AI요약 오류"]
@@ -34,9 +35,7 @@ class StudyNoteAIService:
     if getattr(settings, "GEMINI_API_KEY", None):
         _CLIENT = genai.Client(api_key=settings.GEMINI_API_KEY)
     else:
-        import unittest.mock as mock
-
-        _CLIENT = mock.MagicMock(name="MockGeminiClient")
+        _CLIENT = MagicMock(name="MockGeminiClient")
 
     SUMMARY_PROMPT_TEMPLATE: ClassVar[str] = textwrap.dedent(
         """
