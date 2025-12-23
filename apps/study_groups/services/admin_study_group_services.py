@@ -1,16 +1,18 @@
 from typing import Optional
 
-from django.db.models import QuerySet
+from django.db.models import Count, QuerySet
 
 from apps.study_groups.models import StudyGroup
 
 
 # Admin - 스터디 그룹 가져오기
 def get_admin_study_group_queryset() -> QuerySet[StudyGroup]:
-    return StudyGroup.objects.prefetch_related(
+    # annotate로 일괄계산된 값 적용 (N+1 이슈)
+    return StudyGroup.objects.annotate(current_headcount=Count("groupmember_study_groups")).prefetch_related(
         "groupmember_study_groups__user_id",
         "studylecture_study_groups__lecture",
-        "review_study_groups",
+        # prefetch 함께 적용해 객체 반환
+        "review_study_groups__user",
     )
 
 

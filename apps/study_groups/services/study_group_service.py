@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 from celery import shared_task
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import Count, QuerySet
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -55,8 +55,14 @@ def create_study_group(user: CustomUser, validated_data: dict[str, Any]) -> Stud
 def get_study_group_list(user: CustomUser, status: Optional[str] = None) -> QuerySet[StudyGroup]:
     # 소속 그룹만 필터링
     user_group_ids = GroupMember.objects.filter(user_id=user.id).values_list("study_group_id", flat=True)
-    queryset = StudyGroup.objects.filter(id__in=user_group_ids).prefetch_related(
-        "studylecture_study_groups", "groupmember_study_groups", "review_study_groups"
+    queryset = (  # annotate 사용해 N+1 이슈 해결 (쿼리 반복 감소)
+        StudyGroup.objects.filter(id__in=user_group_ids)
+        .annotate(current_headcount=Count("groupmember_study_groups"))
+        .prefetch_related(
+            "studylecture_study_groups__lecture",
+            "groupmember_study_groups__user_id",
+            "review_study_groups__user",
+        )
     )
     if status:
         queryset = queryset.filter(status=status)
@@ -67,8 +73,8 @@ def get_study_group_list(user: CustomUser, status: Optional[str] = None) -> Quer
 def retrieve_study_group(group_id: int, user: CustomUser) -> StudyGroup:
     # 소속 그룹만 필터링 / 오류 404 처리
     study_group = get_object_or_404(
-        StudyGroup.objects.prefetch_related(
-            # prefetch가... 이쪽이 맞네요... 정상작동하네요... 죄송합니다. 다시 붙였습니다 ㅠ
+        # annotate로 DB에서 계산하여 객체에 필드 추가 (쿼리 반복 N+1 이슈 해결)
+        StudyGroup.objects.annotate(current_headcount=Count("groupmember_study_groups")).prefetch_related(
             "studylecture_study_groups__lecture",
             "groupmember_study_groups__user_id",
         ),

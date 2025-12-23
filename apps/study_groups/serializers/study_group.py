@@ -135,7 +135,8 @@ class StudyGroupListSerializer(serializers.ModelSerializer[StudyGroup]):
         ]
 
     def get_current_headcount(self, obj: StudyGroup) -> int:
-        return len(obj.groupmember_study_groups.all())
+        # annotate로 일괄계산된 값 적용 (N+1 이슈)
+        return getattr(obj, "current_headcount", obj.groupmember_study_groups.count())
 
     def get_is_leader(self, obj: StudyGroup) -> bool:
         user = self.context["request"].user
@@ -182,7 +183,8 @@ class StudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
         ]
 
     def get_current_headcount(self, obj: StudyGroup) -> int:
-        return len(obj.groupmember_study_groups.all())
+        # annotate로 일괄계산된 값 적용 (N+1 이슈)
+        return getattr(obj, "current_headcount", obj.groupmember_study_groups.count())
 
     def get_lectures(self, obj: StudyGroup) -> list[dict[str, Any]]:
         study_lectures = obj.studylecture_study_groups.all()
