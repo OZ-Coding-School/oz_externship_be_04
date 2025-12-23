@@ -16,8 +16,10 @@ from rest_framework.views import APIView
 from apps.users.serializers.admin_analytics_serializers import (
     AdminWithdrawalTrendSerializer,
 )
-from apps.users.services.admin_analytics_common import IntervalLiteral
-from apps.users.services.admin_withdrawals_analytics_service import get_withdrawal_trend
+from apps.users.services.admin_withdrawals_analytics_services import (
+    get_withdrawal_trend,
+)
+from apps.users.utils.admin_analytics_utils import IntervalLiteral
 from apps.users.utils.permissions import StaffOrSuperUser
 
 AdminWithdrawalTrendSimpleErrorSerializer = inline_serializer(

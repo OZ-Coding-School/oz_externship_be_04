@@ -18,7 +18,7 @@ from apps.users.serializers.admin_withdrawal_serializers import (
     AdminWithdrawalDetailSerializer,
     AdminWithdrawalListItemSerializer,
 )
-from apps.users.services.admin_withdrawal_services import (
+from apps.users.services.admin_withdrawals_services import (
     get_admin_withdrawal_detail,
     get_admin_withdrawal_list,
 )

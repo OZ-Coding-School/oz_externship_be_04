@@ -21,7 +21,7 @@ from apps.users.serializers.admin_accounts_serializers import (
     AdminAccountSerializer,
     AdminAccountUpdateSerializer,
 )
-from apps.users.services.admin_services import (
+from apps.users.services.admin_accounts_services import (
     activate_admin_account,
     delete_admin_account,
     get_admin_account_detail,
