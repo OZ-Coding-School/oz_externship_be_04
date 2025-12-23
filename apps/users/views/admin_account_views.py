@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.pagination import Pageable
-from apps.users.serializers.admin_serializers import (
+from apps.users.serializers.admin_accounts_serializers import (
     AdminAccountDetailReadSerializer,
     AdminAccountDetailSerializer,
     AdminAccountRoleUpdateSerializer,
