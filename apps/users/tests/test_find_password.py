@@ -155,11 +155,17 @@ class PasswordManagementIntegrationTestCase(APITestCase):
 
         response = self.client.post(url, data, format="json")
 
+        if response.status_code != status.HTTP_200_OK:
+            print(f"Error Response: {response.data}")
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["detail"], "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.")
         self.assertIn("reset_token", response.data)
 
         token = response.data["reset_token"]
+        self.assertIsNotNone(token)
+        self.assertEqual(len(token), 64)
+
         cached_email = cache.get(f"reset_token:{token}")
         self.assertEqual(cached_email, "testuser@example.com")
 
