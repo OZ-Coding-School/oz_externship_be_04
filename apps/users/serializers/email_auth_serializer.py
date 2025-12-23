@@ -78,7 +78,11 @@ class EmailSerializer(serializers.Serializer[Any]):
 
 
 class PasswordResetSerializer(serializers.Serializer[Any]):
-    token = serializers.CharField(required=True, max_length=64, error_messages={"required": "토큰을 입력해주세요."})
+    token = serializers.CharField(
+        required=False,
+        max_length=64,
+        error_messages={"required": "토큰을 입력해주세요."},
+    )
 
     new_password = serializers.CharField(
         required=True,
@@ -94,7 +98,6 @@ class PasswordResetSerializer(serializers.Serializer[Any]):
         try:
             validate_password(value)
         except DjangoValidationError as e:
-
             raise serializers.ValidationError(e.messages)
 
         return value
