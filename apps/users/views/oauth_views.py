@@ -1,18 +1,17 @@
 import uuid
-from urllib.parse import urlencode
 
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
-from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.core.logger.logging import get_logger
 from apps.users.models.social_user import ProviderChoices
 from apps.users.services.kakao_login_services import KaKaoLoginServices
 from apps.users.services.naver_login_services import NaverLoginService
@@ -21,6 +20,8 @@ from apps.users.services.oauth_services import SocialLoginService
 check_secure = not settings.DEBUG
 check_samesite = "None" if not settings.DEBUG else "Lax"
 check_domain = ".ozcoding.site" if not settings.DEBUG else None
+
+logger = get_logger(__name__)
 
 
 class NaverLoginView(APIView):
@@ -60,41 +61,40 @@ class NaverCallBackView(APIView):
         code = request.GET.get("code")
         state = request.GET.get("state")
 
+        base_url = getattr(settings, "FRONTEND_BASE_URL", "http://localhost:5173")
         if not code or not state:
-            return Response({"error_detail": "네이버 로그인 인증에 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error("네이버 인증 코드 or 상태값 오류")
+            return redirect(f"{base_url}/social-callback?error_code=NAVER_ERROR_001")
+
         try:
             naver_login = NaverLoginService()
-            access_token = naver_login.get_naver_access_token(code, state)
-            user_info = naver_login.get_naver_user_info(access_token)
+            naver_auth_token = naver_login.get_naver_access_token(code, state)
+            user_info = naver_login.get_naver_user_info(naver_auth_token)
 
             social_service = SocialLoginService()
             user, is_created = social_service.login_or_signup(provider=ProviderChoices.NAVER, user_info=user_info)
 
-            token = RefreshToken.for_user(user)
-
-            return_list = urlencode(
-                {
-                    "access_token": str(token.access_token),
-                    "is_created": is_created,
-                    "email": user.email,
-                    "nickname": user.nickname,
-                    "name": user.name,
-                    "phone_number": user.phone_number,
-                    "birthday": user.birthday,
-                    "gender": user.gender,
-                    "profile_img_url": user.profile_img_url or "",
-                    "provider": "naver",
-                }
-            )
+            naver_token = RefreshToken.for_user(user)
+            jwt_access_token = str(naver_token.access_token)
+            jwt_refresh_token = str(naver_token)
 
             base_url = getattr(settings, "FRONTEND_BASE_URL", "http://localhost:5173")
-            redirect_url = f"{base_url}/social-callback?{return_list}"
-
+            redirect_url = f"{base_url}/social-callback"
             response = redirect(redirect_url)
 
             response.set_cookie(
+                key="access_token",
+                value=jwt_access_token,
+                httponly=False,
+                secure=check_secure,
+                samesite=check_samesite,  # type: ignore
+                domain=check_domain,
+                max_age=3600,
+            )
+
+            response.set_cookie(
                 key="refresh_token",
-                value=str(token),
+                value=jwt_refresh_token,
                 httponly=True,
                 secure=check_secure,
                 samesite=check_samesite,  # type: ignore
@@ -103,10 +103,13 @@ class NaverCallBackView(APIView):
             )
             return response
 
-        except:
-            return Response(
-                {"error_detail": "네이버 로그인 도중 오류가 발생했습니다."}, status=status.HTTP_400_BAD_REQUEST
-            )
+        except ValidationError as e:
+            logger.error(f"네이버 검증 에러 {e}")
+            return redirect(f"{base_url}/social-callback?error_code=NAVER_ERROR_001")
+
+        except Exception as e:
+            logger.error(f"네이버 시스템 에러 {e}")
+            return redirect(f"{base_url}/social-callback?error_code=NAVER_ERROR_002")
 
 
 class KakaoLoginView(APIView):
@@ -141,43 +144,42 @@ class KakaoCallBackView(APIView):
     def get(self, request: Request) -> HttpResponse:
         code = request.GET.get("code")
 
+        base_url = getattr(settings, "FRONTEND_BASE_URL", "http://localhost:5173")
         if not code:
-            return Response({"error_detail": "카카오 로그인 인증에 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error(f"카카오 인증 코드 오류")
+            return redirect(f"{base_url}/social-callback?error_code=KAKAO_ERROR_001")
 
         try:
             kakao_login = KaKaoLoginServices()
-            access_token = kakao_login.get_kakao_access_token(code)
-            user_info = kakao_login.get_kakao_user_info(access_token)
+            kakao_auth_token = kakao_login.get_kakao_access_token(code)
+            user_info = kakao_login.get_kakao_user_info(kakao_auth_token)
             social_service = SocialLoginService()
             user, is_created = social_service.login_or_signup(
                 provider=ProviderChoices.KAKAO,
                 user_info=user_info,
             )
 
-            token = RefreshToken.for_user(user)
-
-            return_list = urlencode(
-                {
-                    "access_token": str(token.access_token),
-                    "is_created": is_created,
-                    "email": user.email,
-                    "name": user.name,
-                    "nickname": user.nickname,
-                    "phone_number": user.phone_number,
-                    "birthday": user.birthday,
-                    "gender": user.gender,
-                    "profile_img_url": user.profile_img_url or "",
-                    "provider": "kakao",
-                }
-            )
+            kakao_token = RefreshToken.for_user(user)
+            jwt_access_token = str(kakao_token.access_token)
+            jwt_refresh_token = str(kakao_token)
 
             base_url = getattr(settings, "FRONTEND_BASE_URL", "http://localhost:5173")
-            redirect_url = f"{base_url}/social-callback?{return_list}"
-
+            redirect_url = f"{base_url}/social-callback"
             response = redirect(redirect_url)
+
+            response.set_cookie(
+                key="access_token",
+                value=jwt_access_token,
+                httponly=False,
+                secure=check_secure,
+                samesite=check_samesite,  # type: ignore
+                domain=check_domain,
+                max_age=3600,
+            )
+
             response.set_cookie(
                 key="refresh_token",
-                value=str(token),
+                value=jwt_refresh_token,
                 httponly=True,
                 secure=check_secure,
                 samesite=check_samesite,  # type: ignore
@@ -186,7 +188,10 @@ class KakaoCallBackView(APIView):
             )
             return response
 
-        except:
-            return Response(
-                {"error_detail": "카카오 로그인 도중 오류가 발생했습니다."}, status=status.HTTP_400_BAD_REQUEST
-            )
+        except ValidationError as e:
+            logger.error(f"카카오 검증 에러 {e}")
+            return redirect(f"{base_url}/social-callback?error_code=KAKAO_ERROR_001")
+
+        except Exception as e:
+            logger.error(f"카카오 시스템 에러 {e}")
+            return redirect(f"{base_url}/social-callback?error_code=KAKAO_ERROR_002")

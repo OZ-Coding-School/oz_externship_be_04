@@ -4,6 +4,10 @@ import requests
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
 
+from apps.core.logger.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 class KaKaoLoginServices(object):
 
@@ -17,13 +21,29 @@ class KaKaoLoginServices(object):
             "code": code,
         }
 
-        response = requests.post(url, headers=headers, data=data)
-        token_data = response.json()
+        logger.info(f"카카오 토큰 요청 시작: code={code}")
 
-        if response.status_code != 200 or "error" in token_data:
-            raise ValidationError(f"카카오 토큰 발급 실패: {token_data}")
+        try:
+            response = requests.post(url, headers=headers, data=data, timeout=10)
 
-        return str(token_data.get("access_token"))
+            logger.info(f"카카오 토큰 응답 수신: {response.status_code}")
+
+            token_data = response.json()
+
+            if response.status_code != 200 or "error" in token_data:
+                logger.error(f"카카오 토큰 발급 실패: {token_data}")
+                raise ValidationError(f"카카오 토큰 발급 실패: {token_data}")
+
+            return str(token_data.get("access_token"))
+
+        except requests.exceptions.Timeout:
+            logger.error("카카오 토큰 요청 타임아웃")
+            raise ValidationError("카카오 서버 응답 시간이 초과되었습니다.")
+        except Exception as e:
+            logger.error(
+                f"카카오 토큰 요청 중 에러 발생: {e}",
+            )
+            raise e
 
     def get_kakao_user_info(self, token_id: str) -> dict[str, Any]:
         url = "https://kapi.kakao.com/v2/user/me"
@@ -31,9 +51,14 @@ class KaKaoLoginServices(object):
             "Authorization": f"Bearer {token_id}",
             "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
         }
-        response = requests.get(url, headers=headers)
+        logger.info("카카오 유저 정보 조회 시작")
+
+        response = requests.get(url, headers=headers, timeout=10)
+
+        logger.info(f"카카오 유저 정보 응답 수신: {response.status_code}")
 
         if response.status_code != 200:
+            logger.error(f"카카오 유저 정보 조회 실패 {response.text}")
             raise ValidationError("카카오 유저 정보 조회 실패")
 
         response_json = response.json()
