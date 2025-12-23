@@ -252,3 +252,7 @@ CELERY_TIMEZONE = "Asia/Seoul"
 CELERY_ENABLE_UTC = False
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# 외부 API 키
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
