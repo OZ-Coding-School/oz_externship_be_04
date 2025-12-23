@@ -428,7 +428,7 @@ class AdminAccountRoleUpdateSpec(APIView):
 
 
 class AdminAccountActivateView(APIView):
-    "inactive인 회원 계정을 복구하는 APIView"
+    """inactive인 회원 계정을 복구하는 APIView"""
 
     permission_classes = [StaffOrSuperUser]
 

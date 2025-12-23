@@ -9,7 +9,7 @@ DEFAULT_RECENT_YEARS: int = 5
 
 
 def calc_month_range(today: date, months: int) -> tuple[date, date, List[str]]:
-    base = today.replace(day=1)  # 이번 달 1일 기준
+    base = today.replace(day=1)
     year = base.year
     month = base.month - (months - 1)
 
