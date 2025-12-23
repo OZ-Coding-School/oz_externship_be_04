@@ -150,7 +150,7 @@ class RecruitmentCreateSerializer(serializers.ModelSerializer[Recruitment]):
         extra_kwargs = {
             "title": {"required": True, "max_length": 50},
             "content": {"required": True},
-            "estimated_fee": {"required": False, "min_value": 0},
+            "estimated_fee": {"required": True, "min_value": 0},
             "expected_headcount": {"required": True, "min_value": 1, "max_value": 10},
             "close_at": {"required": True},
         }
