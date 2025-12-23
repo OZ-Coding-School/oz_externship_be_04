@@ -1,4 +1,3 @@
-import secrets
 from typing import Any
 
 from django.core.cache import cache
@@ -94,32 +93,52 @@ class FindPasswordView(APIView):
         },
     )
     def post(self, request: Any) -> Response:
-        serializer = PasswordResetSerializer(data=request.data)
+        token = request.COOKIES.get("password_reset_token")
+
+        if not token:
+            return Response(
+                {"error_detail": "인증 토큰이 없습니다. 이메일 인증을 먼저 완료해주세요."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data = request.data.copy()
+        data["token"] = token
+
+        serializer = PasswordResetSerializer(data=data)
 
         if not serializer.is_valid():
             return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        token = serializer.validated_data["token"]
         new_password = serializer.validated_data["new_password"]
 
         cache_key = f"reset_token:{token}"
         email = cache.get(cache_key)
 
         if not email:
-            return Response({"error_detail": "유효하지 않거나 만료된 토큰입니다."}, status=status.HTTP_400_BAD_REQUEST)
+            response = Response(
+                {"error_detail": "유효하지 않거나 만료된 토큰입니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
+            response.delete_cookie("password_reset_token")
+            return response
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             cache.delete(cache_key)
-            return Response({"error_detail": "등록된 이메일이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            response = Response({"error_detail": "등록된 이메일이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            response.delete_cookie("password_reset_token")
+            return response
 
         user.set_password(new_password)
         user.save()
 
         cache.delete(cache_key)
 
-        return Response({"detail": "비밀번호 변경 성공."}, status=status.HTTP_200_OK)
+        response = Response({"detail": "비밀번호 변경 성공."}, status=status.HTTP_200_OK)
+
+        response.delete_cookie(key="password_reset_token", path="/api/v1/accounts/find-password")
+
+        return response
 
     @extend_schema(
         tags=["Account"],
