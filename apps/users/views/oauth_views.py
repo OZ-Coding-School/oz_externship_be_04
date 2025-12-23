@@ -103,9 +103,11 @@ class NaverCallBackView(APIView):
             )
             return response
 
-        except:
+        except Exception as e:
+            error_msg = f"[naver_login_error] type: {type(e).__name__}, message: {str(e)}"
+            print(error_msg, flush=True)
             return Response(
-                {"error_detail": "네이버 로그인 도중 오류가 발생했습니다."}, status=status.HTTP_400_BAD_REQUEST
+                {"error_detail": f"네이버 로그인 도중 오류가 발생했습니다.{e}"}, status=status.HTTP_400_BAD_REQUEST
             )
 
 
@@ -186,7 +188,9 @@ class KakaoCallBackView(APIView):
             )
             return response
 
-        except:
+        except Exception as e:
+            error_msg = f"[kakao_login_error] type: {type(e).__name__}, message: {str(e)}"
+            print(error_msg, flush=True)
             return Response(
-                {"error_detail": "카카오 로그인 도중 오류가 발생했습니다."}, status=status.HTTP_400_BAD_REQUEST
+                {"error_detail": f"카카오 로그인 도중 오류가 발생했습니다.{e}"}, status=status.HTTP_400_BAD_REQUEST
             )

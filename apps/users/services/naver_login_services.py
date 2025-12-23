@@ -18,19 +18,37 @@ class NaverLoginService:
             "code": code,
         }
 
-        response = requests.get(url, params=params)
-        token_data = response.json()
+        print(f"네이버 토큰 요청 시작: state={state}", flush=True)
 
-        if response.status_code != 200 or "error" in token_data:
-            raise ValidationError(f"네이버 토큰 발급 실패: {token_data}")
+        try:
+            response = requests.get(url, params=params, timeout=10)
 
-        return str(token_data.get("access_token"))
+            print(f"네이버 토큰 응답 수신: {response.status_code}", flush=True)
+
+            token_data = response.json()
+
+            if response.status_code != 200 or "error" in token_data:
+                raise ValidationError(f"네이버 토큰 발급 실패: {token_data}")
+
+            return str(token_data.get("access_token"))
+
+        except requests.exceptions.Timeout:
+            print("네이버 토큰 요청 타임아웃", flush=True)
+            raise ValidationError("네이버 서버 응답 시간이 초과되었습니다.")
+        except Exception as e:
+            print(f"네이버 토큰 요청 중 에러: {e}", flush=True)
+            raise e
 
     def get_naver_user_info(self, token_id: str) -> dict[str, Any]:
         url = "https://openapi.naver.com/v1/nid/me"
         headers = {"Authorization": f"Bearer {token_id}"}
 
-        response = requests.get(url, headers=headers)
+        print("네이버 유저 정보 조회 시작", flush=True)
+
+        response = requests.get(url, headers=headers, timeout=10)
+
+        print(f"네이버 유저 정보 응답 수신: {response.status_code}", flush=True)
+
         if not response.status_code == 200:
             raise ValidationError("네이버 유저 정보 조회 실패")
 
