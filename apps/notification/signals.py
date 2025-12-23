@@ -17,7 +17,7 @@ def recruitment_created(sender: Any, instance: Application, created: bool, **kwa
 
     recruitment = instance.recruitment
     recruitment_id = recruitment.id
-    back_url = f"http://api.ozcoding.site/api/v1/recruitments/{recruitment_id}"
+    back_url = f"https://learn.ozcoding.site/manage/{recruitment_id}"
 
     notification = Notification.objects.create(
         user=recruitment.author,
@@ -36,7 +36,7 @@ def recruitment_approved_rejected_created(sender: Any, instance: Application, cr
         recruitment = instance.recruitment
         recruitment_id = recruitment.id
 
-        back_url = f"http://api.ozcoding.site/api/v1/recruitments/{recruitment_id}"
+        back_url = f"https://account.ozcoding.site/mypage?state=APPLY_LIST&recruitment_id={recruitment_id}"
 
         if instance.status == ApplicationStatus.ACCEPTED:
             notification = Notification.objects.create(
@@ -66,7 +66,7 @@ def study_member_joined_created(sender: Any, instance: Application, created: boo
             new_member = instance.applicant
 
             study_group_id = study_group.id
-            back_url = f"http://api.ozcoding.site/api/v1/study-groups/{study_group_id}"
+            back_url = f"study_group_id : {study_group_id}"
 
             existing_studymember = GroupMember.objects.filter(study_group_id=study_group.id).exclude(
                 user_id=new_member.id
@@ -95,7 +95,7 @@ def study_review_request_created(sender: Any, instance: StudyGroup, created: boo
         group_members = GroupMember.objects.filter(study_group_id=instance)
 
         study_group_id = instance.id
-        back_url = f"http://api.ozcoding.site/api/v1/study-groups/{study_group_id}"
+        back_url = f"https://study.ozcoding.site/{study_group_id}"
 
         notifications = [
             Notification(
@@ -125,7 +125,7 @@ def study_record_request_created(sender: Any, instance: StudyNote, created: bool
     if study_group and author:
         study_group_id = study_group.id
         study_note_id = instance.id
-        back_url = f"http://api.ozcoding.site/api/v1/study-groups/{study_group_id}/notes/{study_note_id}"
+        back_url = f"https://study.ozcoding.site/{study_group_id}/notes/{study_note_id}"
         existing_member = GroupMember.objects.filter(study_group_id=study_group.id).exclude(user_id=author.id)
 
         notifications = [

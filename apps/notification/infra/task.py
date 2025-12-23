@@ -85,15 +85,22 @@ async def send_tomorrow_schedule_notification() -> None:
             "schedule", "schedule__study_group", "member__user"
         )
 
-        notifications = [
-            Notification(
-                user_id=participant.member.user_id.id,
-                content=f"{participant.schedule.study_group.name}에 {participant.member.user_id.nickname}님이 참여했습니다.",
-                type=Notification.NotificationType.STUDY_JOIN,
-                back_url_link="",
+        notifications = []
+
+        for participant in participants:
+            study_group = participant.schedule.study_group
+            study_group_id = study_group.id
+
+            back_url_link = f"https://study.ozcoding.site/{study_group_id}"
+
+            notifications.append(
+                Notification(
+                    user_id=participant.member.user_id.id,
+                    content=f"{participant.schedule.study_group.name}에 {participant.member.user_id.nickname}님이 참여했습니다.",
+                    type=Notification.NotificationType.STUDY_JOIN,
+                    back_url_link=back_url_link,
+                )
             )
-            for participant in participants
-        ]
 
         created_notifications = Notification.objects.bulk_create(notifications)
 
@@ -113,19 +120,26 @@ async def send_today_schedule_notification() -> None:
         participants = ScheduleParticipants.objects.filter(schedule__session_date__date=today).select_related(
             "schedule", "schedule__study_group", "member__user"
         )
-        notifications = [
-            Notification(
-                user_id=participant.member.user_id.id,
-                content=f"금일 {participant.schedule.start_time.strftime('%H:%M')}부터"
-                f"{participant.schedule.end_time.strftime('%H:%M')}까지"
-                f"{participant.schedule.study_group.name}에서 {participant.schedule.title}이"
-                f"예정되어 있습니다! 잊지말고 참여해주세요!",
-                type=Notification.NotificationType.TODAY_SCHEDULE,
-                back_url_link="",
-            )
-            for participant in participants
-        ]
 
+        notifications = []
+
+        for participant in participants:
+            study_group = participant.schedule.study_group
+            study_group_id = study_group.id
+
+            back_url_link = f"https://study.ozcoding.site/{study_group_id}"
+
+            notifications.append(
+                Notification(
+                    user_id=participant.member.user_id.id,
+                    content=f"금일 {participant.schedule.start_time.strftime('%H:%M')}부터"
+                    f"{participant.schedule.end_time.strftime('%H:%M')}까지"
+                    f"{participant.schedule.study_group.name}에서 {participant.schedule.title}이"
+                    f"예정되어 있습니다! 잊지말고 참여해주세요!",
+                    type=Notification.NotificationType.TODAY_SCHEDULE,
+                    back_url_link=back_url_link,
+                )
+            )
         created_notifications = Notification.objects.bulk_create(notifications)
 
         for notification in created_notifications:
