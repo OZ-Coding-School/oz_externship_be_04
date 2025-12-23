@@ -15,8 +15,6 @@ from apps.users.serializers.email_auth_serializer import (
     EmailSignUpSerializer,
     EmailSignUpVerifySerializer,
     EmailVerifySerializer,
-    FindEmailSerializer,
-    PasswordResetSerializer,
 )
 from apps.users.utils.send_auth import SendAuth
 
@@ -160,7 +158,7 @@ class FindPasswordVerifyEmailView(APIView):
     @extend_schema(
         tags=["Account"],
         summary="비밀번호 재설정 시 이메일 인증 API",
-        description="비밀번호 찾기 시 이메일 인증 코드를 검증하고 일회용 토큰을 발급합니다.",
+        description="비밀번호 찾기 시 이메일 인증 코드를 검증하고 일회용 토큰을 쿠키에저장합니다.",
         request=inline_serializer(
             name="FindPasswordVerifyEmailRequest",
             fields={
@@ -181,7 +179,7 @@ class FindPasswordVerifyEmailView(APIView):
                 status_codes=["200"],
                 value={
                     "detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.",
-                    "reset_token": "dpiokwjfoiefjw21123131231231asdpijia",
+                    "expires_in": 300,
                 },
             ),
         ],
@@ -190,7 +188,6 @@ class FindPasswordVerifyEmailView(APIView):
                 name="FindPasswordVerifyEmailSuccess",
                 fields={
                     "detail": serializers.CharField(),
-                    "reset_token": serializers.CharField(),
                 },
             ),
             400: inline_serializer(
@@ -214,6 +211,10 @@ class FindPasswordVerifyEmailView(APIView):
             return Response(
                 {"error_detail": "인증 코드가 만료되었거나 존재하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST
             )
+
+        if stored_code != code:
+            return Response({"error_detail": "인증 코드가 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
         if not User.objects.filter(email=email).exists():
             cache.delete(redis_key)
             return Response({"error_detail": "등록된 이메일이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
@@ -221,14 +222,24 @@ class FindPasswordVerifyEmailView(APIView):
         reset_token = secrets.token_hex(32)
 
         token_key = f"reset_token:{reset_token}"
-        cache.set(token_key, email, timeout=300)
-        if stored_code != code:
-            return Response({"error_detail": "인증 코드가 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        token_ttl = 300
+        cache.set(token_key, email, timeout=token_ttl)
 
         cache.delete(redis_key)
-        cache.set(f"email_verified:reset_password:{email}", True, timeout=300)
 
-        return Response(
-            {"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.", "reset_token": reset_token},
+        response = Response(
+            {"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.", "expires_in": token_ttl},
             status=status.HTTP_200_OK,
         )
+
+        response.set_cookie(
+            key="password_reset_token",
+            value=reset_token,
+            max_age=token_ttl,
+            httponly=True,
+            secure=False,
+            samesite="Lax",
+            path="/api/v1/accounts/find-password",
+        )
+
+        return response
