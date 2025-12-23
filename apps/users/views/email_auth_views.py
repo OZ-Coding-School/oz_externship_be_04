@@ -278,7 +278,7 @@ class IDKPasswordResetView(APIView):
         email = serializer.validated_data["email"]
         new_password = serializer.validated_data["new_password"]
 
-        cache_key = f"email_verified:find_password:{email}"
+        cache_key = f"email_verified:reset_password:{email}"
         is_verified = cache.get(cache_key)
 
         if not is_verified:
