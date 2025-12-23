@@ -1,3 +1,4 @@
+import secrets
 from typing import Any
 
 from django.core.cache import cache
@@ -159,7 +160,7 @@ class FindPasswordVerifyEmailView(APIView):
     @extend_schema(
         tags=["Account"],
         summary="비밀번호 재설정 시 이메일 인증 API",
-        description="비밀번호 찾기 시 이메일 인증 코드를 검증합니다.",
+        description="비밀번호 찾기 시 이메일 인증 코드를 검증하고 일회용 토큰을 발급합니다.",
         request=inline_serializer(
             name="FindPasswordVerifyEmailRequest",
             fields={
@@ -178,11 +179,20 @@ class FindPasswordVerifyEmailView(APIView):
                 name="200 OK",
                 response_only=True,
                 status_codes=["200"],
-                value={"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다."},
+                value={
+                    "detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.",
+                    "reset_token": "dpiokwjfoiefjw21123131231231asdpijia",
+                },
             ),
         ],
         responses={
-            200: inline_serializer(name="FindPasswordVerifyEmailSuccess", fields={"detail": serializers.CharField()}),
+            200: inline_serializer(
+                name="FindPasswordVerifyEmailSuccess",
+                fields={
+                    "detail": serializers.CharField(),
+                    "reset_token": serializers.CharField(),
+                },
+            ),
             400: inline_serializer(
                 name="FindPasswordVerifyEmailError", fields={"error_detail": serializers.DictField()}
             ),
@@ -204,94 +214,21 @@ class FindPasswordVerifyEmailView(APIView):
             return Response(
                 {"error_detail": "인증 코드가 만료되었거나 존재하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST
             )
+        if not User.objects.filter(email=email).exists():
+            cache.delete(redis_key)
+            return Response({"error_detail": "등록된 이메일이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        reset_token = secrets.token_hex(32)
+
+        token_key = f"reset_token:{reset_token}"
+        cache.set(token_key, email, timeout=300)
         if stored_code != code:
             return Response({"error_detail": "인증 코드가 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
         cache.delete(redis_key)
-        cache.set(f"email_verified:reset_password:{email}", True, timeout=1800)  # 30분
+        cache.set(f"email_verified:reset_password:{email}", True, timeout=300)
 
-        return Response({"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다."}, status=status.HTTP_200_OK)
-
-
-class IDKPasswordResetView(APIView):
-    permission_classes = (AllowAny,)
-
-    @extend_schema(
-        tags=["Account"],
-        summary="비밀번호 재설정 API",
-        description="이메일 인증 완료 후 새 비밀번호로 변경합니다.",
-        request=inline_serializer(
-            name="PasswordResetRequest",
-            fields={
-                "email": serializers.EmailField(required=True, help_text="user@example.com"),
-                "new_password": serializers.CharField(required=True, min_length=8, help_text="Pass1234!@"),
-            },
-        ),
-        examples=[
-            OpenApiExample(
-                name="Request",
-                request_only=True,
-                value={"email": "user@example.com", "new_password": "Pass1234!@"},
-            ),
-            OpenApiExample(
-                name="200 OK - Success",
-                response_only=True,
-                status_codes=["200"],
-                value={"detail": "비밀번호 변경 성공."},
-            ),
-            OpenApiExample(
-                name="400 Bad Request - Required Field",
-                response_only=True,
-                status_codes=["400"],
-                value={"error_detail": {"new_password": ["이 필드는 필수 항목입니다."]}},
-            ),
-            OpenApiExample(
-                name="400 Bad Request - Not Verified",
-                response_only=True,
-                status_codes=["400"],
-                value={"error_detail": "이메일 인증이 완료되지 않았습니다."},
-            ),
-            OpenApiExample(
-                name="400 Bad Request - Weak Password",
-                response_only=True,
-                status_codes=["400"],
-                value={"error_detail": {"new_password": ["비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다."]}},
-            ),
-        ],
-        responses={
-            200: inline_serializer(
-                name="PasswordResetSuccess",
-                fields={"detail": serializers.CharField()},
-            ),
-            400: inline_serializer(
-                name="PasswordResetError",
-                fields={"error_detail": serializers.DictField()},
-            ),
-        },
-    )
-    def post(self, request: Any, *args: Any, **kwargs: Any) -> Response:
-        serializer = PasswordResetSerializer(data=request.data)
-
-        if not serializer.is_valid():
-            return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        email = serializer.validated_data["email"]
-        new_password = serializer.validated_data["new_password"]
-
-        cache_key = f"email_verified:reset_password:{email}"
-        is_verified = cache.get(cache_key)
-
-        if not is_verified:
-            return Response({"error_detail": "이메일 인증이 완료되지 않았습니다."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({"error_detail": "등록된 이메일이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
-
-        user.set_password(new_password)
-        user.save()
-
-        cache.delete(cache_key)
-
-        return Response({"detail": "비밀번호 변경 성공."}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.", "reset_token": reset_token},
+            status=status.HTTP_200_OK,
+        )
