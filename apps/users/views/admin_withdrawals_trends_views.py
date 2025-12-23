@@ -31,9 +31,6 @@ AdminWithdrawalTrendSimpleErrorSerializer = inline_serializer(
 
 
 class AdminWithdrawalTrendSpec(APIView):
-    """
-    어드민 페이지 회원탈퇴 추세 분석 APIView
-    """
 
     permission_classes = [StaffOrSuperUser]
 

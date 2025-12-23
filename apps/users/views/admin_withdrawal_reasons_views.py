@@ -32,9 +32,6 @@ AdminWithdrawalAnalyticsSimpleErrorSerializer = inline_serializer(
 
 
 class AdminWithdrawalReasonPercentageView(APIView):
-    """
-    전체 기간 회원 탈퇴 사유 Percentage API view
-    """
 
     permission_classes = [StaffOrSuperUser]
 
@@ -93,9 +90,6 @@ class AdminWithdrawalReasonPercentageView(APIView):
 
 
 class AdminWithdrawalReasonMonthlyStatsView(APIView):
-    """
-    월별 회원 탈퇴 사유 분석 APIView
-    """
 
     permission_classes = [StaffOrSuperUser]
 

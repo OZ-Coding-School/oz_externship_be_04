@@ -29,9 +29,6 @@ AdminSignupTrendSimpleErrorSerializer = inline_serializer(
 
 
 class AdminSignupTrendView(APIView):
-    """
-    관리자 및 스태프 전용 회원가입 추세 분석 API
-    """
 
     permission_classes = [StaffOrSuperUser]
 

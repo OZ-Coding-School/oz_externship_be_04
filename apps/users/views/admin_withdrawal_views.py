@@ -32,9 +32,6 @@ AdminWithdrawalSimpleErrorSerializer = inline_serializer(
 
 
 class AdminWithdrawalList(APIView):
-    """
-    어드민 페이지 회원 탈퇴 내역 목록 조회 APIView
-    """
 
     permission_classes = [StaffOrSuperUser]
     pagination_class = PageNumberPagination
@@ -167,9 +164,6 @@ class AdminWithdrawalList(APIView):
 
 
 class AdminWithdrawalDetail(APIView):
-    """
-    어드민 페이지 회원 탈퇴 내역 상세 조회 API View
-    """
 
     permission_classes = [StaffOrSuperUser]
 

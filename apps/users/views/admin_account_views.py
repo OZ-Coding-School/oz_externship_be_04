@@ -69,9 +69,6 @@ AdminAccountActivateSuccessSerializer = inline_serializer(
 
 
 class AdminAccountListSpec(APIView):
-    """
-    어드민 페이지 회원 목록 조회 APIView
-    """
 
     permission_classes = [StaffOrSuperUser]
     pagination_class = PageNumberPagination
@@ -197,9 +194,6 @@ class AdminAccountListSpec(APIView):
 
 
 class AdminAccountDetailSpec(APIView):
-    """
-    어드민 페이지 회원 정보 상세 조회 APIView
-    """
 
     permission_classes = [StaffOrSuperUser]
 
@@ -428,7 +422,6 @@ class AdminAccountRoleUpdateSpec(APIView):
 
 
 class AdminAccountActivateView(APIView):
-    """inactive인 회원 계정을 복구하는 APIView"""
 
     permission_classes = [StaffOrSuperUser]
 
