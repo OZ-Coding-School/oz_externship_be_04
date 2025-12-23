@@ -1,6 +1,8 @@
 from typing import Any
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from apps.users.utils.auth_code import AuthCodeCache
@@ -76,7 +78,7 @@ class EmailSerializer(serializers.Serializer[Any]):
 
 
 class PasswordResetSerializer(serializers.Serializer[Any]):
-    email = serializers.EmailField(required=True, error_messages={"required": "이메일을 입력해주세요."})
+    token = serializers.CharField(required=True, max_length=64, error_messages={"required": "토큰을 입력해주세요."})
 
     new_password = serializers.CharField(
         required=True,
@@ -88,19 +90,11 @@ class PasswordResetSerializer(serializers.Serializer[Any]):
         },
     )
 
-    def validate_email(self, value: str) -> str:
-        return value.lower()
-
     def validate_new_password(self, value: str) -> str:
-        import re
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
 
-        if not re.search(r"[A-Za-z]", value):
-            raise serializers.ValidationError("비밀번호는 영문을 포함해야 합니다.")
-
-        if not re.search(r"\d", value):
-            raise serializers.ValidationError("비밀번호는 숫자를 포함해야 합니다.")
-
-        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
-            raise serializers.ValidationError("비밀번호는 특수문자를 포함해야 합니다.")
+            raise serializers.ValidationError(e.messages)
 
         return value
