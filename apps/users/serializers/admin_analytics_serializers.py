@@ -2,8 +2,6 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.users.utils.reason_choices import WithdrawalReason
-
 
 class BasePeriodCountItemSerializer(serializers.Serializer[Any]):
     period = serializers.CharField()
@@ -29,10 +27,7 @@ class AdminWithdrawalTrendSerializer(serializers.Serializer[Any]):
 
 
 class WithdrawalReasonPercentageItemSerializer(serializers.Serializer[Any]):
-    reason = serializers.ChoiceField(
-        choices=[choice[0] for choice in WithdrawalReason.choices],
-        read_only=True,
-    )
+    reason = serializers.CharField()
     reason_label = serializers.CharField()
     count = serializers.IntegerField()
     percentage = serializers.FloatField()
@@ -46,10 +41,7 @@ class WithdrawalReasonPercentageSerializer(serializers.Serializer[Any]):
 
 
 class WithdrawalReasonMonthlyStatsSerializer(serializers.Serializer[Any]):
-    reason = serializers.ChoiceField(
-        choices=[choice[0] for choice in WithdrawalReason.choices],
-        read_only=True,
-    )
+    reason = serializers.CharField()
     reason_label = serializers.CharField()
     from_date = serializers.DateField()
     to_date = serializers.DateField()
