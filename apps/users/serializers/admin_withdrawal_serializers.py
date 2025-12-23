@@ -8,6 +8,10 @@ from apps.users.utils.reason_choices import WithdrawalReason
 
 
 class AdminWithdrawalListItemSerializer(serializers.Serializer[Any]):
+    """
+    어드민 페이지의 회원 탈퇴 내역 목록에 개별 탈퇴 항목 한 건을 나타낼 때 사용하는 Serializer
+    """
+
     id = serializers.IntegerField()
     email = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField()
@@ -42,6 +46,10 @@ class AdminWithdrawalListItemSerializer(serializers.Serializer[Any]):
 
 
 class AdminWithdrawalUserDetailsSerializer(serializers.ModelSerializer[User]):
+    """
+    어드민 탈퇴 상세 조회에서 탈퇴 내역에 연결된 User 정보를 중첩 형태로 보여줄 때 사용하는 Serializer
+    """
+
     class Meta:
         model = User
         fields = [
@@ -64,6 +72,10 @@ class AdminWithdrawalUserDetailsSerializer(serializers.ModelSerializer[User]):
 
 
 class AdminWithdrawalDetailSerializer(serializers.ModelSerializer[Withdrawal]):
+    """
+    어드민 페이지 회원 탈퇴 상세 조회 API에서 사용하는 Serializer
+    """
+
     user = AdminWithdrawalUserDetailsSerializer(read_only=True)
 
     class Meta:

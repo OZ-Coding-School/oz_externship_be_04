@@ -16,8 +16,8 @@ from rest_framework.views import APIView
 from apps.users.serializers.admin_analytics_serializers import (
     AdminSignupTrendSerializer,
 )
-from apps.users.services.admin_analytics_common import IntervalLiteral
 from apps.users.services.admin_signup_analytics_services import get_signup_trend
+from apps.users.utils.admin_analytics_utils import IntervalLiteral
 from apps.users.utils.permissions import StaffOrSuperUser
 
 AdminSignupTrendSimpleErrorSerializer = inline_serializer(
@@ -29,9 +29,6 @@ AdminSignupTrendSimpleErrorSerializer = inline_serializer(
 
 
 class AdminSignupTrendView(APIView):
-    """
-    관리자 및 스태프 전용 회원가입 추세 분석 API
-    """
 
     permission_classes = [StaffOrSuperUser]
 

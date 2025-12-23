@@ -9,6 +9,10 @@ from apps.users.models import User
 
 
 class PhoneNumberConflict(APIException):
+    """
+    휴대폰 번호 중복으로 인한 업데이트 실패를 표현하는 커스텀 예외
+    """
+
     status_code = drf_status.HTTP_409_CONFLICT
     default_detail = "휴대폰 번호 중복으로 인하여 요청 처리에 실패하였습니다."
     default_code = "phone_number_conflict"
@@ -21,6 +25,9 @@ def get_admin_account_list(
     role_param: str | None = None,
     search: str | None = None,
 ) -> OffsetPage[User]:
+    """
+    어드민 회원 목록 조회 서비스 함수
+    """
 
     qs: QuerySet[User] = User.objects.all()
 
@@ -60,6 +67,9 @@ def get_admin_account_list(
 
 
 def get_admin_account_detail(*, account_id: int) -> User:
+    """
+    어드민 회원 정보 상세 조회 서비스 함수
+    """
     user = User.objects.filter(id=account_id).first()
     if user is None:
         raise NotFound("사용자 정보를 찾을 수 없습니다.")
@@ -68,6 +78,9 @@ def get_admin_account_detail(*, account_id: int) -> User:
 
 
 def update_admin_account(*, account_id: int, data: dict[str, Any]) -> User:
+    """
+    어드민 회원 정보 수정 서비스 함수
+    """
     user = User.objects.filter(id=account_id).first()
     if user is None:
         raise NotFound("사용자 정보를 찾을 수 없습니다.")
@@ -107,6 +120,9 @@ def update_admin_account(*, account_id: int, data: dict[str, Any]) -> User:
 
 
 def delete_admin_account(*, account_id: int) -> None:
+    """
+    어드민 회원 정보 삭제 서비스 함수
+    """
     user = User.objects.filter(id=account_id).first()
     if user is None:
         raise NotFound("사용자 정보를 찾을 수 없습니다.")
@@ -115,6 +131,9 @@ def delete_admin_account(*, account_id: int) -> None:
 
 
 def update_admin_account_role(*, account_id: int, role: str) -> None:
+    """
+    어드민 회원 권한 변경 서비스 함수
+    """
 
     user = User.objects.filter(id=account_id).first()
     if user is None:
@@ -136,6 +155,9 @@ def update_admin_account_role(*, account_id: int, role: str) -> None:
 
 
 def activate_admin_account(*, account_id: int) -> None:
+    """
+    탈퇴한 회원 계정 복구 서비스 함수
+    """
     user = User.objects.filter(id=account_id).first()
     if user is None:
         raise NotFound("사용자 정보를 찾을 수 없습니다.")

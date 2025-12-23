@@ -17,7 +17,7 @@ from apps.users.serializers.admin_analytics_serializers import (
     WithdrawalReasonMonthlyStatsSerializer,
     WithdrawalReasonPercentageSerializer,
 )
-from apps.users.services.admin_withdrawals_analytics_service import (
+from apps.users.services.admin_withdrawals_analytics_services import (
     get_withdrawal_reason_monthly_stats,
     get_withdrawal_reason_percentage,
 )
@@ -32,9 +32,6 @@ AdminWithdrawalAnalyticsSimpleErrorSerializer = inline_serializer(
 
 
 class AdminWithdrawalReasonPercentageView(APIView):
-    """
-    전체 기간 회원 탈퇴 사유 Percentage API view
-    """
 
     permission_classes = [StaffOrSuperUser]
 
@@ -93,9 +90,6 @@ class AdminWithdrawalReasonPercentageView(APIView):
 
 
 class AdminWithdrawalReasonMonthlyStatsView(APIView):
-    """
-    월별 회원 탈퇴 사유 분석 APIView
-    """
 
     permission_classes = [StaffOrSuperUser]
 

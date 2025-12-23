@@ -7,7 +7,7 @@ from apps.users.views.admin_account_views import (
     AdminAccountRoleUpdateSpec,
 )
 from apps.users.views.admin_signup_trends_views import AdminSignupTrendView
-from apps.users.views.admin_withdrawal_reasons_views import (
+from apps.users.views.admin_withdrawal_reason_trends_views import (
     AdminWithdrawalReasonMonthlyStatsView,
     AdminWithdrawalReasonPercentageView,
 )

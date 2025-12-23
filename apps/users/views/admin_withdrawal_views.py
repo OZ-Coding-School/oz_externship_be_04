@@ -18,7 +18,7 @@ from apps.users.serializers.admin_withdrawal_serializers import (
     AdminWithdrawalDetailSerializer,
     AdminWithdrawalListItemSerializer,
 )
-from apps.users.services.admin_withdrawal_services import (
+from apps.users.services.admin_withdrawals_services import (
     get_admin_withdrawal_detail,
     get_admin_withdrawal_list,
 )
@@ -32,9 +32,6 @@ AdminWithdrawalSimpleErrorSerializer = inline_serializer(
 
 
 class AdminWithdrawalList(APIView):
-    """
-    어드민 페이지 회원 탈퇴 내역 목록 조회 APIView
-    """
 
     permission_classes = [StaffOrSuperUser]
     pagination_class = PageNumberPagination
@@ -167,9 +164,6 @@ class AdminWithdrawalList(APIView):
 
 
 class AdminWithdrawalDetail(APIView):
-    """
-    어드민 페이지 회원 탈퇴 내역 상세 조회 API View
-    """
 
     permission_classes = [StaffOrSuperUser]
 

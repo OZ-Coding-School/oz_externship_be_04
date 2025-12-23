@@ -14,14 +14,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.pagination import Pageable
-from apps.users.serializers.admin_serializers import (
+from apps.users.serializers.admin_accounts_serializers import (
     AdminAccountDetailReadSerializer,
     AdminAccountDetailSerializer,
     AdminAccountRoleUpdateSerializer,
     AdminAccountSerializer,
     AdminAccountUpdateSerializer,
 )
-from apps.users.services.admin_services import (
+from apps.users.services.admin_accounts_services import (
     activate_admin_account,
     delete_admin_account,
     get_admin_account_detail,
@@ -69,9 +69,6 @@ AdminAccountActivateSuccessSerializer = inline_serializer(
 
 
 class AdminAccountListSpec(APIView):
-    """
-    어드민 페이지 회원 목록 조회 APIView
-    """
 
     permission_classes = [StaffOrSuperUser]
     pagination_class = PageNumberPagination
@@ -197,9 +194,6 @@ class AdminAccountListSpec(APIView):
 
 
 class AdminAccountDetailSpec(APIView):
-    """
-    어드민 페이지 회원 정보 상세 조회 APIView
-    """
 
     permission_classes = [StaffOrSuperUser]
 
@@ -428,7 +422,6 @@ class AdminAccountRoleUpdateSpec(APIView):
 
 
 class AdminAccountActivateView(APIView):
-    """inactive인 회원 계정을 복구하는 APIView"""
 
     permission_classes = [StaffOrSuperUser]
 
