@@ -80,6 +80,8 @@ class NaverLoginService:
         phone_number = user_data.get("mobile")
         if phone_number:
             phone_number = phone_number.replace("-", "")
+        else:
+            phone_number = None
 
         return {
             "email": user_data.get("email"),

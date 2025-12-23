@@ -19,6 +19,15 @@ class SocialLoginService:
         name_input = user_info.get("name")
         birthday_input = user_info.get("birthday")
 
+        if not phone_number_input:
+            phone_number_input = f"none_{provider_id[:10]}"
+
+        if gender_input not in ["M", "F"]:
+            gender_input = "M"
+
+        if not name_input:
+            name_input = nickname_input or f"{provider[:10]}_user"
+
         if provider not in ProviderChoices.values:
             raise ValueError("유효하지 않은 소셜 로그인 제공자입니다.")
 
@@ -78,7 +87,9 @@ class SocialLoginService:
             "name": name_input or final_nickname,
             "birthday": birthday_input,
             "is_active": True,
-            "profile_img_url": profile_img_url_input or "",
+            "profile_img_url": None,
+            "gender": gender_input,
+            "phone_number": phone_number_input,
         }
 
         # Optional 필드는 있을 때만 넣기 → mypy 해결

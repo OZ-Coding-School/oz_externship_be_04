@@ -74,13 +74,17 @@ class KaKaoLoginServices(object):
 
         birthyear = kakao_account.get("birthyear", "2000")
         birthday = kakao_account.get("birthday")
-        final_birthday = f"{birthyear}-{birthday[:2]}-{birthday[2:]}"
+        final_birthday = None
+        if birthyear and birthday:
+            final_birthday = f"{birthyear}-{birthday[:2]}-{birthday[2:]}"
 
         gender = kakao_account.get("gender")
         if gender == "male":
             gender = gender.replace("male", "M")
         elif gender == "female":
             gender = gender.replace("female", "F")
+        else:
+            gender = None
 
         phone_number = kakao_account.get("phone_number")
         if phone_number:
@@ -89,6 +93,8 @@ class KaKaoLoginServices(object):
                 phone_number = clean_num.replace("+82", "0")
             else:
                 phone_number = clean_num.replace("+", "")
+        else:
+            phone_number = None
 
         return {
             "provider_id": provider_id,
