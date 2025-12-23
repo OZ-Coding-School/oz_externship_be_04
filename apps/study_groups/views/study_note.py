@@ -24,6 +24,7 @@ from apps.study_groups.serializers.study_note import (
     StudyNoteUpdateResponseSerializer,
     StudyNoteUpdateSerializer,
 )
+from apps.study_groups.services.note_ai import StudyNoteAIService
 from apps.users.models import User
 
 
@@ -108,6 +109,9 @@ class StudyNoteListCreateView(APIView):
 
             self._create_images(note, images)
             self._create_attachments(note, files)
+
+            StudyNoteAIService.summarize(note)
+
         except IntegrityError:
             raise ValidationError({"error_detail": "이미 사용된 파일의 url 입니다."})
 

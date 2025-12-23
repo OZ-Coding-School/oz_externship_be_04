@@ -132,10 +132,17 @@ class StudyNoteListCreateViewTest(TestCase):
         self.assertIn("count", response.data)
         self.assertIn("results", response.data)
 
+    @patch("apps.study_groups.views.study_note.StudyNoteAIService.summarize")
     @patch("apps.study_groups.views.study_note.get_object_or_404")
     @patch("apps.study_groups.views.study_note.StudyNote.objects.create")
     @patch("apps.study_groups.views.study_note.StudyNoteCreateSerializer")
-    def test_post_create(self, mock_serializer_class: Mock, mock_create: Mock, mock_get_object: Mock) -> None:
+    def test_post_create(
+        self,
+        mock_serializer_class: Mock,
+        mock_create: Mock,
+        mock_get_object: Mock,
+        mock_ai_summarize: Mock,
+    ) -> None:
         """POST - 생성"""
         mock_group = Mock()
         mock_get_object.return_value = mock_group
@@ -153,6 +160,9 @@ class StudyNoteListCreateViewTest(TestCase):
         mock_note = Mock()
         mock_create.return_value = mock_note
 
+        # AI 요약 mock
+        mock_ai_summarize.return_value = "AI 요약 결과"
+
         request = self.factory.post(
             "/study-groups/1/notes/",
             {"title": "Test", "content": "Content"},
@@ -164,6 +174,7 @@ class StudyNoteListCreateViewTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         mock_create.assert_called_once()
+        mock_ai_summarize.assert_called_once_with(mock_note)
 
 
 class StudyNoteDetailViewTest(TestCase):
