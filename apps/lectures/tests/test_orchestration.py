@@ -6,13 +6,13 @@ from apps.lectures.tasks.orchestration import crawl_then_embed
 
 
 class CrawlThenEmbedOrchestrationTest(TestCase):
-    @patch("apps.lectures.tasks.orchestration.sync_inflearn_task.apply_async")
-    def test_links_are_configured_correctly(self, mock_apply_async: MagicMock) -> None:
+    @patch("apps.lectures.tasks.orchestration.sync_inflearn_task")
+    def test_links_are_configured_correctly(self, mock_task: MagicMock) -> None:
         crawl_then_embed()
 
-        mock_apply_async.assert_called_once()
+        mock_task.apply_async.assert_called_once()
 
-        _, kwargs = mock_apply_async.call_args
+        _, kwargs = mock_task.apply_async.call_args
 
         link = kwargs["link"]
         link_error = kwargs["link_error"]
