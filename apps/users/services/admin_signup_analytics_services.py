@@ -24,6 +24,7 @@ class SignupTrendItem(TypedDict):
     """
     회원가입 추세에서 개별 기간(월/년) 별 집계 데이터를 표현하는 타입
     """
+
     period: str
     count: int
 
@@ -32,6 +33,7 @@ class SignupTrendResult(TypedDict):
     """
     회원가입 추세 전체 결과를 표현하는 타입입니다.
     """
+
     interval: IntervalLiteral
     from_date: date
     to_date: date

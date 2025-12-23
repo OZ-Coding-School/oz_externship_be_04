@@ -22,6 +22,7 @@ class WithdrawalTrendItem(TypedDict):
     """
     탈퇴 추세에서 개별 기간(월/년) 집계 데이터를 표현하는 타입
     """
+
     period: str
     count: int
 
@@ -30,6 +31,7 @@ class WithdrawalTrendResult(TypedDict):
     """
     탈퇴 추세 전체 결과를 표현하는 타입.
     """
+
     interval: IntervalLiteral
     from_date: date
     to_date: date
@@ -141,6 +143,7 @@ class WithdrawalReasonPercentageItem(TypedDict):
     """
     전체 기간 탈퇴 사유 비율 분석에서 개별 탈퇴 사유 한 건을 표현하는 타입
     """
+
     reason: str
     reason_label: str
     count: int
@@ -151,6 +154,7 @@ class WithdrawalReasonPercentageResult(TypedDict):
     """
     전체 기간 탈퇴 사유 비율 분석 결과 전체를 표현하는 타입입니다.
     """
+
     from_date: date
     to_date: date
     total: int
@@ -220,6 +224,7 @@ class WithdrawalReasonMonthlyStatsItem(TypedDict):
     """
     월별 탈퇴 사유 분석에서 개별 월별 데이터를 표현하는 타입
     """
+
     period: str
     count: int
 
@@ -228,6 +233,7 @@ class WithdrawalReasonMonthlyStatsResult(TypedDict):
     """
     월별 탈퇴 사유 분석 결과 전체를 표현하는 타입
     """
+
     reason: str
     reason_label: str
     from_date: date

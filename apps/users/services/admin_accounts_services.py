@@ -12,6 +12,7 @@ class PhoneNumberConflict(APIException):
     """
     휴대폰 번호 중복으로 인한 업데이트 실패를 표현하는 커스텀 예외
     """
+
     status_code = drf_status.HTTP_409_CONFLICT
     default_detail = "휴대폰 번호 중복으로 인하여 요청 처리에 실패하였습니다."
     default_code = "phone_number_conflict"
