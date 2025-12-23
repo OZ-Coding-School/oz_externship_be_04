@@ -16,6 +16,7 @@ from apps.study_groups.services.admin_study_group_services import (
     filter_study_groups_by_name,
     filter_study_groups_by_status,
     get_admin_study_group_queryset,
+    sort_study_groups,
 )
 
 
@@ -49,6 +50,15 @@ class AdminStudyGroupListView(APIView):
                 description="스터디 상태 필터",
                 enum=["PENDING", "ONGOING", "ENDED"],
             ),
+            # 정렬 선택용 파라미터 스키마 추가 (최신순/등록순/이름순서대로/이름역순으로)
+            # 디폴트값은 최신순
+            OpenApiParameter(
+                "sort",
+                OpenApiTypes.STR,
+                required=False,
+                description='정렬: "latest" | "oldest" | "name_asc" | "name_desc"',
+                enum=["latest", "oldest", "name_asc", "name_desc"],
+            ),
             OpenApiParameter("page", OpenApiTypes.INT, required=False),
             OpenApiParameter("page_size", OpenApiTypes.INT, required=False),
         ],
@@ -65,6 +75,10 @@ class AdminStudyGroupListView(APIView):
         status_param = request.query_params.get("status")
         if status_param and status_param in [choice[0] for choice in StudyGroup.StudyGroupStatusChoices.choices]:
             qs = filter_study_groups_by_status(qs, status_param)
+
+        # 정렬 파라미터
+        sort_param = request.query_params.get("sort")
+        qs = sort_study_groups(qs, sort_param)
 
         # 페이지네이션 파라미터 check/none 및 파라미터 반환 시 처리
         has_pagination_params = "page" in request.query_params or "page_size" in request.query_params
