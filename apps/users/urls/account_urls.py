@@ -5,6 +5,7 @@ from apps.users.views.email_auth_views import (
     EmailSignUpView,
     FindPasswordSendEmailView,
     FindPasswordVerifyEmailView,
+    IDKPasswordResetView,
 )
 from apps.users.views.oauth_views import (
     KakaoCallBackView,
@@ -36,6 +37,7 @@ urlpatterns = [
     path("accounts/signup/send-email", EmailSignUpView.as_view(), name="send-email"),
     path("accounts/signup/verify-email", EmailSignUpVerifyView.as_view(), name="verify-email"),
     path("accounts/check-nickname", NicknameCheckView.as_view(), name="check-nickname"),
+    path("accounts/find-password", IDKPasswordResetView.as_view(), name="find_password"),
     path("accounts/find-password", UserPasswordResetView.as_view(), name="find-password"),
     path("accounts/login", LoginView.as_view(), name="login"),
     path("accounts/logout", LogoutView.as_view(), name="logout"),
