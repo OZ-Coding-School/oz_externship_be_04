@@ -7,7 +7,7 @@ from django.db.models.functions import TruncMonth, TruncYear
 from django.utils import timezone
 
 from apps.users.models.withdrawal import Withdrawal
-from apps.users.services.admin_analytics_common import (
+from apps.users.utils.admin_analytics_utils import (
     DEFAULT_RECENT_MONTHS,
     DEFAULT_RECENT_YEARS,
     IntervalLiteral,
