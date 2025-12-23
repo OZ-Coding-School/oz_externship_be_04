@@ -8,12 +8,14 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.users.models import User
 from apps.users.serializers.email_auth_serializer import (
     EmailSerializer,
     EmailSignUpSerializer,
     EmailSignUpVerifySerializer,
     EmailVerifySerializer,
     FindEmailSerializer,
+    PasswordResetSerializer,
 )
 from apps.users.utils.send_auth import SendAuth
 
@@ -165,6 +167,7 @@ class FindPasswordVerifyEmailView(APIView):
                 "code": serializers.CharField(required=True, min_length=6, max_length=6, help_text="123456"),
             },
         ),
+        methods=["POST"],
         examples=[
             OpenApiExample(
                 name="Request",
@@ -208,3 +211,87 @@ class FindPasswordVerifyEmailView(APIView):
         cache.set(f"email_verified:reset_password:{email}", True, timeout=1800)  # 30분
 
         return Response({"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다."}, status=status.HTTP_200_OK)
+
+
+class IDKPasswordResetView(APIView):
+    permission_classes = (AllowAny,)
+
+    @extend_schema(
+        tags=["Account"],
+        summary="비밀번호 재설정 API",
+        description="이메일 인증 완료 후 새 비밀번호로 변경합니다.",
+        request=inline_serializer(
+            name="PasswordResetRequest",
+            fields={
+                "email": serializers.EmailField(required=True, help_text="user@example.com"),
+                "new_password": serializers.CharField(required=True, min_length=8, help_text="Pass1234!@"),
+            },
+        ),
+        examples=[
+            OpenApiExample(
+                name="Request",
+                request_only=True,
+                value={"email": "user@example.com", "new_password": "Pass1234!@"},
+            ),
+            OpenApiExample(
+                name="200 OK - Success",
+                response_only=True,
+                status_codes=["200"],
+                value={"detail": "비밀번호 변경 성공."},
+            ),
+            OpenApiExample(
+                name="400 Bad Request - Required Field",
+                response_only=True,
+                status_codes=["400"],
+                value={"error_detail": {"new_password": ["이 필드는 필수 항목입니다."]}},
+            ),
+            OpenApiExample(
+                name="400 Bad Request - Not Verified",
+                response_only=True,
+                status_codes=["400"],
+                value={"error_detail": "이메일 인증이 완료되지 않았습니다."},
+            ),
+            OpenApiExample(
+                name="400 Bad Request - Weak Password",
+                response_only=True,
+                status_codes=["400"],
+                value={"error_detail": {"new_password": ["비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다."]}},
+            ),
+        ],
+        responses={
+            200: inline_serializer(
+                name="PasswordResetSuccess",
+                fields={"detail": serializers.CharField()},
+            ),
+            400: inline_serializer(
+                name="PasswordResetError",
+                fields={"error_detail": serializers.DictField()},
+            ),
+        },
+    )
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        serializer = PasswordResetSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data["email"]
+        new_password = serializer.validated_data["new_password"]
+
+        cache_key = f"email_verified:find_password:{email}"
+        is_verified = cache.get(cache_key)
+
+        if not is_verified:
+            return Response({"error_detail": "이메일 인증이 완료되지 않았습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"error_detail": "등록된 이메일이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        cache.delete(cache_key)
+
+        return Response({"detail": "비밀번호 변경 성공."}, status=status.HTTP_200_OK)
