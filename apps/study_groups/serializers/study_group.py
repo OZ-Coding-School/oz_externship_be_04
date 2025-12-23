@@ -217,7 +217,7 @@ class StudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
                 if user is not None:
                     result.append(
                         {
-                            "id": user.id,
+                            "id": m.id,
                             "nickname": user.nickname,
                             "profile_img_url": user.profile_img_url,
                             "is_leader": m.is_leader,
