@@ -72,7 +72,7 @@ class KaKaoLoginServices(object):
         name = kakao_account.get("name")
         profile_img_url = profile.get("profile_image_url")
 
-        birthyear = kakao_account.get("birthyear")
+        birthyear = kakao_account.get("birthyear", "2000")
         birthday = kakao_account.get("birthday")
         final_birthday = f"{birthyear}-{birthday[:2]}-{birthday[2:]}"
 

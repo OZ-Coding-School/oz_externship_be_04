@@ -66,7 +66,7 @@ class NaverLoginService:
 
         user_data = response_json.get("response", {})
 
-        birthyear = user_data.get("birthyear")
+        birthyear = user_data.get("birthyear", "2000")
         birthday = user_data.get("birthday")
         final_birthday = None
         if birthyear and birthday:
