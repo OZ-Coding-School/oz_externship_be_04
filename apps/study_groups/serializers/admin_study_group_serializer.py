@@ -33,7 +33,8 @@ class AdminStudyGroupListSerializer(serializers.ModelSerializer[StudyGroup]):
 
     @extend_schema_field(serializers.IntegerField())
     def get_current_headcount(self, obj: StudyGroup) -> int:
-        return obj.groupmember_study_groups.count()
+        # annotate로 일괄계산된 값 적용 (N+1 이슈)
+        return getattr(obj, "current_headcount", obj.groupmember_study_groups.count())
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_lectures(self, obj: StudyGroup) -> list[dict[str, Any]]:
@@ -87,7 +88,8 @@ class AdminStudyGroupDetailSerializer(serializers.ModelSerializer[StudyGroup]):
 
     @extend_schema_field(serializers.IntegerField())
     def get_current_headcount(self, obj: StudyGroup) -> int:
-        return obj.groupmember_study_groups.count()
+        # annotate로 일괄계산된 값 적용 (N+1 이슈)
+        return getattr(obj, "current_headcount", obj.groupmember_study_groups.count())
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_lectures(self, obj: StudyGroup) -> list[dict[str, Any]]:

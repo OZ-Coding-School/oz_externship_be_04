@@ -557,3 +557,60 @@ class StudyGroupManagementTests(TestCase):
             StudyLecture.objects.filter(study_group=study_group).count(),
             2,
         )
+
+    # 검색 필터링 테스트
+    def test_list_study_groups_with_search_filter(self) -> None:
+        other_study_group = StudyGroup.objects.create(
+            name="다른 스터디",
+            max_headcount=3,
+            start_at=now() + timedelta(days=1),
+            end_at=now() + timedelta(days=10),
+        )
+        GroupMember.objects.create(
+            study_group_id=other_study_group,
+            user_id=self.leader,
+            is_leader=True,
+        )
+
+        url = reverse("study-group-list-create")
+        response: Response = self.leader_client.get(url, {"search": "테스트"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(response.data, list)
+        # 검색어 포함된 스터디 그룹만 반환
+        for group_data in response.data:
+            self.assertIn("테스트", group_data["name"])
+
+    # 존재하지 않는 스터디 그룹 조회
+    def test_retrieve_study_group_not_found(self) -> None:
+        url = reverse("study-group-rud", args=[9999])
+        response: Response = self.leader_client.get(url)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn("error_detail", response.data)
+
+    # 권한 없는 스터디 그룹 조회
+    def test_retrieve_study_group_not_member(self) -> None:
+        other_user = UserModel.objects.create(
+            nickname="other_user",
+            email="other@example.com",
+            birthday=date(2000, 1, 1),
+            phone_number="01000000010",
+        )
+        other_study_group = StudyGroup.objects.create(
+            name="다른 사용자의 스터디",
+            max_headcount=3,
+            start_at=now() + timedelta(days=1),
+            end_at=now() + timedelta(days=10),
+        )
+        GroupMember.objects.create(
+            study_group_id=other_study_group,
+            user_id=other_user,
+            is_leader=True,
+        )
+
+        url = reverse("study-group-rud", args=[other_study_group.id])
+        response: Response = self.leader_client.get(url)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn("error_detail", response.data)
