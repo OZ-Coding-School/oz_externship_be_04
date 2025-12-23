@@ -19,11 +19,17 @@ from apps.users.utils.reason_choices import WithdrawalReason
 
 
 class WithdrawalTrendItem(TypedDict):
+    """
+    탈퇴 추세에서 개별 기간(월/년) 집계 데이터를 표현하는 타입
+    """
     period: str
     count: int
 
 
 class WithdrawalTrendResult(TypedDict):
+    """
+    탈퇴 추세 전체 결과를 표현하는 타입.
+    """
     interval: IntervalLiteral
     from_date: date
     to_date: date
@@ -35,6 +41,9 @@ def _get_monthly_withdrawal_trend(
     today: date | None = None,
     months: int = DEFAULT_RECENT_MONTHS,
 ) -> WithdrawalTrendResult:
+    """
+    최근 N개월 단위 회원탈퇴 추세를 집계
+    """
     if today is None:
         today = timezone.localdate()
 
@@ -77,6 +86,9 @@ def _get_yearly_withdrawal_trend(
     today: date | None = None,
     years: int = DEFAULT_RECENT_YEARS,
 ) -> WithdrawalTrendResult:
+    """
+    최근 N년 단위 회원탈퇴 추세를 집계
+    """
 
     if today is None:
         today = timezone.localdate()
@@ -117,12 +129,18 @@ def _get_yearly_withdrawal_trend(
 
 
 def get_withdrawal_trend(interval: IntervalLiteral) -> WithdrawalTrendResult:
+    """
+    interval 값에 따라 월별/년별 회원탈퇴 추세를 조회합니다.
+    """
     if interval == "monthly":
         return _get_monthly_withdrawal_trend()
     return _get_yearly_withdrawal_trend()
 
 
 class WithdrawalReasonPercentageItem(TypedDict):
+    """
+    전체 기간 탈퇴 사유 비율 분석에서 개별 탈퇴 사유 한 건을 표현하는 타입
+    """
     reason: str
     reason_label: str
     count: int
@@ -130,6 +148,9 @@ class WithdrawalReasonPercentageItem(TypedDict):
 
 
 class WithdrawalReasonPercentageResult(TypedDict):
+    """
+    전체 기간 탈퇴 사유 비율 분석 결과 전체를 표현하는 타입입니다.
+    """
     from_date: date
     to_date: date
     total: int
@@ -137,6 +158,9 @@ class WithdrawalReasonPercentageResult(TypedDict):
 
 
 def get_withdrawal_reason_percentage() -> WithdrawalReasonPercentageResult:
+    """
+    전체 기간 동안의 회원 탈퇴 사유 비율을 집계
+    """
 
     qs_all = Withdrawal.objects.all()
 
@@ -193,11 +217,17 @@ def get_withdrawal_reason_percentage() -> WithdrawalReasonPercentageResult:
 
 
 class WithdrawalReasonMonthlyStatsItem(TypedDict):
+    """
+    월별 탈퇴 사유 분석에서 개별 월별 데이터를 표현하는 타입
+    """
     period: str
     count: int
 
 
 class WithdrawalReasonMonthlyStatsResult(TypedDict):
+    """
+    월별 탈퇴 사유 분석 결과 전체를 표현하는 타입
+    """
     reason: str
     reason_label: str
     from_date: date
@@ -211,6 +241,9 @@ def get_withdrawal_reason_monthly_stats(
     today: date | None = None,
     months: int = DEFAULT_RECENT_MONTHS,
 ) -> WithdrawalReasonMonthlyStatsResult:
+    """
+    특정 탈퇴 사유(reason)에 대해, 최근 N개월 동안의 월별 탈퇴 추세를 집계
+    """
 
     if today is None:
         today = timezone.localdate()

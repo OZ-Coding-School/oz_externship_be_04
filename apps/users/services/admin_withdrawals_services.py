@@ -15,6 +15,9 @@ def get_admin_withdrawal_list(
     sort_param: Optional[str],
     reason_param: Optional[str],
 ) -> OffsetPage[Withdrawal]:
+    """
+    어드민 회원 탈퇴 목록 조회 서비스 함수
+    """
     qs = Withdrawal.objects.select_related("user").all()
 
     if search:
@@ -54,6 +57,9 @@ def get_admin_withdrawal_list(
 
 
 def get_admin_withdrawal_detail(withdrawal_id: int) -> Withdrawal:
+    """
+    어드민 회원 탈퇴 정보 상세 조회 서비스 함수
+    """
     withdrawal = Withdrawal.objects.select_related("user").filter(pk=withdrawal_id, user__isnull=False).first()
 
     if withdrawal is None:

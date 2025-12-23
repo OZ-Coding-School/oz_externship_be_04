@@ -21,11 +21,17 @@ User = get_user_model()
 
 
 class SignupTrendItem(TypedDict):
+    """
+    회원가입 추세에서 개별 기간(월/년) 별 집계 데이터를 표현하는 타입
+    """
     period: str
     count: int
 
 
 class SignupTrendResult(TypedDict):
+    """
+    회원가입 추세 전체 결과를 표현하는 타입입니다.
+    """
     interval: IntervalLiteral
     from_date: date
     to_date: date
@@ -37,6 +43,9 @@ def _get_monthly_signup_trend(
     today: date | None = None,
     months: int = DEFAULT_RECENT_MONTHS,
 ) -> SignupTrendResult:
+    """
+    최근 N개월 단위 회원가입 추세를 집계
+    """
     if today is None:
         today = timezone.localdate()
 
@@ -74,6 +83,9 @@ def _get_yearly_signup_trend(
     today: date | None = None,
     years: int = DEFAULT_RECENT_YEARS,
 ) -> SignupTrendResult:
+    """
+    최근 N년 단위 회원가입 추세를 집계
+    """
 
     if today is None:
         today = timezone.localdate()
@@ -109,6 +121,9 @@ def _get_yearly_signup_trend(
 
 
 def get_signup_trend(interval: IntervalLiteral) -> SignupTrendResult:
+    """
+    interval 값에 따라 월별/년별 회원가입 추세를 조회
+    """
 
     if interval == "monthly":
         return _get_monthly_signup_trend()
