@@ -1,5 +1,6 @@
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 
+
 class CustomSimpleJWTScheme(OpenApiAuthenticationExtension):
     target_class = "apps.core.authentication.ActiveUserJWTAuthentication"
     name = "BearerAuth"
