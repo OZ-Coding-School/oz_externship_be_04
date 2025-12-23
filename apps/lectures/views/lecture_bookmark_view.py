@@ -1,6 +1,5 @@
-from typing import Any, List, Sequence, cast
+from typing import Any, Sequence, cast
 
-from django.conf import settings
 from django.db.models import Q, QuerySet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -58,38 +57,6 @@ class LectureBookmarkListCreateAPIView(APIView):
 
         return qs
 
-    def _get_mock_bookmarks(self) -> List[LectureBookmark]:
-        mock_lectures: List[CrawledLecture] = []
-        for i in range(1, 21):
-            lecture = CrawledLecture(
-                id=i,
-                title=f"북마크 Mock 강의 {i}",
-                instructor=f"북마크 강사 {i}",
-                total_class_time=3600 * i,
-                original_price=10000 * i,
-                discount_price=8000 * i,
-                difficulty=CrawledLecture.DifficultyEnum.EASY,
-                thumbnail_img_url="https://example.com/mock_thumbnail.jpg",
-                platform=CrawledLecture.PlatformEnum.INFLEARN,
-                url_link=f"https://example.com/mock_lecture_{i}",
-            )
-            mock_lectures.append(lecture)
-
-        user_id = self._get_user_id()
-        mock_bookmarks: List[LectureBookmark] = [
-            LectureBookmark(user_id=user_id, lecture=lecture) for lecture in mock_lectures
-        ]
-
-        if search := self.request.query_params.get("search"):
-            lowered = search.lower()
-            mock_bookmarks = [
-                bm
-                for bm in mock_bookmarks
-                if lowered in (bm.lecture.title or "").lower() or lowered in (bm.lecture.instructor or "").lower()
-            ]
-
-        return mock_bookmarks
-
     @extend_schema(
         tags=["Lecture"],
         summary="강의 북마크 목록을 조회하는 API입니다.",
@@ -124,17 +91,11 @@ class LectureBookmarkListCreateAPIView(APIView):
     def get(self, request: Request) -> Response:
         paginator: LectureBookmarkPagination = self.pagination_class()
 
-        if settings.DEBUG:
-            bookmarks = self._get_mock_bookmarks()
-            page = cast(
-                Sequence[LectureBookmark], paginator.paginate_queryset(bookmarks, request)  # type: ignore[arg-type]
-            )
-        else:
-            queryset = self.get_queryset()
-            page = cast(
-                Sequence[LectureBookmark],
-                paginator.paginate_queryset(queryset, request),
-            )
+        queryset = self.get_queryset()
+        page = cast(
+            Sequence[LectureBookmark],
+            paginator.paginate_queryset(queryset, request),
+        )
 
         serializer = self.list_serializer_class(page, many=True)
         return paginator.get_paginated_response(serializer.data)
