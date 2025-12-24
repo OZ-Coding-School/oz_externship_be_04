@@ -3,26 +3,17 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from apps.users.utils.auth_code import AuthCodeCache
+from apps.users.utils.conts import (
+    EMAIL_SEND_MESSAGE,
+    EMAiL_TEMPLATES,
+    EMAiL_VERIFY_MESSAGE,
+)
 from config.settings.base import DEFAULT_FROM_EMAIL
 
 
 class SendAuth:
-    TEMPLATES = {
-        "signup": {"subject": "회원가입 이메일 인증", "message": "{code}"},
-        "reset_password": {"subject": "비밀번호 재설정 이메일 인증", "message": "{code}"},
-        "restore": {"subject": "계정 복구 이메일 인증", "message": "{code}"},
-    }
-    verify_message = {
-        "signup": "회원가입을 위한 이메일 인증에 성공하였습니다.",
-        "find_password": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.",
-        "restore": "계정복구를 위한 이메일 인증에 성공하였습니다.",
-    }
-
-    email_subject = {
-        "signup": "회원가입 인증 코드",
-        "find_password": "비밀번호 찾기 인증 코드",
-        "restore": "계정 복구 인증 코드",
-    }
+    TEMPLATES = EMAiL_TEMPLATES
+    verify_message = EMAiL_VERIFY_MESSAGE
 
     @classmethod
     def send_email_auth(cls, email: str, auth_type: str) -> Response:
