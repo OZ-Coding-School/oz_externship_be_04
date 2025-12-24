@@ -53,6 +53,7 @@ class NotificationListAPIView(APIView):
         base_qs = Notification.objects.filter(user_id=authenticated_user.id)  # type: ignore
         # 전체 개수 먼저 확보 (필터 영향받지 않도록)
         total = base_qs.count()
+        unread_total = base_qs.filter(is_read=False).count()
 
         qs = base_qs
 
@@ -68,6 +69,7 @@ class NotificationListAPIView(APIView):
 
         # 페이지네이션 객체에 토탈 속성 심기
         paginator.total_count = total
+        paginator.unread_count = unread_total
 
         # 시리얼라이즈
         serializer = self.serializer_class(paginated_qs, many=True)
