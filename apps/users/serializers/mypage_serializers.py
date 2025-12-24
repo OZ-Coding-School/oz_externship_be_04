@@ -1,14 +1,12 @@
 from typing import Any, cast
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
-from rest_framework.request import Request
 
 from apps.core.constants import USER_PROFILE_IMAGE_UPLOAD_PATH
 from apps.core.S3 import S3Uploader
-from apps.users.services.mypage_services import NicknameCheckConflict
+from apps.users.services.check_nickname_service import NicknameCheckConflict
+from apps.users.utils.conts import WithdrawalReason
 
 User = get_user_model()
 
@@ -73,47 +71,12 @@ class MyPageSerializer(serializers.ModelSerializer[Any]):
         return data
 
 
-class PasswordChangeSerializer(serializers.Serializer[Any]):
-    current_password = serializers.CharField(
-        required=True, error_messages={"required": "현재 비밀번호를 입력해주세요."}
-    )
+class WithdrawalSerializer(serializers.Serializer):  # type: ignore
+    reason = serializers.ChoiceField(choices=WithdrawalReason.choices)
+    reason_detail = serializers.CharField()
+    agree_check = serializers.BooleanField()
 
-    new_password = serializers.CharField(
-        required=True,
-        min_length=8,
-        max_length=128,
-        error_messages={
-            "required": "새 비밀번호를 입력해주세요.",
-            "min_length": "비밀번호는 8자 이상이어야 합니다.",
-        },
-    )
-
-    confirm_password = serializers.CharField(
-        required=True, error_messages={"required": "비밀번호 확인을 입력해주세요."}
-    )
-
-    def validate_current_password(self, value: str) -> str:
-        request = cast(Request, self.context.get("request"))
-        user = request.user
-
-        if not user.check_password(value):
-            raise serializers.ValidationError("현재 비밀번호가 일치하지 않습니다.")
-
+    def validate_agree_check(self, value: bool) -> bool:
+        if not value:
+            raise serializers.ValidationError("회원 탈퇴에 동의해야 탈퇴 가능합니다.")
         return value
-
-    def validate_new_password(self, value: str) -> str:
-        try:
-            validate_password(value)
-        except DjangoValidationError as e:
-            raise serializers.ValidationError(e.messages)
-
-        return value
-
-    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        new_password = attrs.get("new_password")
-        confirm_password = attrs.get("confirm_password")
-
-        if new_password != confirm_password:
-            raise serializers.ValidationError({"new_password": ["새 비밀번호가 일치하지 않습니다."]})
-
-        return attrs
