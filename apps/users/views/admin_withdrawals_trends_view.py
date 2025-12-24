@@ -19,7 +19,7 @@ from apps.users.serializers.admin_analytics_serializers import (
 from apps.users.services.admin_withdrawals_analytics_services import (
     get_withdrawal_trend,
 )
-from apps.users.utils.admin_analytics_utils import IntervalLiteral
+from apps.users.utils.admin_analytics_util import IntervalLiteral
 from apps.users.utils.permissions import StaffOrSuperUser
 
 AdminWithdrawalTrendSimpleErrorSerializer = inline_serializer(

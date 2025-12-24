@@ -1,21 +1,21 @@
 from django.urls import path
 
-from apps.users.views.admin_account_views import (
+from apps.users.views.admin_account_view import (
     AdminAccountActivateView,
     AdminAccountDetailSpec,
     AdminAccountListSpec,
     AdminAccountRoleUpdateSpec,
 )
-from apps.users.views.admin_signup_trends_views import AdminSignupTrendView
-from apps.users.views.admin_withdrawal_reason_trends_views import (
+from apps.users.views.admin_signup_trends_view import AdminSignupTrendView
+from apps.users.views.admin_withdrawal_reason_trends_view import (
     AdminWithdrawalReasonMonthlyStatsView,
     AdminWithdrawalReasonPercentageView,
 )
-from apps.users.views.admin_withdrawal_views import (
+from apps.users.views.admin_withdrawal_view import (
     AdminWithdrawalDetail,
     AdminWithdrawalList,
 )
-from apps.users.views.admin_withdrawals_trends_views import AdminWithdrawalTrendSpec
+from apps.users.views.admin_withdrawals_trends_view import AdminWithdrawalTrendSpec
 
 urlpatterns = [
     path(

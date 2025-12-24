@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.users.models.users import User
+from apps.users.views.find_email_view import FindEmailView
 
 
 class FindEmailTestCase(APITestCase):
@@ -108,7 +109,6 @@ class FindEmailTestCase(APITestCase):
         self.assertIn("phone_number", response.data["error_detail"])
 
     def test_email_masking(self) -> None:
-        from apps.users.views.user_sms_view import FindEmailView
 
         masked = FindEmailView._mask_email("asd@example.com")
         self.assertEqual(masked, "a***@example.com")

@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 
 from apps.users.models import User
 from apps.users.models.withdrawal import Withdrawal
-from apps.users.utils.reason_choices import WithdrawalReason
+from apps.users.utils.conts import WithdrawalReason
 
 
 class AdminWithdrawalReasonAnalyticsBaseTestCase(APITestCase):
@@ -78,10 +78,6 @@ class AdminWithdrawalReasonAnalyticsBaseTestCase(APITestCase):
 
 
 class AdminWithdrawalReasonPercentageAPITests(AdminWithdrawalReasonAnalyticsBaseTestCase):
-    """
-    전체 기간 회원 탈퇴 사유 Percentage 분석 API 테스트
-    """
-
     def test_withdrawal_reason_percentage_unauthorized_returns_401(self) -> None:
 
         response = self.client.get(self.percentage_url)

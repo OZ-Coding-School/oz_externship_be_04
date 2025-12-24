@@ -22,16 +22,15 @@ class test_user_register(APITestCase):
             "gender": "M",
             "birthday": "1990-01-01",
         }
-        # 이메일 인증 PASS 임시 mocking code
+
         self.patcher = patch("django.core.cache.cache.get")
         self.mock_cache_get = self.patcher.start()
         self.mock_cache_get.return_value = "true"
         # -------------------------------
 
     def tearDown(self) -> None:
-        # 이메일 인증 PASS 임시 mocking code
         self.patcher.stop()
-        # -------------------------------
+
         User.objects.all().delete()
 
     def test_success_register(self) -> None:
@@ -101,14 +100,14 @@ class test_user_register(APITestCase):
 
     def test_invalid_phone_number(self) -> None:
         invaild_phone_number = [
-            "1234567890",  # 앞자리 누락
-            "010 1234 5678",  # 공백
-            "0101234567",  # 10자리
-            "010123456789",  # 12자리
-            "abc12345678",  # 문자 포함
-            "02012345678",  # 020
-            "010-abcd-5678",  # 하이픈 문자포함
-            "010--1234-5678",  # 하이픈 중복
+            "1234567890",
+            "010 1234 5678",
+            "0101234567",
+            "010123456789",
+            "abc12345678",
+            "02012345678",
+            "010-abcd-5678",
+            "010--1234-5678",
         ]
         for phone_number in invaild_phone_number:
             with self.subTest(phone_number=phone_number):
@@ -122,10 +121,10 @@ class test_user_register(APITestCase):
 
     def test_valid_phone_number(self) -> None:
         valid_phone_number = [
-            ("01023456789", "user1", "test1@test.com"),  # 하이픈 없음
-            ("010-1934-5678", "user2", "test2@test.com"),  # 하이픈 포함
-            ("01112345678", "user3", "test3@test.com"),  # 011 하이픈 없음
-            ("011-1234-5679", "user4", "test4@test.com"),  # 011 하이픈 포함
+            ("01023456789", "user1", "test1@test.com"),
+            ("010-1934-5678", "user2", "test2@test.com"),
+            ("01112345678", "user3", "test3@test.com"),
+            ("011-1234-5679", "user4", "test4@test.com"),
         ]
 
         for phone_number, nickname, email in valid_phone_number:

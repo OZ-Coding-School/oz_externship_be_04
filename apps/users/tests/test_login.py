@@ -35,16 +35,12 @@ class TestUserLoginAPI(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access_token", response.data)
-        # 리프레시 토큰 쿠키 확인
         self.assertIn("refresh_token", response.cookies)
 
     def test_token_refresh_success(self) -> None:
-        """토큰 재발급 성공 테스트"""
-        # 먼저 로그인
         login_response = self.client.post(self.url, self.active_data, format="json")
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
 
-        # 쿠키가 설정된 상태에서 토큰 재발급
         refresh_url = "/api/v1/accounts/token/refresh"
         response = self.client.post(refresh_url)
 
@@ -52,7 +48,6 @@ class TestUserLoginAPI(APITestCase):
         self.assertIn("access_token", response.data)
 
     def test_token_refresh_no_cookie(self) -> None:
-        """리프레시 토큰 쿠키 없이 재발급 시도"""
         refresh_url = "/api/v1/accounts/token/refresh"
         response = self.client.post(refresh_url)
 
@@ -60,11 +55,8 @@ class TestUserLoginAPI(APITestCase):
         self.assertEqual(response.data["error_detail"], "리프레시 토큰이 없습니다.")
 
     def test_logout_success(self) -> None:
-        """로그아웃 성공 테스트"""
-        # 먼저 로그인
         self.client.post(self.url, self.active_data, format="json")
 
-        # 로그아웃
         logout_url = "/api/v1/accounts/logout"
         response = self.client.post(logout_url)
 
@@ -72,21 +64,16 @@ class TestUserLoginAPI(APITestCase):
         self.assertEqual(response.data["detail"], "로그아웃 되었습니다.")
 
     def test_logout_blacklist_token(self) -> None:
-        """로그아웃 후 블랙리스트된 토큰으로 재발급 시도 시 실패"""
-        # 로그인
         login_response = self.client.post(self.url, self.active_data, format="json")
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
 
-        # refresh_token 저장
         refresh_cookie = login_response.cookies.get("refresh_token")
         assert refresh_cookie is not None
         refresh_token = refresh_cookie.value
 
-        # 로그아웃 (토큰 블랙리스트)
         logout_url = "/api/v1/accounts/logout"
         self.client.post(logout_url)
 
-        # 블랙리스트된 토큰으로 재발급 시도
         self.client.cookies["refresh_token"] = refresh_token
         refresh_url = "/api/v1/accounts/token/refresh"
         response = self.client.post(refresh_url)
@@ -94,19 +81,15 @@ class TestUserLoginAPI(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_token_rotation_blacklist(self) -> None:
-        """토큰 재발급 시 이전 refresh 토큰이 블랙리스트 처리되는지 확인"""
-        # 로그인
         login_response = self.client.post(self.url, self.active_data, format="json")
         refresh_cookie = login_response.cookies.get("refresh_token")
         assert refresh_cookie is not None
         old_refresh_token = refresh_cookie.value
 
-        # 첫 번째 재발급 (성공)
         refresh_url = "/api/v1/accounts/token/refresh"
         response = self.client.post(refresh_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # 이전 토큰으로 다시 재발급 시도 (실패해야 함)
         self.client.cookies["refresh_token"] = old_refresh_token
         response = self.client.post(refresh_url)
 

@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 
 from apps.users.models import User
 from apps.users.models.withdrawal import Withdrawal
-from apps.users.utils.reason_choices import WithdrawalReason
+from apps.users.utils.conts import WithdrawalReason
 
 
 class AdminWithdrawalTrendAPITests(APITestCase):

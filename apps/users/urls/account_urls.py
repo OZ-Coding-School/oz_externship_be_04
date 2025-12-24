@@ -23,7 +23,7 @@ from apps.users.views.social_login_view import (
     NaverCallBackView,
     NaverLoginView,
 )
-from apps.users.views.user_account_views import MyPageView
+from apps.users.views.mypage_view import MyPageView
 
 urlpatterns = [
     path("accounts/signup", SignupView.as_view(), name="signup"),

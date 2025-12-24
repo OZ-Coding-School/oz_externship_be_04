@@ -8,7 +8,7 @@ from django.db.models import Count
 from django.db.models.functions import TruncMonth, TruncYear
 from django.utils import timezone
 
-from apps.users.utils.admin_analytics_utils import (
+from apps.users.utils.admin_analytics_util import (
     DEFAULT_RECENT_MONTHS,
     DEFAULT_RECENT_YEARS,
     IntervalLiteral,
