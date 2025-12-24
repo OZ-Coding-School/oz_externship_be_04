@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 
 from apps.application.models import Application, ApplicationStatus
 from apps.recruitment.models import Recruitment
-from apps.study_groups.models import StudyGroup
+from apps.study_groups.models import GroupMember, StudyGroup
 from apps.users.models import User
 
 
@@ -235,6 +235,12 @@ class RecruiterApplicationAPITestCase(APITestCase):
 
         self.application.refresh_from_db()
         self.assertEqual(self.application.status, ApplicationStatus.ACCEPTED)
+
+        member_exists = GroupMember.objects.filter(
+            study_group_id=self.recruitment.study_group.id, user_id=self.application.applicant.id, is_leader=False
+        ).exists()
+
+        self.assertTrue(member_exists, "지원 승인 후 스터디 그룹 멤버로 등록되어야 합니다.")
 
     def test_application_accept_unauthorized(self) -> None:
         self.client.force_authenticate(user=None)
