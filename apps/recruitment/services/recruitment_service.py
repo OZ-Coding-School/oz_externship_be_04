@@ -248,19 +248,19 @@ class RecruitmentService:
 
     @staticmethod
     def _sync_attachments(recruitment: Recruitment, files_data: list[dict[str, Any]]) -> None:
-        # 이미지 삭제
+
         existing_files = {a.id: a for a in recruitment.attachments.all()}
-
         incoming_ids = {f.get("id") for f in files_data if f.get("id") is not None}
-        to_delete_ids = set(existing_files.keys()) - incoming_ids
 
+        to_delete_ids = set(existing_files.keys()) - incoming_ids
         if to_delete_ids:
             recruitment.attachments.filter(id__in=to_delete_ids).delete()
 
         to_create = []
+        to_update = []
+
         for f_data in files_data:
             f_id = f_data.get("id")
-
             file_name = f_data.get("file_name")
             file_url = f_data.get("file_url")
 
@@ -268,13 +268,15 @@ class RecruitmentService:
                 continue
 
             if f_id and f_id in existing_files:
-
                 file_obj = existing_files[f_id]
                 file_obj.file_name = file_name
                 file_obj.file_url = file_url
-                file_obj.save()
+                to_update.append(file_obj)
             else:
                 to_create.append(RecruitmentAttachment(recruitment=recruitment, file_name=file_name, file_url=file_url))
+
+        if to_update:
+            RecruitmentAttachment.objects.bulk_update(to_update, ["file_name", "file_url"])
 
         if to_create:
             RecruitmentAttachment.objects.bulk_create(to_create)
@@ -282,13 +284,13 @@ class RecruitmentService:
     @staticmethod
     def _sync_images(recruitment: Recruitment, incoming_urls: list[str]) -> None:
 
+        incoming_urls_set = set(incoming_urls)
         existing_images = recruitment.images.all()
         existing_urls = {img.img_url for img in existing_images}
-        incoming_urls_set = set(incoming_urls)
 
-        for img_obj in existing_images:
-            if img_obj.img_url not in incoming_urls_set:
-                img_obj.delete()
+        to_delete_urls = existing_urls - incoming_urls_set
+        if to_delete_urls:
+            recruitment.images.filter(img_url__in=to_delete_urls).delete()
 
         new_urls = incoming_urls_set - existing_urls
         if new_urls:
