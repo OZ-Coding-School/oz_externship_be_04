@@ -40,7 +40,7 @@ class RecruitmentService:
         QuerySet 반환
 
         Args:
-            include_attachments: 첨부파일 포함 여부
+            include_attachments: 첨부파일 포함 여부 확인
 
         Returns:
             Recruitment QuerySet
@@ -244,7 +244,7 @@ class RecruitmentService:
             cls._sync_images(recruitment, image_urls)
 
         recruitment.refresh_from_db()
-        return recruitment
+        return cls._get_base_queryset(include_attachments=True).get(uuid=uuid)
 
     @staticmethod
     def _sync_attachments(recruitment: Recruitment, files_data: list[dict[str, Any]]) -> None:
