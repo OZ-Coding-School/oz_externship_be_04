@@ -36,7 +36,11 @@ class SocialLoginService:
         )
 
         if social_user:
-            return social_user.user, False
+            user = social_user.user
+            if not user.is_active:
+                user.is_active = True
+                user.save()
+            return user, False
 
         existing_user = None
 
@@ -53,6 +57,9 @@ class SocialLoginService:
                 provider=provider,
                 provider_id=provider_id,
             )
+
+            if not existing_user.is_active:
+                existing_user.is_active = True
 
             if not existing_user.nickname and nickname_input:
                 existing_user.nickname = nickname_input
