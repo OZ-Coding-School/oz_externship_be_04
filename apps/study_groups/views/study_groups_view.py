@@ -216,11 +216,10 @@ class DelegateLeaderAPIView(APIView):
         except GroupMember.DoesNotExist:
             return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
 
-        user = cast(User, request.user)
         try:
             delegate_leader(
                 group_id=group_id,
-                current_user=user,
+                current_user=request.user,  # type: ignore[arg-type]
                 target_user_id=target_member.user_id.id,
             )
         except PermissionError as e:
@@ -252,11 +251,10 @@ class LeaveStudyGroupMeAPIView(APIView):
         if isinstance(request.user, AnonymousUser):
             return Response({"error_detail": "로그인이 필요합니다."}, status=401)
 
-        user = cast(User, request.user)
         try:
             leave_study_group(
                 group_id=group_id,
-                user=user,
+                user=request.user,  # type: ignore[arg-type]
             )
         except ValueError as e:
             return Response({"error_detail": str(e)}, status=400)
@@ -289,11 +287,10 @@ class KickStudyGroupMemberAPIView(APIView):
         except GroupMember.DoesNotExist:
             return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
 
-        user = cast(User, request.user)
         try:
             kick_member(
                 group_id=group_id,
-                current_user=user,
+                current_user=request.user,  # type: ignore[arg-type]
                 target_user_id=target_member.user_id.id,
             )
         except PermissionError as e:
