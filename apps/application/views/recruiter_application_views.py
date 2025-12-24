@@ -18,6 +18,7 @@ from apps.application.serializers.application_serializers import (
     RecruiterApplicationListSerializer,
 )
 from apps.recruitment.models import Recruitment
+from apps.study_groups.models import GroupMember
 from apps.users.models import User
 
 ERROR_MESSAGES = {
@@ -195,6 +196,12 @@ class ApplicationAcceptView(APIView):
 
         application.status = ApplicationStatus.ACCEPTED
         application.save(update_fields=["status"])
+
+        GroupMember.objects.get_or_create(
+            study_group_id=recruitment.study_group,
+            user_id=application.applicant,
+            defaults={"is_leader": False},
+        )
 
         return success_response(SUCCESS_MESSAGES["ACCEPTED"])
 
