@@ -47,7 +47,7 @@ class CrawledLectureListAPIView(APIView):
         queryset = CrawledLecture.objects.prefetch_related("categories", "reviews").all()
 
         filterset = self.filterset_class(data=self.request.GET, queryset=queryset, request=self.request)
-        queryset = cast(QuerySet[CrawledLecture], filterset.qs)
+        queryset = cast(QuerySet[CrawledLecture], filterset.qs).distinct()
 
         q = Q()
         if search := self.request.GET.get("search"):
