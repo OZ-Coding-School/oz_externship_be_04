@@ -66,6 +66,7 @@ class RecruitmentListSerializer(serializers.ModelSerializer[Recruitment]):
 class RecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
     """구인공고 상세 조회"""
 
+    study_group_id = serializers.ReadOnlyField(source="study_group.id")
     bookmark_count = serializers.IntegerField(read_only=True, default=0)
     lectures = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
@@ -76,6 +77,7 @@ class RecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
         model = Recruitment
         fields = [
             "uuid",
+            "study_group_id",
             "title",
             "content",
             "estimated_fee",
@@ -92,6 +94,7 @@ class RecruitmentDetailSerializer(serializers.ModelSerializer[Recruitment]):
         ]
         read_only_fields = [
             "uuid",
+            "study_group_id",
             "views_count",
             "bookmark_count",
             "created_at",
