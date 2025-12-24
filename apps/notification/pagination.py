@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 class NotificationCursorPagination(CursorPagination):
     total_count: Optional[int] = None
+    unread_count: Optional[int] = None
     page_size = 10
     page_size_query_param = "page_size"
     cursor_query_param = "cursor"
@@ -20,6 +21,7 @@ class NotificationCursorPagination(CursorPagination):
                     ("next", self.get_next_link()),
                     ("previous", self.get_previous_link()),
                     ("total", getattr(self, "total_count", None)),
+                    ("unread_total", getattr(self, "unread_count", None)),
                     ("results", data),
                 ]
             )
