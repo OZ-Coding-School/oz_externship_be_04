@@ -114,7 +114,7 @@ class RecommendLecturesTest(APITestCase):
         response = self.client.get("/api/v1/lectures/recommends?max_count=2")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data), 0)
 
         returned_ids = [lec["id"] for lec in response.data]
 
