@@ -248,7 +248,7 @@ class RecruitmentService:
 
     @staticmethod
     def _sync_attachments(recruitment: Recruitment, files_data: list[dict[str, Any]]) -> None:
-
+        # 이미지 삭제
         existing_files = {a.id: a for a in recruitment.attachments.all()}
 
         incoming_ids = {f.get("id") for f in files_data if f.get("id") is not None}
