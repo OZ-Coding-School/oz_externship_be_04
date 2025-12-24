@@ -354,17 +354,17 @@ class StudyGroupManagementTests(TestCase):
         self.assertEqual(self.study_group.name, "수정된 스터디 이름")
         self.assertEqual(self.study_group.introduction, "수정된 소개")
 
-    # 일반 멤버 스터디그룹 수정
-    ### 유효성 추가 필요 (막아야함...)
-    def test_update_study_group_by_member_success(self) -> None:
+    # 일반 멤버 스터디그룹 수정 시도 (권한 없음)
+    def test_update_study_group_by_member_forbidden(self) -> None:
         url = reverse("study-group-rud", args=[self.study_group.id])
         data = {
             "name": "멤버가 수정한 이름",
         }
 
-        response = self.member_client.patch(url, data, format="json")
+        response: Response = self.member_client.patch(url, data, format="json")
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("스터디 그룹 수정 권한이 없습니다", response.data["error_detail"])
 
     # 리더가 스터디그룹 삭제 (정상)
     def test_delete_study_group_by_leader_success(self) -> None:
