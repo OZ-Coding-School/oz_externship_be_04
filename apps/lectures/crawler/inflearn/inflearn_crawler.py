@@ -211,7 +211,23 @@ class InflearnCrawler:
             http2=True,
             limits=limits,
             timeout=timeout,
-            headers={"User-Agent": "Mozilla/5.0 (crawler; contact=admin@yourapp.com)"},
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/143.0.0.0 Safari/537.36"
+                ),
+                "Accept": "*/*",
+                "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Referer": "https://www.inflearn.com/",
+                "Origin": "https://www.inflearn.com",
+                "Sec-Fetch-Site": "same-site",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Dest": "empty",
+                "sec-ch-ua": '"Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
+                "sec-ch-ua-platform": '"Windows"',
+                "sec-ch-ua-mobile": "?0",
+            },
         ) as client:
             # 1페이지 요청 후 전체 페이지 수 확인
             first = await self._fetch_list_page(client, 1)
@@ -250,7 +266,7 @@ class InflearnCrawler:
                     }
                     items.append((cid, slug, base))
 
-            sem = asyncio.Semaphore(10)
+            sem = asyncio.Semaphore(5)
 
             async def limited_gather(
                 cid: int,
