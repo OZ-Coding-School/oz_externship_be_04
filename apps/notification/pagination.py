@@ -21,7 +21,7 @@ class NotificationCursorPagination(CursorPagination):
                     ("next", self.get_next_link()),
                     ("previous", self.get_previous_link()),
                     ("total", getattr(self, "total_count", None)),
-                    ("unread_total", getattr(self, "unread_total", None)),
+                    ("unread_total", getattr(self, "unread_count", None)),
                     ("results", data),
                 ]
             )
