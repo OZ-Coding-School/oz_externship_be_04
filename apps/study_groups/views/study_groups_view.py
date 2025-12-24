@@ -16,6 +16,7 @@ from apps.study_groups.serializers import (
     DelegateLeaderRequestSerializer,
     DetailResponseSerializer,
     ErrorDetailResponseSerializer,
+    MemberResponseSerializer,
     StudyGroupListSerializer,
     StudyGroupSerializer,
 )
@@ -129,13 +130,28 @@ class StudyGroupRetrieveUpdateDestroyAPIView(APIView):
     # 수정
     @extend_schema(
         summary="스터디 그룹 수정",
-        description="스터디 그룹 정보를 수정합니다.",
+        description="스터디 그룹 정보를 수정합니다. 리더만 수정할 수 있습니다.",
         request=StudyGroupSerializer,
-        responses={200: StudyGroupSerializer, 401: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
+        responses={200: StudyGroupSerializer, 401: OpenApiTypes.OBJECT, 403: ErrorDetailResponseSerializer},
         tags=["StudyGroup"],
     )
     def patch(self, request: Request, group_id: int) -> Response:
         study_group = get_object_or_404(StudyGroup, pk=group_id)
+
+        # 리더 권한 확인
+        user = cast(User, request.user)
+        is_leader = GroupMember.objects.filter(
+            study_group_id=study_group.id,
+            user_id=user.id,
+            is_leader=True,
+        ).exists()
+
+        if not is_leader:
+            return Response(
+                {"error_detail": "스터디 그룹 수정 권한이 없습니다."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         serializer = StudyGroupSerializer(study_group, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         study_group = update_study_group(study_group, serializer.validated_data)
@@ -179,7 +195,7 @@ class DelegateLeaderAPIView(APIView):
         description="스터디 그룹 리더 권한을 특정 멤버에게 위임합니다.",
         request=DelegateLeaderRequestSerializer,
         responses={
-            200: DetailResponseSerializer,
+            200: MemberResponseSerializer,
             401: ErrorDetailResponseSerializer,
             403: ErrorDetailResponseSerializer,
             404: ErrorDetailResponseSerializer,
@@ -204,7 +220,16 @@ class DelegateLeaderAPIView(APIView):
         except ValueError as e:
             return Response({"error_detail": str(e)}, status=404)
 
-        return Response({"detail": "리더 권한이 위임되었습니다."}, status=200)
+        # 위임받은 멤버 id 조회 및 반환 (서비스 성공 시 반드시 존재)
+        target_member = GroupMember.objects.get(
+            study_group_id=group_id,
+            user_id=serializer.validated_data["target_member_id"],
+        )
+
+        return Response(
+            {"member_id": target_member.id, "detail": "리더 권한이 위임되었습니다."},
+            status=200,
+        )
 
 
 class LeaveStudyGroupMeAPIView(APIView):
@@ -243,7 +268,7 @@ class KickStudyGroupMemberAPIView(APIView):
         summary="스터디 그룹 멤버 추방",
         description="리더가 스터디 그룹의 특정 멤버를 추방합니다.",
         responses={
-            200: DetailResponseSerializer,
+            200: MemberResponseSerializer,
             400: ErrorDetailResponseSerializer,
             401: ErrorDetailResponseSerializer,
             403: ErrorDetailResponseSerializer,
@@ -254,6 +279,14 @@ class KickStudyGroupMemberAPIView(APIView):
     def delete(self, request: Request, group_id: int, member_id: int) -> Response:
         if isinstance(request.user, AnonymousUser):
             return Response({"error_detail": "로그인이 필요합니다."}, status=401)
+
+        # 추방 대상 멤버 ID 저장 (삭제 전)
+        target_member = GroupMember.objects.filter(
+            study_group_id=group_id,
+            user_id=member_id,
+        ).first()
+
+        target_member_id = target_member.id if target_member else None
 
         try:
             kick_member(
@@ -266,4 +299,13 @@ class KickStudyGroupMemberAPIView(APIView):
         except ValueError as e:
             return Response({"error_detail": str(e)}, status=404)
 
-        return Response({"detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."}, status=status.HTTP_200_OK)
+        # 서비스 성공 시 member_id 반환
+        if target_member_id:
+            return Response(
+                {"member_id": target_member_id, "detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."},
+            status=status.HTTP_200_OK,
+        )
