@@ -40,7 +40,7 @@ class RecruitmentService:
         QuerySet 반환
 
         Args:
-            include_attachments: 첨부파일 포함 여부
+            include_attachments: 첨부파일 포함 여부 확인
 
         Returns:
             Recruitment QuerySet
