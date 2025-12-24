@@ -5,7 +5,7 @@ from rest_framework.exceptions import NotFound
 
 from apps.core.pagination import OffsetPage, Pageable, offset_paginate_queryset
 from apps.users.models.withdrawal import Withdrawal
-from apps.users.utils.reason_choices import WithdrawalReason
+from apps.users.utils.conts import WithdrawalReason
 
 
 def get_admin_withdrawal_list(
