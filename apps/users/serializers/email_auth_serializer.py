@@ -1,6 +1,8 @@
 from typing import Any
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from apps.users.utils.auth_code import AuthCodeCache
@@ -73,3 +75,29 @@ class FindEmailSerializer(serializers.Serializer[Any]):
 class EmailSerializer(serializers.Serializer[Any]):
 
     email = serializers.EmailField(required=True)
+
+
+class PasswordResetSerializer(serializers.Serializer[Any]):
+    token = serializers.CharField(
+        required=False,
+        max_length=64,
+        error_messages={"required": "토큰을 입력해주세요."},
+    )
+
+    new_password = serializers.CharField(
+        required=True,
+        min_length=8,
+        max_length=128,
+        error_messages={
+            "required": "이 필드는 필수 항목입니다.",
+            "min_length": "비밀번호는 8자 이상이어야 합니다.",
+        },
+    )
+
+    def validate_new_password(self, value: str) -> str:
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.messages)
+
+        return value

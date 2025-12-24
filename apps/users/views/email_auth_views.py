@@ -1,3 +1,4 @@
+import secrets
 from typing import Any
 
 from django.core.cache import cache
@@ -8,12 +9,12 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.users.models import User
 from apps.users.serializers.email_auth_serializer import (
     EmailSerializer,
     EmailSignUpSerializer,
     EmailSignUpVerifySerializer,
     EmailVerifySerializer,
-    FindEmailSerializer,
 )
 from apps.users.utils.send_auth import SendAuth
 
@@ -157,7 +158,7 @@ class FindPasswordVerifyEmailView(APIView):
     @extend_schema(
         tags=["Account"],
         summary="비밀번호 재설정 시 이메일 인증 API",
-        description="비밀번호 찾기 시 이메일 인증 코드를 검증합니다.",
+        description="비밀번호 찾기 시 이메일 인증 코드를 검증하고 일회용 토큰을 쿠키에저장합니다.",
         request=inline_serializer(
             name="FindPasswordVerifyEmailRequest",
             fields={
@@ -165,6 +166,7 @@ class FindPasswordVerifyEmailView(APIView):
                 "code": serializers.CharField(required=True, min_length=6, max_length=6, help_text="123456"),
             },
         ),
+        methods=["POST"],
         examples=[
             OpenApiExample(
                 name="Request",
@@ -175,11 +177,19 @@ class FindPasswordVerifyEmailView(APIView):
                 name="200 OK",
                 response_only=True,
                 status_codes=["200"],
-                value={"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다."},
+                value={
+                    "detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.",
+                    "expires_in": 300,
+                },
             ),
         ],
         responses={
-            200: inline_serializer(name="FindPasswordVerifyEmailSuccess", fields={"detail": serializers.CharField()}),
+            200: inline_serializer(
+                name="FindPasswordVerifyEmailSuccess",
+                fields={
+                    "detail": serializers.CharField(),
+                },
+            ),
             400: inline_serializer(
                 name="FindPasswordVerifyEmailError", fields={"error_detail": serializers.DictField()}
             ),
@@ -201,10 +211,35 @@ class FindPasswordVerifyEmailView(APIView):
             return Response(
                 {"error_detail": "인증 코드가 만료되었거나 존재하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST
             )
+
         if stored_code != code:
             return Response({"error_detail": "인증 코드가 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
-        cache.delete(redis_key)
-        cache.set(f"email_verified:reset_password:{email}", True, timeout=1800)  # 30분
+        if not User.objects.filter(email=email).exists():
+            cache.delete(redis_key)
+            return Response({"error_detail": "등록된 이메일이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다."}, status=status.HTTP_200_OK)
+        reset_token = secrets.token_hex(32)
+
+        token_key = f"reset_token:{reset_token}"
+        token_ttl = 300
+        cache.set(token_key, email, timeout=token_ttl)
+
+        cache.delete(redis_key)
+
+        response = Response(
+            {"detail": "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.", "expires_in": token_ttl},
+            status=status.HTTP_200_OK,
+        )
+
+        response.set_cookie(
+            key="password_reset_token",
+            value=reset_token,
+            max_age=token_ttl,
+            httponly=True,
+            secure=False,
+            samesite="Lax",
+            path="/api/v1/accounts/find-password",
+        )
+
+        return response

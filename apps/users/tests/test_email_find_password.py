@@ -67,22 +67,27 @@ class FindPasswordEmailTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_verify_email_success(self) -> None:
-        code = "asA456"
-        email = self.email
+        cache.set(f"email:reset_password:{self.email}", "ABC123", timeout=300)
 
-        cache_key = f"email:reset_password:{email}"
-        cache.set(cache_key, code, timeout=300)
+        url = "/api/v1/accounts/find-password/verify-email"
+        data = {"email": self.email, "code": "ABC123"}
 
-        response = self.client.post(self.verify_url, {"email": email, "code": code})
-
-        if response.status_code != 200:
-            print(f"Error Detail: {response.data}")
+        response = self.client.post(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("비밀번호 찾기", response.data["detail"])
+        self.assertEqual(response.data["detail"], "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.")
 
-        verified_key = f"email_verified:reset_password:{email}"
-        self.assertTrue(cache.get(verified_key))
+        self.assertIn("password_reset_token", response.cookies)
+
+        token = response.cookies["password_reset_token"].value
+        self.assertIsNotNone(token)
+        self.assertEqual(len(token), 64)
+
+        token_key = f"reset_token:{token}"
+        cached_email = cache.get(token_key)
+        self.assertEqual(cached_email, self.email)
+
+        self.assertIsNone(cache.get(f"email:reset_password:{self.email}"))
 
     def test_verify_email_wrong_code(self) -> None:
         cache.set(f"email:reset_password:{self.email}", "asA456", timeout=300)
