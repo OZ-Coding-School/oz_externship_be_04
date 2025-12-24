@@ -209,22 +209,23 @@ class DelegateLeaderAPIView(APIView):
         if isinstance(request.user, AnonymousUser):
             return Response({"error_detail": "로그인이 필요합니다."}, status=401)
 
+        # target_member_id로 GroupMember 조회
+        target_member_id = serializer.validated_data["target_member_id"]
+        try:
+            target_member = GroupMember.objects.get(id=target_member_id, study_group_id=group_id)
+        except GroupMember.DoesNotExist:
+            return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
+
         try:
             delegate_leader(
                 group_id=group_id,
                 current_user=request.user,
-                target_user_id=serializer.validated_data["target_member_id"],
+                target_user_id=target_member.user_id.id,
             )
         except PermissionError as e:
             return Response({"error_detail": str(e)}, status=403)
         except ValueError as e:
             return Response({"error_detail": str(e)}, status=404)
-
-        # 위임받은 멤버 id 조회 및 반환 (서비스 성공 시 반드시 존재)
-        target_member = GroupMember.objects.get(
-            study_group_id=group_id,
-            user_id=serializer.validated_data["target_member_id"],
-        )
 
         return Response(
             {"member_id": target_member.id, "detail": "리더 권한이 위임되었습니다."},
@@ -280,32 +281,24 @@ class KickStudyGroupMemberAPIView(APIView):
         if isinstance(request.user, AnonymousUser):
             return Response({"error_detail": "로그인이 필요합니다."}, status=401)
 
-        # 추방 대상 멤버 ID 저장 (삭제 전)
-        target_member = GroupMember.objects.filter(
-            study_group_id=group_id,
-            user_id=member_id,
-        ).first()
-
-        target_member_id = target_member.id if target_member else None
+        # member_id로 GroupMember 조회 (삭제 전)
+        try:
+            target_member = GroupMember.objects.get(id=member_id, study_group_id=group_id)
+        except GroupMember.DoesNotExist:
+            return Response({"error_detail": "해당 멤버를 찾을 수 없습니다."}, status=404)
 
         try:
             kick_member(
                 group_id=group_id,
                 current_user=request.user,
-                target_user_id=member_id,
+                target_user_id=target_member.user_id.id,
             )
         except PermissionError as e:
             return Response({"error_detail": str(e)}, status=403)
         except ValueError as e:
             return Response({"error_detail": str(e)}, status=404)
 
-        # 서비스 성공 시 member_id 반환
-        if target_member_id:
-            return Response(
-                {"member_id": target_member_id, "detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."},
-                status=status.HTTP_200_OK,
-            )
         return Response(
-            {"detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."},
+            {"member_id": target_member.id, "detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."},
             status=status.HTTP_200_OK,
         )

@@ -108,7 +108,9 @@ class StudyGroupMemberManagementTests(TestCase):
     # 리더 위임
     def test_delegate_leader_success(self) -> None:
         url = reverse("delegate-leader", args=[self.study_group.id])
-        data = {"target_member_id": self.member1.id}
+        # GroupMember ID를 전달
+        member1_group_member = GroupMember.objects.get(study_group_id=self.study_group, user_id=self.member1.id)
+        data = {"target_member_id": member1_group_member.id}
 
         response: Response = self.leader_client.post(url, data, format="json")
 
@@ -134,7 +136,9 @@ class StudyGroupMemberManagementTests(TestCase):
     # 일반 멤버가 리더 위임
     def test_delegate_leader_permission_denied(self) -> None:
         url = reverse("delegate-leader", args=[self.study_group.id])
-        data = {"target_member_id": self.member2.id}
+        # GroupMember ID를 전달
+        member2_group_member = GroupMember.objects.get(study_group_id=self.study_group, user_id=self.member2.id)
+        data = {"target_member_id": member2_group_member.id}
 
         response: Response = self.member_client.post(url, data, format="json")
 
@@ -154,7 +158,9 @@ class StudyGroupMemberManagementTests(TestCase):
     # 이미 리더인 멤버(자기자신)
     def test_delegate_leader_to_leader(self) -> None:
         url = reverse("delegate-leader", args=[self.study_group.id])
-        data = {"target_member_id": self.leader.id}
+        # 리더의 GroupMember ID를 전달
+        leader_group_member = GroupMember.objects.get(study_group_id=self.study_group, user_id=self.leader.id)
+        data = {"target_member_id": leader_group_member.id}
 
         response: Response = self.leader_client.post(url, data, format="json")
 
@@ -163,7 +169,9 @@ class StudyGroupMemberManagementTests(TestCase):
 
     # 리더가 멤버 추방
     def test_kick_member_success(self) -> None:
-        url = reverse("study-group-kick", args=[self.study_group.id, self.member1.id])
+        # GroupMember ID를 전달
+        member1_group_member = GroupMember.objects.get(study_group_id=self.study_group, user_id=self.member1.id)
+        url = reverse("study-group-kick", args=[self.study_group.id, member1_group_member.id])
 
         response: Response = self.leader_client.delete(url)
 
@@ -178,7 +186,9 @@ class StudyGroupMemberManagementTests(TestCase):
 
     # 일반 멤버가 멤버 추방
     def test_kick_member_permission_denied(self) -> None:
-        url = reverse("study-group-kick", args=[self.study_group.id, self.member2.id])
+        # GroupMember ID를 전달
+        member2_group_member = GroupMember.objects.get(study_group_id=self.study_group, user_id=self.member2.id)
+        url = reverse("study-group-kick", args=[self.study_group.id, member2_group_member.id])
 
         response: Response = self.member_client.delete(url)
 
@@ -186,8 +196,9 @@ class StudyGroupMemberManagementTests(TestCase):
         self.assertIn("리더만 멤버를 추방할 수 있습니다", response.data["error_detail"])
 
     def test_kick_leader_forbidden(self) -> None:
-        # 리더 추방
-        url = reverse("study-group-kick", args=[self.study_group.id, self.leader.id])
+        # 리더 추방 - GroupMember ID를 전달
+        leader_group_member = GroupMember.objects.get(study_group_id=self.study_group, user_id=self.leader.id)
+        url = reverse("study-group-kick", args=[self.study_group.id, leader_group_member.id])
 
         response: Response = self.leader_client.delete(url)
 
