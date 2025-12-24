@@ -12,6 +12,9 @@ from apps.users.models import User
 
 class RecommendLecturesTest(APITestCase):
     def setUp(self) -> None:
+
+        random.seed(42)
+
         self.client = APIClient()
         self.user = User.objects.create_user(
             email="test@example.com",
