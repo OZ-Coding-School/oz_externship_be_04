@@ -16,6 +16,7 @@ from apps.study_groups.serializers import (
     DelegateLeaderRequestSerializer,
     DetailResponseSerializer,
     ErrorDetailResponseSerializer,
+    MemberResponseSerializer,
     StudyGroupListSerializer,
     StudyGroupSerializer,
 )
@@ -179,7 +180,7 @@ class DelegateLeaderAPIView(APIView):
         description="스터디 그룹 리더 권한을 특정 멤버에게 위임합니다.",
         request=DelegateLeaderRequestSerializer,
         responses={
-            200: DetailResponseSerializer,
+            200: MemberResponseSerializer,
             401: ErrorDetailResponseSerializer,
             403: ErrorDetailResponseSerializer,
             404: ErrorDetailResponseSerializer,
@@ -204,6 +205,17 @@ class DelegateLeaderAPIView(APIView):
         except ValueError as e:
             return Response({"error_detail": str(e)}, status=404)
 
+        # 위임받은 멤버 id 조회 및 반환
+        target_member = GroupMember.objects.filter(
+            study_group_id=group_id,
+            user_id=serializer.validated_data["target_member_id"],
+        ).first()
+
+        if target_member:
+            return Response(
+                {"member_id": target_member.id, "detail": "리더 권한이 위임되었습니다."},
+                status=200,
+            )
         return Response({"detail": "리더 권한이 위임되었습니다."}, status=200)
 
 
@@ -243,7 +255,7 @@ class KickStudyGroupMemberAPIView(APIView):
         summary="스터디 그룹 멤버 추방",
         description="리더가 스터디 그룹의 특정 멤버를 추방합니다.",
         responses={
-            200: DetailResponseSerializer,
+            200: MemberResponseSerializer,
             400: ErrorDetailResponseSerializer,
             401: ErrorDetailResponseSerializer,
             403: ErrorDetailResponseSerializer,
@@ -254,6 +266,12 @@ class KickStudyGroupMemberAPIView(APIView):
     def delete(self, request: Request, group_id: int, member_id: int) -> Response:
         if isinstance(request.user, AnonymousUser):
             return Response({"error_detail": "로그인이 필요합니다."}, status=401)
+
+        # 추방 대상 멤버 조회 (삭제 직전)
+        target_member = GroupMember.objects.filter(
+            study_group_id=group_id,
+            user_id=member_id,
+        ).first()
 
         try:
             kick_member(
@@ -266,4 +284,12 @@ class KickStudyGroupMemberAPIView(APIView):
         except ValueError as e:
             return Response({"error_detail": str(e)}, status=404)
 
-        return Response({"detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."}, status=status.HTTP_200_OK)
+        if target_member:
+            return Response(
+                {"member_id": target_member.id, "detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"detail": "스터디 그룹에서 멤버를 추방하는데 성공했습니다."},
+            status=status.HTTP_200_OK,
+        )

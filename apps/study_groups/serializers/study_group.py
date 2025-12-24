@@ -240,3 +240,10 @@ class DetailResponseSerializer(serializers.Serializer):  # type: ignore
 
 class ErrorDetailResponseSerializer(serializers.Serializer):  # type: ignore
     error_detail = serializers.CharField()
+
+
+# 추방/위임 시 멤버 아이디와 상세정보 응답용 시리얼라이저 추가
+# DetatilResponseSerializer 대신 사용
+class MemberResponseSerializer(serializers.Serializer):  # type: ignore
+    member_id = serializers.IntegerField()
+    detail = serializers.CharField()
