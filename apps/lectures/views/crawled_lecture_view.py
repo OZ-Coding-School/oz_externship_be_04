@@ -86,6 +86,13 @@ class CrawledLectureListAPIView(APIView):
                 required=False,
             ),
             OpenApiParameter(
+                name="category",
+                type=OpenApiTypes.STR,
+                location="query",
+                description="카테고리 이름을 입력하여 해당하는 강의를 검색합니다.",
+                required=False,
+            ),
+            OpenApiParameter(
                 name="sort",
                 type=OpenApiTypes.STR,
                 location="query",
