@@ -18,9 +18,12 @@ class SMSValidator:
         return value.replace("-", "")
 
     @staticmethod
-    def phone_unique(value: str) -> str:
+    def phone_unique(serializer_instance: Any, value: str) -> str:
         value = SMSValidator.phone_format(value)
-        if User.objects.filter(phone_number=value).exists():
+        user_num = User.objects.filter(phone_number=value)
+        if serializer_instance and hasattr(serializer_instance, "instance") and serializer_instance.instance:
+            user_num = user_num.exclude(pk=serializer_instance.instance.pk)
+        if user_num.exists():
             raise serializers.ValidationError("이미 사용 중인 전화번호입니다.")
         return value
 
@@ -35,7 +38,7 @@ class SMSSendSerializer(serializers.Serializer[Any]):
     phone_number = serializers.CharField(required=True, max_length=20)
 
     def validate_phone_number(self, value: str) -> str:
-        return SMSValidator.phone_unique(value)
+        return SMSValidator.phone_unique(self, value)
 
 
 class FindEmailSMSSendSerializer(serializers.Serializer[Any]):
@@ -75,7 +78,7 @@ class ChangePhoneSerializer(serializers.Serializer[Any]):
     code = serializers.CharField(required=True, min_length=6, max_length=6)
 
     def validate_phone_number(self, value: str) -> str:
-        return SMSValidator.phone_unique(value)
+        return SMSValidator.phone_unique(self, value)
 
     def validate_code(self, value: str) -> str:
         return SMSValidator.code_digit(value)
