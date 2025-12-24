@@ -9,9 +9,6 @@ DEFAULT_RECENT_YEARS: int = 5
 
 
 def calc_month_range(today: date, months: int) -> tuple[date, date, List[str]]:
-    """
-    최근 N개월에 대한 시작/끝 날짜와, 월별 라벨 리스트를 계산합니다.
-    """
     base = today.replace(day=1)
     year = base.year
     month = base.month - (months - 1)
@@ -42,10 +39,6 @@ def calc_month_range(today: date, months: int) -> tuple[date, date, List[str]]:
 
 
 def calc_year_range(today: date, years: int) -> tuple[date, date, List[str]]:
-    """
-    최근 N년에 대한 시작/끝 날짜와, 연도 라벨 리스트를 계산합니다.
-    """
-
     current_year = today.year
     start_year = current_year - (years - 1)
 
@@ -58,8 +51,4 @@ def calc_year_range(today: date, years: int) -> tuple[date, date, List[str]]:
 
 
 def init_counts_map(labels: List[str]) -> "OrderedDict[str, int]":
-    """
-    기간 라벨 리스트를 받아, 각 라벨의 초기 count를 0으로 세팅한 OrderedDict를 생성합니다.
-    """
-
     return OrderedDict((label, 0) for label in labels)
