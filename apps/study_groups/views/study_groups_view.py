@@ -219,7 +219,7 @@ class DelegateLeaderAPIView(APIView):
         try:
             delegate_leader(
                 group_id=group_id,
-                current_user=request.user,  # type: ignore[arg-type]
+                current_user=request.user,
                 target_user_id=target_member.user_id.id,
             )
         except PermissionError as e:
@@ -254,7 +254,7 @@ class LeaveStudyGroupMeAPIView(APIView):
         try:
             leave_study_group(
                 group_id=group_id,
-                user=request.user,  # type: ignore[arg-type]
+                user=request.user,
             )
         except ValueError as e:
             return Response({"error_detail": str(e)}, status=400)
@@ -290,7 +290,7 @@ class KickStudyGroupMemberAPIView(APIView):
         try:
             kick_member(
                 group_id=group_id,
-                current_user=request.user,  # type: ignore[arg-type]
+                current_user=request.user,
                 target_user_id=target_member.user_id.id,
             )
         except PermissionError as e:
