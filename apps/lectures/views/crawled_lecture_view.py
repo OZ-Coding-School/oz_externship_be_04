@@ -47,7 +47,7 @@ class CrawledLectureListAPIView(APIView):
         queryset = CrawledLecture.objects.prefetch_related("categories", "reviews").all()
 
         filterset = self.filterset_class(data=self.request.GET, queryset=queryset, request=self.request)
-        queryset = cast(QuerySet[CrawledLecture], filterset.qs)
+        queryset = cast(QuerySet[CrawledLecture], filterset.qs).distinct()
 
         q = Q()
         if search := self.request.GET.get("search"):
@@ -83,6 +83,13 @@ class CrawledLectureListAPIView(APIView):
                 type=OpenApiTypes.STR,
                 location="query",
                 description="강의 제목 또는 강사 이름으로 검색합니다.",
+                required=False,
+            ),
+            OpenApiParameter(
+                name="category",
+                type=OpenApiTypes.STR,
+                location="query",
+                description="카테고리 이름을 입력하여 해당하는 강의를 검색합니다.",
                 required=False,
             ),
             OpenApiParameter(
