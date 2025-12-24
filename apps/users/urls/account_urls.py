@@ -9,6 +9,7 @@ from apps.users.views.find_password_view import (
     FindPasswordVerifyEmailView,
     FindPasswordView,
 )
+from apps.users.views.mypage_view import MyPageView
 from apps.users.views.restore_view import RestoreAccountView, RestoreSendEmailView
 from apps.users.views.signup_view import (
     EmailSignUpVerifyView,
@@ -23,7 +24,6 @@ from apps.users.views.social_login_view import (
     NaverCallBackView,
     NaverLoginView,
 )
-from apps.users.views.mypage_view import MyPageView
 
 urlpatterns = [
     path("accounts/signup", SignupView.as_view(), name="signup"),

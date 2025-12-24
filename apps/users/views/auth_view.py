@@ -11,8 +11,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.users.serializers.login_serializer import LoginSerializer
 from apps.users.models import User
+from apps.users.serializers.login_serializer import LoginSerializer
 
 check_secure = not settings.DEBUG
 check_samesite = "None" if not settings.DEBUG else "Lax"
