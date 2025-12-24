@@ -41,25 +41,6 @@ class SMSSendSerializer(serializers.Serializer[Any]):
         return SMSValidator.phone_unique(self, value)
 
 
-class FindEmailSMSSendSerializer(serializers.Serializer[Any]):
-    name = serializers.CharField(required=True, max_length=20, error_messages={"required": "이름을 입력해주세요."})
-    phone_number = serializers.CharField(
-        required=True, max_length=20, error_messages={"required": "휴대폰 번호를 입력해주세요."}
-    )
-
-    def validate_phone_number(self, value: str) -> str:
-        return SMSValidator.phone_format(value)
-
-    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        name = attrs.get("name")
-        phone_number = attrs.get("phone_number")
-
-        if not User.objects.filter(name=name, phone_number=phone_number).exists():
-            raise serializers.ValidationError("등록된 정보가 없습니다.")
-
-        return attrs
-
-
 class SMSVerifySerializer(serializers.Serializer[Any]):
     phone_number = serializers.CharField(required=True, max_length=20)
     code = serializers.CharField(required=True, min_length=6, max_length=6)
@@ -71,23 +52,8 @@ class SMSVerifySerializer(serializers.Serializer[Any]):
         return SMSValidator.code_digit(value)
 
 
-class ChangePhoneSerializer(serializers.Serializer[Any]):
-    phone_number = serializers.CharField(
-        required=True, max_length=20, error_messages={"required": "휴대폰 번호를 입력해주세요."}
-    )
-    code = serializers.CharField(required=True, min_length=6, max_length=6)
-
-    def validate_phone_number(self, value: str) -> str:
-        return SMSValidator.phone_unique(self, value)
-
-    def validate_code(self, value: str) -> str:
-        return SMSValidator.code_digit(value)
-
-
-class FindEmailVerifySerializer(serializers.Serializer[Any]):
-    phone_number = serializers.CharField(
-        required=True, max_length=20, error_messages={"required": "휴대폰 번호를 입력해주세요."}
-    )
+class EmailVerifySerializer(serializers.Serializer[Any]):
+    email = serializers.EmailField(required=True)
     code = serializers.CharField(
         required=True, min_length=6, max_length=6, error_messages={"required": "인증 코드를 입력해주세요."}
     )
@@ -96,6 +62,11 @@ class FindEmailVerifySerializer(serializers.Serializer[Any]):
         return SMSValidator.phone_format(value)
 
     def validate_code(self, value: str) -> str:
-        if not value.isdigit():
-            raise serializers.ValidationError("인증 코드는 숫자만 입력 가능합니다.")
+        if not value.isalnum():
+            raise serializers.ValidationError("인증 코드는 영문자와 숫자만 입력 가능합니다.")
         return value
+
+
+class EmailSerializer(serializers.Serializer[Any]):
+
+    email = serializers.EmailField(required=True)
