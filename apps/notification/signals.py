@@ -16,8 +16,8 @@ def recruitment_created(sender: Any, instance: Application, created: bool, **kwa
         return
 
     recruitment = instance.recruitment
-    recruitment_id = recruitment.id
-    back_url = f"https://learn.ozcoding.site/manage/{recruitment_id}"
+    recruitment_uuid = recruitment.uuid
+    back_url = f"https://learn.ozcoding.site/manage/recruitment_uuid={recruitment_uuid}"
 
     notification = Notification.objects.create(
         user=recruitment.author,
