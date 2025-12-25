@@ -207,13 +207,6 @@ class PasswordManagementIntegrationTestCase(APITestCase):
     def test_email_verify_sets_cookie(self) -> None:
         cache.set("email:reset_password:testuser@example.com", "ABC123", timeout=300)
 
-        user = User.objects.filter(email="testuser@example.com").first()
-        if not user:
-            user = User.objects.create_user(
-                email="testuser@example.com",
-                password="dummy1234",
-            )
-
         url = "/api/v1/accounts/find-password/verify-email"
         data = {"email": "testuser@example.com", "code": "ABC123"}
 
