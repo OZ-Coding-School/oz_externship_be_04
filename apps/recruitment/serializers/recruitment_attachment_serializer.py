@@ -28,6 +28,7 @@ class RecruitmentAttachmentCreateSerializer(serializers.ModelSerializer[Recruitm
 
 class RecruitmentAttachmentUpdateSerializer(serializers.ModelSerializer[RecruitmentAttachment]):
     """구인공고 첨부파일 수정"""
+
     id = serializers.IntegerField(required=False)
 
     class Meta:
