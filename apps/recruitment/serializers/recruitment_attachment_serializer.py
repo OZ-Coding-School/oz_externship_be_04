@@ -28,12 +28,13 @@ class RecruitmentAttachmentCreateSerializer(serializers.ModelSerializer[Recruitm
 
 class RecruitmentAttachmentUpdateSerializer(serializers.ModelSerializer[RecruitmentAttachment]):
     """구인공고 첨부파일 수정"""
+    id = serializers.IntegerField(required=False)
 
     class Meta:
         model = RecruitmentAttachment
-        fields = ["file_name", "file_url"]
+        fields = ["id", "file_name", "file_url"]
         extra_kwargs = {
-            "file_name": {"required": True, "max_length": 50},
+            "file_name": {"required": True, "max_length": 255},
             "file_url": {"required": True},
         }
 
