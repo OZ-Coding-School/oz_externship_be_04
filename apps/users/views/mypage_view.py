@@ -21,7 +21,7 @@ from apps.users.services.mypage_services import (
     account_update_service,
 )
 from apps.users.services.withdrawal_services import withdraw_service
-from apps.users.utils.conts import WithdrawalReason
+from apps.users.utils.consts import WithdrawalReason
 from apps.users.views.auth_view import blacklist_token
 
 

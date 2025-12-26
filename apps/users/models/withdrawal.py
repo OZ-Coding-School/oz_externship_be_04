@@ -6,7 +6,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core.models import TimeStampedModel
-from apps.users.utils.conts import WithdrawalReason
+from apps.users.utils.consts import WithdrawalReason
 
 
 class Withdrawal(TimeStampedModel):

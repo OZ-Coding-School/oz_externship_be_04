@@ -2,7 +2,7 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.users.utils.conts import WithdrawalReason
+from apps.users.utils.consts import WithdrawalReason
 
 
 class BasePeriodCountItemSerializer(serializers.Serializer[Any]):

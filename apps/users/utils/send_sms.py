@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from twilio.rest import Client  # type: ignore[import-untyped]
 
-from apps.users.utils.conts import SMS_SEND_MESSAGE, SMS_VERIFY_MESSAGE
+from apps.users.utils.consts import SMS_SEND_MESSAGE, SMS_VERIFY_MESSAGE
 from config.settings.base import (
     TWILIO_ACCOUNT_SID,
     TWILIO_AUTH_TOKEN,

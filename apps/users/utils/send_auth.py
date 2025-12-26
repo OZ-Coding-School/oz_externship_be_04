@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from apps.users.utils.auth_code import AuthCodeCache
-from apps.users.utils.conts import (
+from apps.users.utils.consts import (
     EMAIL_SEND_MESSAGE,
     EMAiL_TEMPLATES,
     EMAiL_VERIFY_MESSAGE,

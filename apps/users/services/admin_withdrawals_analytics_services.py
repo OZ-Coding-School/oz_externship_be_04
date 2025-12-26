@@ -15,7 +15,7 @@ from apps.users.utils.admin_analytics_util import (
     calc_year_range,
     init_counts_map,
 )
-from apps.users.utils.conts import WithdrawalReason
+from apps.users.utils.consts import WithdrawalReason
 
 
 class WithdrawalTrendItem(TypedDict):

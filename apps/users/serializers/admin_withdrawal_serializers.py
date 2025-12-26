@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from apps.users.models import User
 from apps.users.models.withdrawal import Withdrawal
-from apps.users.utils.conts import WithdrawalReason
+from apps.users.utils.consts import WithdrawalReason
 
 
 class AdminWithdrawalListItemSerializer(serializers.Serializer[Any]):

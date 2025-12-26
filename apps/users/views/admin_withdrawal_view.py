@@ -22,7 +22,7 @@ from apps.users.services.admin_withdrawals_services import (
     get_admin_withdrawal_detail,
     get_admin_withdrawal_list,
 )
-from apps.users.utils.conts import WithdrawalReason
+from apps.users.utils.consts import WithdrawalReason
 from apps.users.utils.permissions import StaffOrSuperUser
 
 AdminWithdrawalSimpleErrorSerializer = inline_serializer(

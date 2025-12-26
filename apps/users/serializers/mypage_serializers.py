@@ -6,7 +6,7 @@ from rest_framework import serializers
 from apps.core.constants import USER_PROFILE_IMAGE_UPLOAD_PATH
 from apps.core.S3 import S3Uploader
 from apps.users.services.check_nickname_service import NicknameCheckConflict
-from apps.users.utils.conts import WithdrawalReason
+from apps.users.utils.consts import WithdrawalReason
 
 User = get_user_model()
 
