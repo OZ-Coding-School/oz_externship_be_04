@@ -1,6 +1,7 @@
 import secrets
-from typing import Any
+from typing import Any, Literal
 
+from django.conf import settings
 from django.core.cache import cache
 from drf_spectacular.utils import OpenApiExample, extend_schema, inline_serializer
 from rest_framework import permissions, serializers, status
@@ -20,6 +21,10 @@ from apps.users.serializers.verification_serializer import (
 from apps.users.services.mypage_services import password_reset_service
 from apps.users.utils.send_auth import SendAuth
 
+check_secure = not settings.DEBUG
+check_samesite: Literal["Lax", "Strict", "None", False] = "None" if not settings.DEBUG else "Lax"
+check_domain = ".ozcoding.site" if not settings.DEBUG else None
+
 
 class FindPasswordView(APIView):
     permission_classes = []
@@ -33,22 +38,22 @@ class FindPasswordView(APIView):
 
     @extend_schema(
         tags=["Account"],
-        summary="비밀번호 재설정 API (토큰 기반)",
-        description="이메일 인증 후 발급받은 토큰으로 새 비밀번호로 변경합니다.",
+        summary="비밀번호 재설정 API (쿠키 자동 인증)",
+        description="쿠키 기반 비밀번호 재설정",
         request=inline_serializer(
-            name="PasswordResetRequest",
+            name="PasswordResetRequestCookie",
             fields={
-                "token": serializers.CharField(
-                    required=True, max_length=64, help_text="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+                "new_password": serializers.CharField(
+                    required=True, min_length=8, help_text="새 비밀번호 (최소 8자, 숫자만으로 구성 불가)"
                 ),
-                "new_password": serializers.CharField(required=True, min_length=8, help_text="Pass1234!@"),
             },
         ),
         examples=[
             OpenApiExample(
-                name="Request",
+                name="Request (쿠키 자동 전송)",
                 request_only=True,
-                value={"token": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6", "new_password": "NewPass1234!@"},
+                value={"new_password": "NewPass1234!@"},
+                description="쿠키의 password_reset_token이 자동으로 전송됩니다.",
             ),
             OpenApiExample(
                 name="200 OK - Success",
@@ -57,10 +62,18 @@ class FindPasswordView(APIView):
                 value={"detail": "비밀번호 변경 성공."},
             ),
             OpenApiExample(
+                name="400 Bad Request - No Cookie",
+                response_only=True,
+                status_codes=["400"],
+                value={"error_detail": "인증 토큰이 없습니다. 이메일 인증을 먼저 완료해주세요."},
+                description="쿠키에 password_reset_token이 없는 경우",
+            ),
+            OpenApiExample(
                 name="400 Bad Request - Invalid Token",
                 response_only=True,
                 status_codes=["400"],
                 value={"error_detail": "유효하지 않거나 만료된 토큰입니다."},
+                description="토큰이 만료되었거나 잘못된 경우",
             ),
             OpenApiExample(
                 name="400 Bad Request - Required Field",
@@ -87,6 +100,13 @@ class FindPasswordView(APIView):
                 response_only=True,
                 status_codes=["400"],
                 value={"error_detail": {"new_password": ["이 비밀번호는 숫자로만 되어 있습니다."]}},
+            ),
+            OpenApiExample(
+                name="400 Bad Request - User Not Found",
+                response_only=True,
+                status_codes=["400"],
+                value={"error_detail": "등록된 이메일이 없습니다."},
+                description="토큰에 해당하는 사용자가 없는 경우",
             ),
         ],
         responses={
@@ -371,8 +391,9 @@ class FindPasswordVerifyEmailView(APIView):
             value=reset_token,
             max_age=token_ttl,
             httponly=True,
-            secure=False,
-            samesite="Lax",
+            secure=check_secure,
+            samesite=check_samesite,
+            domain=check_domain,
             path="/api/v1/accounts/find-password",
         )
 
