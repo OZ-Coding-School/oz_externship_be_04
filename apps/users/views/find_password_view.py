@@ -146,7 +146,9 @@ class FindPasswordView(APIView):
             response = Response(
                 {"error_detail": "유효하지 않거나 만료된 토큰입니다."}, status=status.HTTP_400_BAD_REQUEST
             )
-            response.delete_cookie("password_reset_token")
+            response.delete_cookie(
+                key="password_reset_token", path="/api/v1/accounts/find-password", domain=check_domain
+            )
             return response
 
         try:
@@ -154,7 +156,9 @@ class FindPasswordView(APIView):
         except User.DoesNotExist:
             cache.delete(cache_key)
             response = Response({"error_detail": "등록된 이메일이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
-            response.delete_cookie("password_reset_token")
+            response.delete_cookie(
+                key="password_reset_token", path="/api/v1/accounts/find-password", domain=check_domain
+            )
             return response
 
         user.set_password(new_password)
@@ -164,7 +168,7 @@ class FindPasswordView(APIView):
 
         response = Response({"detail": "비밀번호 변경 성공."}, status=status.HTTP_200_OK)
 
-        response.delete_cookie(key="password_reset_token", path="/api/v1/accounts/find-password")
+        response.delete_cookie(key="password_reset_token", path="/api/v1/accounts/find-password", domain=check_domain)
 
         return response
 
