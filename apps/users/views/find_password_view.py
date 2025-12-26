@@ -7,6 +7,8 @@ from rest_framework import permissions, serializers, status
 from rest_framework.permissions import AllowAny, BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 from apps.users.models.users import User
 from apps.users.serializers.find_password_serializer import (
@@ -33,28 +35,35 @@ class FindPasswordView(APIView):
 
     @extend_schema(
         tags=["Account"],
-        summary="비밀번호 재설정 API (토큰 기반)",
-        description="이메일 인증 후 발급받은 토큰으로 새 비밀번호로 변경합니다.",
+        summary="비밀번호 재설정 API (쿠키 자동 인증)",
+        description="쿠키 기반 비밀번호 재설정",
         request=inline_serializer(
-            name="PasswordResetRequest",
+            name="PasswordResetRequestCookie",
             fields={
-                "token": serializers.CharField(
-                    required=True, max_length=64, help_text="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+                "new_password": serializers.CharField(
+                    required=True,
+                    min_length=8,
+                    help_text="새 비밀번호 (8자 이상)"
                 ),
-                "new_password": serializers.CharField(required=True, min_length=8, help_text="Pass1234!@"),
             },
         ),
         examples=[
             OpenApiExample(
                 name="Request",
                 request_only=True,
-                value={"token": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6", "new_password": "NewPass1234!@"},
+                value={"new_password": "NewPass1234!@"},
             ),
             OpenApiExample(
                 name="200 OK - Success",
                 response_only=True,
                 status_codes=["200"],
                 value={"detail": "비밀번호 변경 성공."},
+            ),
+            OpenApiExample(
+                name="400 Bad Request - No Cookie",
+                response_only=True,
+                status_codes=["400"],
+                value={"error_detail": "인증 토큰이 없습니다. 이메일 인증을 먼저 완료해주세요."},
             ),
             OpenApiExample(
                 name="400 Bad Request - Invalid Token",
@@ -66,7 +75,7 @@ class FindPasswordView(APIView):
                 name="400 Bad Request - Required Field",
                 response_only=True,
                 status_codes=["400"],
-                value={"error_detail": {"new_password": ["이 필드는 필수 항목입니다."]}},
+                value={"error_detail": {"new_password": ["새 비밀번호를 입력해주세요."]}},
             ),
             OpenApiExample(
                 name="400 Bad Request - Weak Password",
@@ -106,35 +115,51 @@ class FindPasswordView(APIView):
         if not token:
             return Response(
                 {"error_detail": "인증 토큰이 없습니다. 이메일 인증을 먼저 완료해주세요."},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-        data = request.data.copy()
-        data["token"] = token
+        new_password = request.data.get("new_password")
 
-        serializer = PasswordResetSerializer(data=data)
+        if not new_password:
+            return Response(
+                {"error_detail": {"new_password": ["새 비밀번호를 입력해주세요."]}},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        if not serializer.is_valid():
-            return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        new_password = serializer.validated_data["new_password"]
+        try:
+            validate_password(new_password)
+        except DjangoValidationError as e:
+            return Response(
+                {"error_detail": {"new_password": list(e.messages)}},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         cache_key = f"reset_token:{token}"
         email = cache.get(cache_key)
 
         if not email:
             response = Response(
-                {"error_detail": "유효하지 않거나 만료된 토큰입니다."}, status=status.HTTP_400_BAD_REQUEST
+                {"error_detail": "유효하지 않거나 만료된 토큰입니다."},
+                status=status.HTTP_400_BAD_REQUEST
             )
-            response.delete_cookie("password_reset_token")
+            response.delete_cookie(
+                key="password_reset_token",
+                path="/api/v1/accounts/find-password"
+            )
             return response
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             cache.delete(cache_key)
-            response = Response({"error_detail": "등록된 이메일이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
-            response.delete_cookie("password_reset_token")
+            response = Response(
+                {"error_detail": "등록된 이메일이 없습니다."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            response.delete_cookie(
+                key="password_reset_token",
+                path="/api/v1/accounts/find-password"
+            )
             return response
 
         user.set_password(new_password)
@@ -142,9 +167,15 @@ class FindPasswordView(APIView):
 
         cache.delete(cache_key)
 
-        response = Response({"detail": "비밀번호 변경 성공."}, status=status.HTTP_200_OK)
+        response = Response(
+            {"detail": "비밀번호 변경 성공."},
+            status=status.HTTP_200_OK
+        )
 
-        response.delete_cookie(key="password_reset_token", path="/api/v1/accounts/find-password")
+        response.delete_cookie(
+            key="password_reset_token",
+            path="/api/v1/accounts/find-password"
+        )
 
         return response
 
