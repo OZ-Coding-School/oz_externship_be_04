@@ -1,14 +1,14 @@
 import secrets
 from typing import Any
 
+from django.contrib.auth.password_validation import validate_password
 from django.core.cache import cache
+from django.core.exceptions import ValidationError as DjangoValidationError
 from drf_spectacular.utils import OpenApiExample, extend_schema, inline_serializer
 from rest_framework import permissions, serializers, status
 from rest_framework.permissions import AllowAny, BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError as DjangoValidationError
 
 from apps.users.models.users import User
 from apps.users.serializers.find_password_serializer import (
@@ -40,11 +40,7 @@ class FindPasswordView(APIView):
         request=inline_serializer(
             name="PasswordResetRequestCookie",
             fields={
-                "new_password": serializers.CharField(
-                    required=True,
-                    min_length=8,
-                    help_text="새 비밀번호 (8자 이상)"
-                ),
+                "new_password": serializers.CharField(required=True, min_length=8, help_text="새 비밀번호 (8자 이상)"),
             },
         ),
         examples=[
@@ -115,51 +111,37 @@ class FindPasswordView(APIView):
         if not token:
             return Response(
                 {"error_detail": "인증 토큰이 없습니다. 이메일 인증을 먼저 완료해주세요."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         new_password = request.data.get("new_password")
 
         if not new_password:
             return Response(
-                {"error_detail": {"new_password": ["새 비밀번호를 입력해주세요."]}},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error_detail": {"new_password": ["새 비밀번호를 입력해주세요."]}}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
             validate_password(new_password)
         except DjangoValidationError as e:
-            return Response(
-                {"error_detail": {"new_password": list(e.messages)}},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error_detail": {"new_password": list(e.messages)}}, status=status.HTTP_400_BAD_REQUEST)
 
         cache_key = f"reset_token:{token}"
         email = cache.get(cache_key)
 
         if not email:
             response = Response(
-                {"error_detail": "유효하지 않거나 만료된 토큰입니다."},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error_detail": "유효하지 않거나 만료된 토큰입니다."}, status=status.HTTP_400_BAD_REQUEST
             )
-            response.delete_cookie(
-                key="password_reset_token",
-                path="/api/v1/accounts/find-password"
-            )
+            response.delete_cookie(key="password_reset_token", path="/api/v1/accounts/find-password")
             return response
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             cache.delete(cache_key)
-            response = Response(
-                {"error_detail": "등록된 이메일이 없습니다."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-            response.delete_cookie(
-                key="password_reset_token",
-                path="/api/v1/accounts/find-password"
-            )
+            response = Response({"error_detail": "등록된 이메일이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            response.delete_cookie(key="password_reset_token", path="/api/v1/accounts/find-password")
             return response
 
         user.set_password(new_password)
@@ -167,15 +149,9 @@ class FindPasswordView(APIView):
 
         cache.delete(cache_key)
 
-        response = Response(
-            {"detail": "비밀번호 변경 성공."},
-            status=status.HTTP_200_OK
-        )
+        response = Response({"detail": "비밀번호 변경 성공."}, status=status.HTTP_200_OK)
 
-        response.delete_cookie(
-            key="password_reset_token",
-            path="/api/v1/accounts/find-password"
-        )
+        response.delete_cookie(key="password_reset_token", path="/api/v1/accounts/find-password")
 
         return response
 
