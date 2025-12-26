@@ -1,5 +1,5 @@
 import secrets
-from typing import Any
+from typing import Any, Literal
 
 from django.conf import settings
 from django.core.cache import cache
@@ -22,7 +22,7 @@ from apps.users.services.mypage_services import password_reset_service
 from apps.users.utils.send_auth import SendAuth
 
 check_secure = not settings.DEBUG
-check_samesite = "None" if not settings.DEBUG else "Lax"
+check_samesite: Literal["Lax", "Strict", "None", False] = "None" if not settings.DEBUG else "Lax"
 check_domain = ".ozcoding.site" if not settings.DEBUG else None
 
 
@@ -392,9 +392,9 @@ class FindPasswordVerifyEmailView(APIView):
             max_age=token_ttl,
             httponly=True,
             secure=check_secure,
-            samesite="None" if not settings.DEBUG else "Lax",
+            samesite=check_samesite,
             domain=check_domain,
-            path="accounts/find-password",
+            path="/api/v1/accounts/find-password",
         )
 
         return response
