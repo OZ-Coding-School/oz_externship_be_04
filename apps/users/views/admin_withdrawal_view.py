@@ -22,8 +22,8 @@ from apps.users.services.admin_withdrawals_services import (
     get_admin_withdrawal_detail,
     get_admin_withdrawal_list,
 )
+from apps.users.utils.consts import WithdrawalReason
 from apps.users.utils.permissions import StaffOrSuperUser
-from apps.users.utils.reason_choices import WithdrawalReason
 
 AdminWithdrawalSimpleErrorSerializer = inline_serializer(
     name="AdminWithdrawalSimpleError",

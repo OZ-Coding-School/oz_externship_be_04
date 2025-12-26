@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from twilio.rest import Client  # type: ignore[import-untyped]
 
+from apps.users.utils.consts import SMS_SEND_MESSAGE, SMS_VERIFY_MESSAGE
 from config.settings.base import (
     TWILIO_ACCOUNT_SID,
     TWILIO_AUTH_TOKEN,
@@ -11,18 +12,8 @@ from config.settings.base import (
 
 
 class TwilioSendSms:
-    send_message = {
-        "signup": "회원가입을 위한 휴대폰 인증 코드가 전송되었습니다.",
-        "reset_password": "비밀번호 재설정을 위한 휴대폰 인증 코드가 전송되었습니다.",
-        "find_email": "계정찾기를 위한 휴대폰 인증 코드가 전송되었습니다.",
-        "change_phone": "휴대폰 번호 변경을 위한 휴대폰 인증 코드가 전송되었습니다.",
-    }
-    verify_message = {
-        "signup": "회원가입을 위한 휴대폰 인증에 성공하였습니다.",
-        "reset_password": "비밀번호 재설정을 위한 휴대폰 인증에 성공하였습니다.",
-        "find_email": "계정찾기를 위한 휴대폰 인증에 성공하였습니다.",
-        "change_phone": "휴대폰 번호 변경을 위한 휴대폰 인증에 성공하였습니다.",
-    }
+    send_message = SMS_SEND_MESSAGE
+    verify_message = SMS_VERIFY_MESSAGE
 
     def __init__(self) -> None:
         self.client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)

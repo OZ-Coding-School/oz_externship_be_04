@@ -5,10 +5,12 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from rest_framework import serializers
 
+from apps.users.utils.auth_code import AuthCodeCache
+
 User = get_user_model()
 
 
-class UserSerializer(serializers.ModelSerializer[Any]):
+class SignUpSerializer(serializers.ModelSerializer[Any]):
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -77,4 +79,27 @@ class UserSerializer(serializers.ModelSerializer[Any]):
             get_verified_email = cache.get(f"verified:email:{email}")
             if not get_verified_email:
                 raise serializers.ValidationError({"email": ["이메일 인증을 완료해야 가입하실 수 있습니다."]})
+        return data
+
+
+class EmailSignUpSerializer(serializers.Serializer[Any]):
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value: str) -> str:
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("이미 가입되어 있는 이메일 입니다.")
+        return value
+
+
+class EmailSignUpVerifySerializer(serializers.Serializer[Any]):
+    email = serializers.EmailField(required=True)
+    code = serializers.CharField(required=True)
+
+    def validate(self, data: Any) -> Any:
+        email = data["email"]
+        code = data["code"]
+        key = f"email:signup:{email}"
+
+        if not AuthCodeCache.verify(key, code):
+            raise serializers.ValidationError({"code": ["인증 코드가 올바르지 않거나 만료되었습니다."]})
         return data

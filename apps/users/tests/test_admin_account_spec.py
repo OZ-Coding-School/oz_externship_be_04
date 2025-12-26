@@ -50,15 +50,12 @@ class AdminAccountBaseTestCase(APITestCase):
         )
 
     def authenticate_as_normal_user(self) -> None:
-        """일반 유저로 인증"""
         self.client.force_authenticate(user=self.normal_user)
 
     def authenticate_as_staff_user(self) -> None:
-        """스태프 유저로 인증"""
         self.client.force_authenticate(user=self.staff_user)
 
     def authenticate_as_super_user(self) -> None:
-        """슈퍼유저로 인증"""
         self.client.force_authenticate(user=self.super_user)
 
 
@@ -252,7 +249,7 @@ class AdminAccountUpdateTests(AdminAccountBaseTestCase):
         url = reverse(self.url_name, kwargs={"account_id": self.normal_user.id})
         response = self.client.patch(
             url,
-            {"phone_number": "010-1234-5678"},  # 잘못된 포맷
+            {"phone_number": "010-1234-5678"},
             format="json",
         )
 

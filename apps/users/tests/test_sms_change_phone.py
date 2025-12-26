@@ -79,8 +79,7 @@ class SMSAuthTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         url = "/api/v1/accounts/change-phone"
-        data = {"phone_number": "01099999999", "code": "123456"}  # other_user의 번호
-
+        data = {"phone_number": "01099999999", "code": "123456"}
         response = self.client.patch(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

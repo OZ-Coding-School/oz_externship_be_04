@@ -44,7 +44,6 @@ class SocialLoginService:
 
         existing_user = None
 
-        # email 기반 기존 유저 연결
         if email_input:
             existing_user = User.objects.filter(email=email_input).first()
 
@@ -77,17 +76,14 @@ class SocialLoginService:
             existing_user.save()
             return existing_user, False
 
-        # 새 이메일 생성
         email = email_input or f"{provider}_{provider_id}@auto.com"
         final_nickname = nickname_input
         if not final_nickname:
             final_nickname = self._generate_unique_nickname(provider)
         else:
-            # 소셜 닉네임이 이미 DB에 있다면? -> 뒤에 난수 붙여서 충돌 방지
             while User.objects.filter(nickname=final_nickname).exists():
                 final_nickname = f"{nickname_input}_{uuid.uuid4().hex[:4]}"
 
-        # 기본 user data
         user_data: Dict[str, Any] = {
             "email": email,
             "nickname": final_nickname,
@@ -99,7 +95,6 @@ class SocialLoginService:
             "phone_number": phone_number_input,
         }
 
-        # Optional 필드는 있을 때만 넣기 → mypy 해결
         if gender_input is not None:
             user_data["gender"] = gender_input
 

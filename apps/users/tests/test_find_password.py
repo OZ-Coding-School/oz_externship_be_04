@@ -205,14 +205,18 @@ class PasswordManagementIntegrationTestCase(APITestCase):
         self.assertIsNone(cache.get(f"reset_token:{token}"))
 
     def test_email_verify_sets_cookie(self) -> None:
-        cache.set("email:reset_password:testuser@example.com", "ABC123", timeout=300)
+        code = "ABC123"
+        cache.set(f"email:reset_password:{self.user.email}", code, timeout=300)
 
         url = "/api/v1/accounts/find-password/verify-email"
-        data = {"email": "testuser@example.com", "code": "ABC123"}
+        data = {"email": "testuser@example.com", "code": code}
 
         response = self.client.post(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(response.data["detail"], "비밀번호 찾기를 위한 이메일 인증에 성공하였습니다.")
+        self.assertEqual(response.data["expires_in"], 300)
 
         self.assertIn("password_reset_token", response.cookies)
 
@@ -220,3 +224,9 @@ class PasswordManagementIntegrationTestCase(APITestCase):
         self.assertTrue(cookie["httponly"])
         self.assertEqual(cookie["max-age"], 300)
         self.assertEqual(cookie["path"], "/api/v1/accounts/find-password")
+
+        token = cookie.value
+        cached_email = cache.get(f"reset_token:{token}")
+        self.assertEqual(cached_email, self.user.email)
+
+        self.assertIsNone(cache.get(f"email:reset_password:{self.user.email}"))

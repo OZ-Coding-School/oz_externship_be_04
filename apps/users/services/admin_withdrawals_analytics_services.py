@@ -7,7 +7,7 @@ from django.db.models.functions import TruncMonth, TruncYear
 from django.utils import timezone
 
 from apps.users.models.withdrawal import Withdrawal
-from apps.users.utils.admin_analytics_utils import (
+from apps.users.utils.admin_analytics_util import (
     DEFAULT_RECENT_MONTHS,
     DEFAULT_RECENT_YEARS,
     IntervalLiteral,
@@ -15,7 +15,7 @@ from apps.users.utils.admin_analytics_utils import (
     calc_year_range,
     init_counts_map,
 )
-from apps.users.utils.reason_choices import WithdrawalReason
+from apps.users.utils.consts import WithdrawalReason
 
 
 class WithdrawalTrendItem(TypedDict):

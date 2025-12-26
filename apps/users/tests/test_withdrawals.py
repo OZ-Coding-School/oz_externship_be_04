@@ -15,9 +15,7 @@ from apps.users.services.withdrawal_services import (
 )
 
 
-# model 테스트
 class WithdrawalCheckModel(TestCase):
-    # 기본 user 셋팅
     def setUp(self) -> None:
         uid = random.randint(1000, 9999)
 
@@ -31,7 +29,6 @@ class WithdrawalCheckModel(TestCase):
             gender="M",
         )
 
-    # 탈퇴 성공 case + 날짜 계산
     def test_withdrawal(self) -> None:
         expected_date = timezone.now().date() + timedelta(days=14)
         withdrawal = Withdrawal.objects.create(
@@ -41,7 +38,6 @@ class WithdrawalCheckModel(TestCase):
         )
         self.assertEqual(withdrawal.due_date, expected_date)
 
-    # 탈퇴 상세 사유 공백 (실패 case)
     def test_withdrawal_reason_blank(self) -> None:
         withdrawal = Withdrawal(
             user=self.user,
@@ -63,7 +59,6 @@ class WithdrawalCheckModel(TestCase):
         with self.assertRaises(DjangoErrorValid):
             withdrawal.full_clean()
 
-    # 탈퇴 상세 사유 500자 초과 시키기 ( 실패 case )
     def test_withdrawal_max_length_check(self) -> None:
         withdrawal = Withdrawal(
             user=self.user,
@@ -75,7 +70,6 @@ class WithdrawalCheckModel(TestCase):
             withdrawal.full_clean()
 
 
-# service 테스트
 class WithdrawalCheckService(TransactionTestCase):
     def setUp(self) -> None:
         uid = random.randint(1000, 9999)
@@ -91,7 +85,6 @@ class WithdrawalCheckService(TransactionTestCase):
             is_active=True,
         )
 
-    # 탈퇴 처리 후 is_active 처리 테스트 ( 초기화 후 데이터 반영 확인 )
     def test_withdrawal_is_active_true(self) -> None:
         data = {
             "reason": "TOO_DIFFICULT",
@@ -104,7 +97,6 @@ class WithdrawalCheckService(TransactionTestCase):
         self.assertFalse(self.user.is_active)
         self.assertEqual(Withdrawal.objects.count(), 1)
 
-    # 이미 탈퇴 처리된 유저가 다시 탈퇴 신청 할때 ( 실패 case )
     def test_withdrawal_is_active_false(self) -> None:
         self.user.is_active = False
         self.user.save()
@@ -118,7 +110,6 @@ class WithdrawalCheckService(TransactionTestCase):
         self.assertEqual(Withdrawal.objects.count(), 0)
 
 
-# view 테스트
 class WithdrawalCheckView(APITestCase):
     def setUp(self) -> None:
         uid = random.randint(1000, 9999)

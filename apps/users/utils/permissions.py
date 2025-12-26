@@ -5,10 +5,6 @@ from rest_framework.request import Request
 
 
 class StaffOrSuperUser(permissions.BasePermission):
-    """
-    관리자(staff or superuser) 로그인만 허용합니다.
-    """
-
     def has_permission(self, request: Request, view: Any) -> bool:
         user = request.user
 
@@ -19,10 +15,6 @@ class StaffOrSuperUser(permissions.BasePermission):
 
 
 class SuperUserOnly(permissions.BasePermission):
-    """
-    superuser만 허용합니다.
-    """
-
     def has_permission(self, request: Request, view: Any) -> bool:
         user = request.user
 

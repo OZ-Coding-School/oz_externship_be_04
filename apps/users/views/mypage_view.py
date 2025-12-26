@@ -15,18 +15,17 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.serializers.mypage_serializers import (
     MyPageSerializer,
+    WithdrawalSerializer,
 )
-from apps.users.serializers.withdrawal_serializers import WithdrawalSerializer
 from apps.users.services.mypage_services import (
     account_update_service,
-    nickname_check_service,
 )
 from apps.users.services.withdrawal_services import withdraw_service
-from apps.users.utils.reason_choices import WithdrawalReason
-from apps.users.views.token_views import blacklist_token
+from apps.users.utils.consts import WithdrawalReason
+from apps.users.views.auth_view import blacklist_token
 
 
-class UserAccountView(APIView):
+class MyPageView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @extend_schema(
@@ -196,7 +195,6 @@ class UserAccountView(APIView):
 
         withdraw_service(request.user, data)
 
-        # refresh 토큰 블랙리스트 처리
         refresh_token = request.COOKIES.get("refresh_token")
         if refresh_token:
             try:
@@ -213,56 +211,3 @@ class UserAccountView(APIView):
         )
         response.delete_cookie("refresh_token")
         return response
-
-
-class NicknameCheckView(APIView):
-    permission_classes = (permissions.AllowAny,)
-
-    @extend_schema(
-        tags=["Account"],
-        summary="닉네임 중복 확인",
-        description="닉네임 입력 시 중복된 닉네임이 존재하는지 확인합니다.",
-        parameters=[
-            OpenApiParameter(
-                name="nickname",
-                description="중복 확인할 닉네임 입력",
-                required=True,
-                type=str,
-                location=OpenApiParameter.QUERY,
-            )
-        ],
-        methods=["GET"],
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 409: OpenApiTypes.OBJECT},
-        examples=[
-            OpenApiExample(
-                response_only=True,
-                name="success_case",
-                summary="사용 가능",
-                value={"detail": "사용가능한 닉네임 입니다."},
-                status_codes=["200"],
-            ),
-            OpenApiExample(
-                response_only=True,
-                name="nickname_blank",
-                summary="입력 누락",
-                value={"error_detail": {"nickname": ["이 필드는 필수 항목입니다."]}},
-                status_codes=["400"],
-            ),
-            OpenApiExample(
-                response_only=True,
-                name="already_exists",
-                summary="닉네임 중복",
-                value={"error_detail": "중복된 닉네임이 존재합니다."},
-                status_codes=["409"],
-            ),
-        ],
-    )
-    def get(self, request: Any, *args: Any, **kwargs: Any) -> Response:
-        nickname = request.query_params.get("nickname")
-        if not nickname:
-            return Response(
-                {"error_detail": {"nickname": ["이 필드는 필수 항목입니다."]}}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        nickname_check_service(nickname)
-        return Response({"detail": "사용가능한 닉네임 입니다."}, status=status.HTTP_200_OK)
