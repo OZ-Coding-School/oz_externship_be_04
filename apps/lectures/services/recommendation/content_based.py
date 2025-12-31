@@ -1,4 +1,5 @@
 import os
+import random
 import re
 from typing import List, Optional, Tuple
 
@@ -192,11 +193,14 @@ def recommend_lectures(user: User, top_n: int = 3) -> Tuple[List[CrawledLecture]
     )
 
     if is_cold_user:
-        qs = CrawledLecture.objects.all()
+        all_ids = list(CrawledLecture.objects.values_list("id", flat=True))
 
-        lectures = list(qs.order_by("?")[:top_n])
-        if not lectures:
+        if not all_ids:
             return [], "lecture not crawled"
+
+        sample_ids = random.sample(all_ids, min(top_n, len(all_ids)))
+
+        lectures = list(CrawledLecture.objects.filter(id__in=sample_ids))
 
         return lectures, "random"
 
@@ -210,8 +214,6 @@ def recommend_lectures(user: User, top_n: int = 3) -> Tuple[List[CrawledLecture]
     user_vec = get_user_embedding_vector(user, lecture_vectors, lecture_ids)
 
     if user_vec is None:
-        import random
-
         candidates = [lec for lec in lectures if lec.id not in enrolled_ids] or lectures
         return random.sample(candidates, min(top_n, len(candidates))), "random"
 
