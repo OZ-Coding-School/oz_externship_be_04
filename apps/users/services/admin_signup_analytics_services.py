@@ -54,7 +54,10 @@ def _get_monthly_signup_trend(
     start_date, end_date, labels = calc_month_range(today, months)
 
     qs = (
-        User.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
+        User.objects.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date,
+        )
         .annotate(period=TruncMonth("created_at"))
         .values("period")
         .annotate(count=Count("id"))
@@ -95,7 +98,10 @@ def _get_yearly_signup_trend(
     start_date, end_date, labels = calc_year_range(today, years)
 
     qs = (
-        User.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
+        User.objects.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date,
+        )
         .annotate(period=TruncYear("created_at"))
         .values("period")
         .annotate(count=Count("id"))
