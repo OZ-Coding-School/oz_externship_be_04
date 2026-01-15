@@ -2,7 +2,7 @@ services:
   django:
     container_name: django
     env_file:
-      - envs/.local.env
+      - ./envs/.local.env
     build:
       context: .
     working_dir: /oz_externship
@@ -73,6 +73,36 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+
+  celery-worker:
+    container_name: celery-worker
+    env_file:
+      - ./envs/.local.env
+    build:
+      context: .
+    command: celery -A config worker -l info
+    volumes:
+      - .:/oz_externship
+    depends_on:
+      - django
+      - redis
+    networks:
+      - ws
+
+  celery-beat:
+    container_name: celery-beat
+    env_file:
+      - ./envs/.local.env
+    build:
+      context: .
+    command: celery -A config beat -l info
+    volumes:
+      - .:/oz_externship
+    depends_on:
+      - django
+      - redis
+    networks:
+      - ws
 
 networks:
   ws:

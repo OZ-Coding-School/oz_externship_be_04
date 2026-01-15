@@ -1,0 +1,170 @@
+from typing import cast
+
+from django.conf import settings
+from django.db.models import Q, QuerySet
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_field
+from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.lectures.filters.crawled_lecture_filter import CrawledLectureFilter
+from apps.lectures.models import CrawledLecture
+from apps.lectures.serializers.crawled_lecture_serializer import (
+    CrawledLectureSerializer,
+)
+from apps.lectures.services.recommendation.content_based import recommend_lectures
+from apps.users.models import User
+
+
+class CrawledLecturePagination(PageNumberPagination):
+    page_size = 12
+    page_size_query_param = "page_size"
+    max_page_size = 50
+
+
+class CrawledLectureListAPIView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = CrawledLectureSerializer
+    pagination_class = CrawledLecturePagination
+    search_fields = ["title", "instructor"]
+    filterset_class = CrawledLectureFilter
+
+    sort_map = {
+        "latest": "-created_at",
+        "oldest": "created_at",
+        "low_price": "discount_price",
+        "high_price": "-discount_price",
+        "high_rating": "-average_rating",
+        "low_rating": "average_rating",
+    }
+
+    @extend_schema_field(dict)
+    def get_queryset(self) -> QuerySet[CrawledLecture]:
+        queryset = CrawledLecture.objects.prefetch_related("categories", "reviews").all()
+
+        filterset = self.filterset_class(data=self.request.GET, queryset=queryset, request=self.request)
+        queryset = cast(QuerySet[CrawledLecture], filterset.qs).distinct()
+
+        q = Q()
+        if search := self.request.GET.get("search"):
+            for field in self.search_fields:
+                q |= Q(**{f"{field}__icontains": search})
+            queryset = queryset.filter(q)
+
+        if (sort_key := self.request.GET.get("sort")) in self.sort_map:
+            queryset = queryset.order_by(self.sort_map[sort_key])
+
+        return queryset
+
+    @extend_schema(
+        tags=["Lecture"],
+        summary="크롤링된 강의 목록을 조회하는 API입니다.",
+        parameters=[
+            OpenApiParameter(
+                name="page",
+                type=OpenApiTypes.INT,
+                location="query",
+                description="원하는 페이지 번호를 입력하여 해당하는 페이지의 강의 내용을 가져올 수 있습니다.",
+                required=False,
+            ),
+            OpenApiParameter(
+                name="page_size",
+                type=OpenApiTypes.INT,
+                location="query",
+                description="한 페이지에 나타내는 강의 목록의 수를 조절할 수 있습니다.",
+                required=False,
+            ),
+            OpenApiParameter(
+                name="search",
+                type=OpenApiTypes.STR,
+                location="query",
+                description="강의 제목 또는 강사 이름으로 검색합니다.",
+                required=False,
+            ),
+            OpenApiParameter(
+                name="category",
+                type=OpenApiTypes.STR,
+                location="query",
+                description="카테고리 이름을 입력하여 해당하는 강의를 검색합니다.",
+                required=False,
+            ),
+            OpenApiParameter(
+                name="sort",
+                type=OpenApiTypes.STR,
+                location="query",
+                enum=[
+                    "latest",
+                    "oldest",
+                    "low_price",
+                    "high_price",
+                    "high_rating",
+                    "low_rating",
+                ],
+                description="""
+아래의 정렬 기준을 선택할 수 있습니다:
+- latest : 최신순으로 정렬
+- oldest : 오래된순으로 정렬
+- low_price : 낮은 가격순으로 정렬
+- high_price : 높은 가격순으로 정렬
+- high_rating : 높은 리뷰 평점순으로 정렬
+- low_rating : 낮은 리뷰 평점순으로 정렬
+                """,
+                required=False,
+            ),
+        ],
+        responses={
+            200: CrawledLectureSerializer(many=True, read_only=True),
+            500: {"example": {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."}},
+        },
+    )
+    def get(self, request: Request) -> Response:
+        paginator = self.pagination_class()
+
+        queryset = self.get_queryset()
+        page: list[CrawledLecture] | None = paginator.paginate_queryset(queryset, request)
+
+        serializer = self.serializer_class(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+@extend_schema(
+    tags=["Lecture"],
+    summary="사용자 맞춤 강의를 추천하는 API입니다.",
+    parameters=[
+        OpenApiParameter(
+            name="max_count",
+            type=OpenApiTypes.INT,
+            location="query",
+            description="추천 받을 강의 개수를 입력합니다. (기본 3)",
+            required=False,
+        ),
+    ],
+    responses={
+        200: CrawledLectureSerializer(many=True, read_only=True),
+        500: {"example": {"error_detail": "서버에서 알 수 없는 오류가 발생했습니다."}},
+    },
+)
+class CrawledLectureRecommendAPIView(APIView):
+    serializer_class = CrawledLectureSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        user = cast(User, request.user)
+
+        max_count = request.query_params.get("max_count", 3)
+
+        try:
+            max_count = max(1, int(max_count))
+        except (ValueError, TypeError):
+            return Response(
+                {"error_detail": "max_count는 1 이상의 정수 형식이어야 합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        recommended_lectures, text = recommend_lectures(user, max_count)
+        serializer = CrawledLectureSerializer(recommended_lectures, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
